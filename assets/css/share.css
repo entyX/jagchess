@@ -1,0 +1,116 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   share.css — invite links, QR codes, and the attendance check-in prompt.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── the share sheet ────────────────────────────────────────────────── */
+
+.share-card {
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+.share-card h3 { margin: 0; }
+.share-card .modal-meta { line-height: 1.45; }
+
+.share-qr {
+  width: min(260px, 72vw);
+  margin: 2px auto 0;
+  padding: 12px;
+  border-radius: var(--r-lg);
+  background: #fff;
+  border: 2px solid var(--border);
+  box-shadow: var(--lift-card);
+}
+.share-qr svg { display: block; width: 100%; height: auto; }
+
+.share-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 2px dashed var(--border-2);
+}
+.share-code span {
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.share-code b {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  color: var(--text);
+}
+
+.share-link { display: flex; gap: 8px; }
+.share-link input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+}
+.share-link .btn { flex-shrink: 0; }
+
+.share-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.share-actions .btn { flex: 1; min-width: 110px; }
+
+/* the topbar's invite button */
+.topbar-invite { flex-shrink: 0; }
+.topbar-invite svg { width: 15px; height: 15px; }
+
+/* ── the attendance prompt ──────────────────────────────────────────── */
+
+.att-prompt-card {
+  max-width: 400px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.att-prompt-card h3 { margin: 0; }
+.att-prompt-card .modal-meta { line-height: 1.5; }
+
+.att-prompt-ico {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: var(--green-soft);
+  font-size: 30px;
+  line-height: 1;
+  animation: att-pop .4s var(--ease) both;
+}
+.att-prompt-ico.warn { background: var(--orange-soft); }
+
+@keyframes att-pop {
+  from { opacity: 0; transform: scale(.72); }
+  to   { opacity: 1; transform: none; }
+}
+
+.att-prompt-event {
+  font-family: var(--font);
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.att-prompt-actions { display: flex; gap: 10px; width: 100%; }
+.att-prompt-actions .btn { flex: 1; }
+
+@media (max-width: 720px) {
+  .share-actions .btn { min-width: 0; }
+  .topbar-invite span { display: none; }
+}

@@ -1,0 +1,294 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   newsletter-mail.css — the "also email this" field under an announcement.
+   Shared by the admin console and the club Newsletters block, so every
+   selector is namespaced `nl-` and none of it is scoped to a page class.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.nl-mail { display: block; }
+
+/* ── the switch ─────────────────────────────────────────────────────── */
+
+.nl-toggle {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: 8px;
+  padding: 13px 15px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg);
+}
+/* square off the bottom so the revealed panel reads as one card with it */
+.nl-mail.nl-on .nl-toggle { border-radius: var(--r-md) var(--r-md) 0 0; }
+
+.nl-toggle-copy { display: grid; gap: 2px; min-width: 0; }
+.nl-toggle-title { font-size: 14px; font-weight: 800; color: var(--text); }
+.nl-toggle-sub { font-size: 12.5px; color: var(--muted); }
+
+.nl-switch { position: relative; flex-shrink: 0; display: inline-flex; cursor: pointer; }
+.nl-switch input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;            /* stay the click target — the thumb paints over it otherwise */
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.nl-switch-track {
+  display: block;
+  width: 46px;
+  height: 27px;
+  border-radius: 999px;
+  background: var(--border-2);
+  transition: background .18s ease;
+}
+.nl-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20,38,47,0.3);
+  transition: transform .18s ease;
+}
+.nl-switch input:checked + .nl-switch-track { background: var(--green); }
+.nl-switch input:checked + .nl-switch-track .nl-switch-thumb { transform: translateX(19px); }
+.nl-switch input:focus-visible + .nl-switch-track { box-shadow: 0 0 0 4px var(--blue-soft); }
+
+/* ── the panel the switch reveals ───────────────────────────────────── */
+
+.nl-panel {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  background: var(--card);
+}
+.nl-panel[hidden] { display: none; }
+
+/* ── the connected sending account ──────────────────────────────────── */
+
+.nl-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--card);
+}
+.nl-mail.nl-connected .nl-account { border-color: var(--green); background: var(--green-soft); }
+
+.nl-account-info { display: flex; align-items: center; gap: 11px; min-width: 0; }
+
+.nl-account-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--border-2);
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.nl-mail.nl-connected .nl-account-avatar { background-color: var(--green); }
+/* a real Google photo replaces the initials underneath it */
+.nl-account-avatar.has-photo { color: transparent; }
+
+.nl-account-text { display: grid; gap: 1px; min-width: 0; }
+.nl-account-name {
+  font-size: 13.5px; font-weight: 800; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nl-account-email {
+  font-size: 12px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.btn.nl-connect { padding: 7px 14px; font-size: 12.5px; white-space: nowrap; }
+
+.nl-field { position: relative; display: grid; gap: 7px; }
+.nl-field > label { margin: 0; font-size: 13px; font-weight: 800; color: var(--text-2); }
+.nl-hint { font-size: 12px; color: var(--muted); }
+
+.nl-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.btn.nl-add-all {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ── recipient chips ────────────────────────────────────────────────── */
+
+.nl-input-shell { position: relative; }
+
+.nl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  min-height: 46px;
+  padding: 7px 10px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--card);
+  cursor: text;
+  transition: border-color .16s, box-shadow .16s;
+}
+.nl-chips:focus-within { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(28,176,246,0.14); }
+
+.nl-chips input {
+  flex: 1;
+  min-width: 190px;
+  width: auto;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+  font-size: 14px;
+  color: var(--text);
+}
+.nl-chips input:focus { box-shadow: none; }
+
+.nl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 260px;
+  padding: 3px 7px 3px 3px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--blue-soft);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.nl-chip:hover { border-color: var(--blue); }
+
+.nl-chip-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 800;
+}
+.nl-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nl-chip-x {
+  flex-shrink: 0;
+  padding: 0 1px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.nl-chip-x:hover { color: var(--red); }
+
+/* ── autocomplete ───────────────────────────────────────────────────── */
+
+.nl-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 5px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--card);
+  box-shadow: var(--pop);
+}
+.nl-dropdown[hidden] { display: none; }
+
+.nl-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.nl-suggestion:hover,
+.nl-suggestion.active { background: var(--blue-soft); }
+
+.nl-suggestion-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.nl-suggestion-text { display: grid; gap: 1px; min-width: 0; flex: 1; }
+.nl-suggestion-name {
+  font-weight: 800;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nl-suggestion-email {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nl-suggestion-role {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.nl-suggestion-role.admin   { background: var(--blue-soft);   color: var(--blue-dark); }
+.nl-suggestion-role.founder { background: var(--purple-soft); color: var(--purple-dark); }
+
+/* ── send feedback ──────────────────────────────────────────────────── */
+
+.nl-status {
+  margin-top: 10px;
+  padding: 10px 13px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.nl-status[hidden] { display: none; }
+.nl-status.info  { background: var(--bg);         color: var(--text-2); }
+.nl-status.ok    { background: var(--green-soft); color: var(--green-dark); }
+.nl-status.warn  { background: var(--gold-soft);  color: var(--gold-dark); }
+.nl-status.error { background: var(--red-soft);   color: var(--red-dark); }

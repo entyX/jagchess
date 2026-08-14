@@ -1,0 +1,365 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   admin.css — JagChess admin console
+   Scoped to .adm. Builds on the core system in styles.css.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── EVENTS ─────────────────────────────────────────────────────────── */
+
+.adm .calendar-layout {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.adm .events-right-col { display: grid; gap: 16px; align-content: start; }
+
+.adm .event-manager { display: grid; gap: 0; }
+.adm .event-manager h3 { margin-bottom: 14px; }
+.adm #event-form { gap: 11px; }
+
+/* ── PUZZLE BUILDER ─────────────────────────────────────────────────── */
+
+.adm .puzzle-layout {
+  grid-template-columns: 56px minmax(0, 1.45fr) minmax(300px, 1fr);
+  position: relative;
+  overflow: visible;
+}
+
+.adm .puzzle-import-bar { display: flex; flex-direction: column; gap: 8px; }
+
+.adm .pib-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 52px;
+  padding: 11px 4px 9px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--lift-card);
+  cursor: pointer;
+  color: var(--text-2);
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transition: all .16s var(--ease);
+}
+.adm .pib-btn:hover { border-color: var(--blue); color: var(--blue-dark); transform: translateY(-2px); }
+.adm .pib-btn.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 3px 0 var(--blue-dark);
+}
+
+.adm .puzzle-import-popover {
+  position: absolute;
+  left: 70px;
+  top: 0;
+  width: 320px;
+  z-index: 100;
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--pop);
+}
+.adm .puzzle-import-popover[hidden] { display: none; }
+
+.adm .pip-title {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+}
+.adm .pip-textarea { font-family: var(--font-mono); font-size: 12px; line-height: 1.6; }
+
+.adm .puzzle-all-card { max-width: 620px; }
+.adm .puzzle-all-info { display: grid; gap: 3px; min-width: 0; }
+.adm .puzzle-all-desc { font-size: 12.5px; color: var(--text-2); display: block; }
+.adm .puzzle-view-all-btn { width: 100%; }
+
+.adm .all-events-card { max-width: 640px; }
+
+/* ── SHOP MANAGEMENT ────────────────────────────────────────────────── */
+
+.adm .shop-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.adm .shop-add-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 190px;
+  border: 2.5px dashed var(--border-2);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .18s var(--ease);
+}
+.adm .shop-add-card:hover {
+  border-color: var(--green);
+  color: var(--green-dark);
+  background: var(--green-soft);
+  transform: translateY(-2px);
+}
+.adm .shop-add-card-label { font-family: var(--font); font-size: 13.5px; font-weight: 800; }
+
+.adm .shop-item-card {
+  overflow: hidden;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift-card);
+  transition: transform .18s var(--ease), border-color .18s;
+}
+.adm .shop-item-card:hover { transform: translateY(-3px); border-color: var(--border-2); }
+
+.adm .shop-item-thumb { width: 100%; height: 140px; object-fit: cover; display: block; }
+.adm .shop-item-thumb-placeholder {
+  width: 100%;
+  height: 140px;
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  background: var(--surface-2);
+}
+.adm .shop-item-meta { padding: 12px 14px 14px; }
+.adm .shop-item-meta-name {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.adm .shop-item-meta-cost {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gold-dark);
+  margin-top: 2px;
+}
+
+.adm .shop-img-picker {
+  width: 100%;
+  height: 150px;
+  border: 2.5px dashed var(--border-2);
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  background: var(--surface);
+  transition: border-color .16s, background .16s;
+}
+.adm .shop-img-picker:hover { border-color: var(--blue); background: var(--blue-soft); }
+.adm .shop-img-picker img { width: 100%; height: 100%; object-fit: cover; }
+.adm #shop-img-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+}
+.adm .shop-textarea { min-height: 66px; }
+
+/* ── ORDERS ─────────────────────────────────────────────────────────── */
+
+.adm .shop-orders-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.adm .shop-orders-head h3 { margin: 0; }
+.adm .shop-orders-filter { font-size: 12.5px; padding: 6px 13px; }
+.adm .shop-orders-filter.active {
+  background: var(--text);
+  border-color: var(--text);
+  color: #fff;
+  --btn-shadow: rgba(0,0,0,0.25);
+}
+
+.adm .order-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+}
+.adm .order-row:last-child { border-bottom: none; }
+.adm .order-user-name { font-family: var(--font); font-size: 14.5px; font-weight: 800; color: var(--text); }
+.adm .order-items-list { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+.adm .order-meta-row { display: flex; align-items: center; gap: 9px; }
+
+.adm .order-cost-pill {
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 900;
+  color: var(--gold-dark);
+  background: var(--gold-soft);
+  padding: 4px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.adm .order-status-pill {
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 4px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.adm .order-status-pill.pending  { background: var(--gold-soft);  color: var(--gold-dark); }
+.adm .order-status-pill.verified { background: var(--green-soft); color: var(--green-dark); }
+.adm .order-status-pill.rejected { background: var(--red-soft);   color: var(--red-dark); }
+
+.adm .order-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ── ATTENDANCE ─────────────────────────────────────────────────────── */
+
+.adm .adm-att-layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.adm .adm-att-setup-card { padding: 26px; }
+.adm .adm-att-intro { font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin: -6px 0 16px; }
+.adm .adm-att-setup-card select { width: 100%; }
+
+.adm #att-setup-body:not([hidden]) {
+  display: grid;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px solid var(--border);
+}
+
+.adm .adm-att-pts-row { margin-bottom: 22px; }
+
+.adm .adm-field-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.adm .adm-att-qs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.adm .adm-att-q-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.adm .adm-att-q-input { flex: 1; }
+.adm .adm-att-q-del {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border: none;
+  border-radius: 11px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1;
+  transition: all .14s;
+}
+.adm .adm-att-q-del:hover { color: #fff; background: var(--red); }
+
+.adm #att-save-form-btn { margin-top: 18px; }
+
+.adm .adm-att-responses-card { padding: 26px; min-height: 340px; }
+.adm .adm-att-responses-card > .empty-state { padding-top: 60px; }
+
+.adm .adm-att-resp-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid var(--border);
+}
+.adm .adm-att-resp-head h3 { font-size: 19px; margin: 0 0 3px; }
+
+.adm .adm-att-badge {
+  flex-shrink: 0;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 900;
+  background: var(--green-soft);
+  color: var(--green-dark);
+  border-radius: 999px;
+  padding: 6px 15px;
+  white-space: nowrap;
+}
+
+.adm .adm-att-resp-row { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.adm .adm-att-resp-row:last-child { border-bottom: none; }
+.adm .adm-att-resp-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.adm .adm-att-resp-name { font-family: var(--font); font-size: 14.5px; font-weight: 800; color: var(--text); }
+.adm .adm-att-resp-time { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+.adm .adm-att-answer { display: flex; gap: 8px; font-size: 13px; line-height: 1.5; margin-top: 4px; }
+.adm .adm-att-q-label { color: var(--muted); flex-shrink: 0; }
+.adm .adm-att-a-text { font-weight: 600; color: var(--text); }
+
+/* ── USER MANAGE MODAL ──────────────────────────────────────────────── */
+
+.adm #user-manage-modal .modal-card { gap: 0; }
+.adm .manage-user-head {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 22px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+
+@media (max-width: 1180px) {
+  .adm .calendar-layout { grid-template-columns: 1fr; }
+  .adm .adm-att-layout { grid-template-columns: 1fr; }
+  .adm .puzzle-layout { grid-template-columns: 56px minmax(0, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .adm .puzzle-layout { grid-template-columns: 1fr; }
+  .adm .puzzle-import-bar { flex-direction: row; }
+  .adm .puzzle-import-popover { left: 0; top: 68px; width: 100%; }
+  .adm .order-row { grid-template-columns: 1fr; gap: 10px; }
+}
