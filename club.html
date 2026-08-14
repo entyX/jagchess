@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Club · JagChess</title>
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/vendor/jquery-ui/jquery-ui.min.css" />
+  <link rel="stylesheet" href="/assets/vendor/chessboard/chessboard-1.0.0.min.css" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/clubs.css" />
+  <link rel="stylesheet" href="/assets/css/club.css" />
+  <link rel="stylesheet" href="/assets/css/duels.css" />
+  <link rel="stylesheet" href="/assets/css/share.css" />
+  <link rel="stylesheet" href="/assets/css/newsletter-mail.css" />
+</head>
+<body class="club app" id="app">
+
+  <div class="nav-scrim" id="nav-scrim"></div>
+
+  <!-- ══ BOOT / GATE ══ -->
+  <div class="club-boot" id="club-boot">
+    <div class="club-boot-inner">
+      <div class="club-boot-spinner"></div>
+      <p>Opening your club…</p>
+    </div>
+  </div>
+
+  <div class="club-gate" id="club-gate" hidden>
+    <div class="club-gate-card">
+      <span class="club-avatar" id="gate-avatar" style="background:#58cc02">♞</span>
+      <h1 id="gate-name">This club</h1>
+      <p id="gate-desc">You're not a member of this club yet.</p>
+      <div id="gate-actions" class="club-gate-actions"></div>
+      <a class="club-gate-back" href="/clubs">← Back to my clubs</a>
+    </div>
+  </div>
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar" id="sidebar" hidden>
+    <a class="brand club-brand" href="/clubs" title="All my clubs">
+      <div class="brand-mark" id="club-icon" aria-hidden="true">♞</div>
+      <div class="brand-text">
+        <h2 id="club-name">Club</h2>
+        <span class="brand-role" id="club-role">Member</span>
+      </div>
+      <svg class="brand-switch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5 4.5 9 8 12.5"/><path d="M4.5 9h11.2a3.8 3.8 0 0 1 0 7.6H10"/></svg>
+    </a>
+
+    <div class="nav-scroll">
+      <div class="nav-group">
+        <div class="nav-group-label">Club</div>
+        <div class="tabs" id="nav-fixed"></div>
+      </div>
+      <div class="nav-group" id="nav-blocks-group">
+        <div class="nav-group-label">
+          <span>Pages</span>
+          <button class="nav-add" id="add-block-btn" title="Add a block" hidden>+</button>
+        </div>
+        <div class="tabs" id="nav-blocks"></div>
+      </div>
+      <div class="nav-group" id="nav-admin-group" hidden>
+        <div class="nav-group-label">Manage</div>
+        <div class="tabs" id="nav-admin"></div>
+      </div>
+    </div>
+
+    <div class="nav-foot">
+      <div class="mode-switch" id="mode-switch" hidden>
+        <button class="mode-opt on" data-mode="admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.84 2.84l-.06-.06a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.96-1.14l-.06.06a2 2 0 1 1-2.84-2.84l.06-.06A1.7 1.7 0 0 0 3 15.06 2 2 0 1 1 3 11h.1a1.7 1.7 0 0 0 1.14-2.96l-.06-.06a2 2 0 1 1 2.84-2.84l.06.06A1.7 1.7 0 0 0 10 5.06V5a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.14l.06-.06a2 2 0 1 1 2.84 2.84l-.06.06A1.7 1.7 0 0 0 21 11.9h.1a2 2 0 1 1 0 4H21a1.7 1.7 0 0 0-1.6 1.1Z"/></svg>
+          Admin
+        </button>
+        <button class="mode-opt" data-mode="editor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5 15.4 4.1a2.3 2.3 0 0 1 3.2 3.2L7.2 18.7 3 20l1.3-4.2Z"/><path d="M13.4 6.1 17 9.7"/></svg>
+          Editor
+        </button>
+      </div>
+
+      <div class="nav-user">
+        <div class="user-avatar-circle" id="me-avatar">—</div>
+        <div class="nav-user-info">
+          <div class="nav-user-name" id="me-name">—</div>
+          <div class="nav-user-mail" id="me-email">—</div>
+        </div>
+      </div>
+      <div class="nav-foot-actions">
+        <button id="theme-toggle" class="nav-mini icon-only" title="Toggle theme" aria-label="Toggle theme">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.5A8.5 8.5 0 0 1 9.5 3a.75.75 0 0 0-.78-.98A10 10 0 1 0 22 15.28a.75.75 0 0 0-1-.78z"/></svg>
+        </button>
+        <button id="logout" class="nav-mini">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20H12"/></svg>
+          Log out
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <div class="app-main" id="app-main" hidden>
+    <header class="topbar">
+      <button class="menu-btn" id="menu-btn" aria-label="Open navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="topbar-head">
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div class="topbar-sub" id="page-sub"></div>
+      </div>
+      <button class="btn subtle sm topbar-invite" id="invite-btn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="7" height="7" rx="1.6"/><rect x="13.8" y="3.2" width="7" height="7" rx="1.6"/><rect x="3.2" y="13.8" width="7" height="7" rx="1.6"/><path d="M13.8 13.8h3v3h-3zM20.8 13.8v3M17.8 20.8h3M13.8 20.8h.01"/></svg>
+        Invite
+      </button>
+      <div class="topbar-stats" id="topbar-stats"></div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </header>
+
+    <div class="editor-bar" id="editor-bar" hidden>
+      <span class="editor-bar-dot"></span>
+      <b>Editor mode</b>
+      <span>Drag blocks to move them, pull the corner to resize.</span>
+      <div class="spacer"></div>
+      <button class="btn subtle sm" id="editor-reset">Reset layout</button>
+      <button class="btn primary sm" id="editor-done">Done editing</button>
+    </div>
+
+    <main class="container" id="page-host"></main>
+  </div>
+
+  <!-- ══ ADD BLOCK PANEL ══ -->
+  <div class="modal" id="add-block-modal" hidden>
+    <div class="modal-card block-picker">
+      <button class="icon-btn modal-close" data-close-blocks title="Close">✕</button>
+      <h3>Add a block</h3>
+      <p class="modal-meta" style="margin:0">Blocks are pages in your club's sidebar. Add what you need, rename them, remove them any time.</p>
+      <div class="search-wrap" style="margin-top:6px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <input id="block-search" type="text" placeholder="Search blocks and templates…" autocomplete="off" />
+      </div>
+      <div class="block-list" id="block-list"></div>
+    </div>
+  </div>
+
+  <script src="/assets/vendor/jquery/jquery.min.js"></script>
+  <script src="/assets/vendor/jquery-ui/jquery-ui.min.js"></script>
+  <script src="/assets/vendor/chess/chess.min.js"></script>
+  <script src="/assets/vendor/chessboard/chessboard-1.0.0.min.js"></script>
+  <script src="/assets/js/ui-select.js"></script>
+  <script src="/assets/js/firebase-config.js"></script>
+  <script src="/assets/js/mail-config.js"></script>
+  <script type="module" src="/assets/js/theme.js"></script>
+  <script type="module" src="/assets/js/club.js"></script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in · JagChess</title>
+  <meta name="description" content="Sign in to your club's JagChess platform, or create a new account." />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/auth.css" />
+</head>
+<body>
+
+<div class="auth">
+
+  <!-- ══ BRAND PANEL ══ -->
+  <aside class="auth-brand">
+    <a href="/" class="ab-logo">
+      <span class="ab-mark" aria-hidden="true">♞</span>
+      <span class="ab-name">JagChess</span>
+    </a>
+
+    <div class="ab-body">
+      <h1>The home your club plays from.</h1>
+      <p>Puzzles, events, lessons, newsletters and rewards — one login for everyone in the club.</p>
+      <div class="ab-points">
+        <div class="ab-point"><i>♟</i> Daily puzzles with instant scoring</div>
+        <div class="ab-point"><i>🔥</i> Streaks that reward showing up</div>
+        <div class="ab-point"><i>🏆</i> A leaderboard everyone can see</div>
+        <div class="ab-point"><i>🎁</i> Points you can actually spend</div>
+      </div>
+    </div>
+
+    <div class="ab-foot">
+      <span>© <span id="year">2026</span> JagChess</span>
+      <a href="/">← Back to jagchess.com</a>
+    </div>
+
+    <div class="ab-board" aria-hidden="true">
+      <div class="ab-board-inner">
+        <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
+        <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
+        <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
+        <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
+        <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
+        <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
+        <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
+        <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ FORM PANEL ══ -->
+  <main class="auth-panel">
+    <div class="auth-card">
+
+      <a class="auth-back" href="/">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        Back to home
+      </a>
+
+      <div class="auth-head">
+        <h2 id="auth-title">Welcome back</h2>
+        <p id="auth-sub">Sign in to your club dashboard.</p>
+      </div>
+
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab on" id="tab-login" role="tab">Sign in</button>
+        <button class="auth-tab" id="tab-signup" role="tab">Create account</button>
+      </div>
+
+      <div class="alert error" id="alert-error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.2v.2"/></svg>
+        <span id="alert-error-text"></span>
+      </div>
+      <div class="alert ok" id="alert-ok">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+        <span id="alert-ok-text"></span>
+      </div>
+
+      <!-- ── SIGN IN ── -->
+      <form class="pane on" id="pane-login" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3.6 7 7.3 5.3a2 2 0 0 0 2.2 0L20.4 7"/></svg>
+            <input id="email" type="email" autocomplete="email" placeholder="you@club.org" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-row">
+            <label for="password">Password</label>
+            <a href="#" id="forgot-link">Forgot?</a>
+          </div>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="3"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/></svg>
+            <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" required />
+            <button type="button" class="peek" data-peek="password" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <label class="check-row">
+          <input type="checkbox" id="remember" checked />
+          Keep me signed in on this device
+        </label>
+
+        <button type="submit" class="btn3d" id="login-btn">Sign in</button>
+
+        <div class="or">or</div>
+
+        <button type="button" class="btn3d white" id="google-btn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.78-.07-1.53-.2-2.25H12v4.26h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.9-1.74 2.98-4.3 2.98-7.53Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.42l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.6-4.12H3.06v2.58A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.92a6 6 0 0 1 0-3.84V7.5H3.06a10 10 0 0 0 0 9l3.34-2.58Z"/><path fill="#EA4335" d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.87-2.87C16.95 2.98 14.7 2 12 2A10 10 0 0 0 3.06 7.5L6.4 10.08C7.2 7.72 9.4 5.98 12 5.98Z"/></svg>
+          Continue with Google
+        </button>
+
+        <div class="auth-swap">
+          New to JagChess? <button type="button" id="go-signup">Create an account</button>
+        </div>
+      </form>
+
+      <!-- ── CREATE ACCOUNT ── -->
+      <form class="pane" id="pane-signup" novalidate>
+        <div class="field">
+          <label for="username">Display name</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.4" r="3.6"/><path d="M4.8 20c0-3.6 3.3-6 7.2-6s7.2 2.4 7.2 6"/></svg>
+            <input id="username" type="text" autocomplete="nickname" placeholder="How your club sees you" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="su-email">Email</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3.6 7 7.3 5.3a2 2 0 0 0 2.2 0L20.4 7"/></svg>
+            <input id="su-email" type="email" autocomplete="email" placeholder="you@club.org" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="su-password">Password</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="3"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/></svg>
+            <input id="su-password" type="password" autocomplete="new-password" placeholder="At least 6 characters" required />
+            <button type="button" class="peek" data-peek="su-password" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="strength" id="strength" data-level="0">
+            <div class="strength-bars"><i></i><i></i><i></i><i></i></div>
+            <div class="strength-label" id="strength-label">—</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn3d" id="signup-btn">Create account</button>
+
+        <div class="or">or</div>
+
+        <button type="button" class="btn3d white" id="google-btn-2">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.78-.07-1.53-.2-2.25H12v4.26h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.9-1.74 2.98-4.3 2.98-7.53Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.42l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.6-4.12H3.06v2.58A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.92a6 6 0 0 1 0-3.84V7.5H3.06a10 10 0 0 0 0 9l3.34-2.58Z"/><path fill="#EA4335" d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.87-2.87C16.95 2.98 14.7 2 12 2A10 10 0 0 0 3.06 7.5L6.4 10.08C7.2 7.72 9.4 5.98 12 5.98Z"/></svg>
+          Continue with Google
+        </button>
+
+        <p class="legal">By creating an account you agree to the JagChess terms and privacy policy.</p>
+
+        <div class="auth-swap">
+          Already have an account? <button type="button" id="go-login">Sign in</button>
+        </div>
+      </form>
+
+    </div>
+  </main>
+</div>
+
+<!-- ══ ACCOUNT STATE MODALS ══ -->
+<div id="suspended-modal" class="acct-modal">
+  <div class="acct-card">
+    <div class="acct-ico">🔒</div>
+    <h3>Account suspended</h3>
+    <p>Your account has been suspended. Please contact a club administrator for more information.</p>
+    <button class="btn3d" id="suspended-ok">Got it</button>
+  </div>
+</div>
+
+<div id="deleted-modal" class="acct-modal">
+  <div class="acct-card">
+    <div class="acct-ico">🗑</div>
+    <h3>Account deleted</h3>
+    <p>This account has been permanently deleted. Contact an administrator if you believe this was a mistake.</p>
+    <button class="btn3d" id="deleted-ok">Got it</button>
+  </div>
+</div>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="assets/js/firebase-config.js"></script>
+<script type="module" src="assets/js/auth.js"></script>
+</body>
+</html>

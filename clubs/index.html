@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My clubs · JagChess</title>
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <link rel="stylesheet" href="../assets/css/clubs.css" />
+</head>
+<body class="hub">
+
+  <header class="hub-nav">
+    <a href="/" class="hub-logo">
+      <span class="hub-logo-mark" aria-hidden="true">♞</span>
+      <span class="hub-logo-text">JagChess</span>
+    </a>
+    <div class="hub-nav-right">
+      <button id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.5A8.5 8.5 0 0 1 9.5 3a.75.75 0 0 0-.78-.98A10 10 0 1 0 22 15.28a.75.75 0 0 0-1-.78z"/></svg>
+      </button>
+      <div class="hub-user">
+        <div class="user-avatar-circle" id="hub-avatar">—</div>
+        <div class="hub-user-info">
+          <div class="hub-user-name" id="hub-name">—</div>
+          <div class="hub-user-mail" id="hub-email">—</div>
+        </div>
+      </div>
+      <button class="btn subtle" id="logout">Log out</button>
+    </div>
+  </header>
+
+  <main class="hub-main">
+    <div class="hub-head">
+      <div>
+        <h1 class="hub-title">My clubs</h1>
+        <p class="hub-sub" id="hub-count">Loading your clubs…</p>
+      </div>
+      <div class="hub-head-actions">
+        <button class="btn subtle" id="open-join">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Join a club
+        </button>
+        <button class="btn primary" id="open-create">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Create your own
+        </button>
+      </div>
+    </div>
+
+    <div class="club-grid" id="club-grid"></div>
+
+    <div class="hub-empty" id="hub-empty" hidden>
+      <div class="hub-empty-art" aria-hidden="true">♟</div>
+      <h2>You're not in a club yet</h2>
+      <p>Join your school's club with a code, browse public clubs, or start your own platform in a couple of minutes.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn primary lg" data-open-create>Create a club</button>
+        <button class="btn subtle lg" data-open-join>Join a club</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══ JOIN MODAL ══ -->
+  <div class="modal" id="join-modal" hidden>
+    <div class="modal-card join-card">
+      <button class="icon-btn modal-close" data-close-join title="Close">✕</button>
+      <h3>Join a club</h3>
+
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <input id="club-search" type="text" placeholder="Search clubs by name…" autocomplete="off" />
+      </div>
+
+      <div class="join-list-label" id="join-list-label">Trending clubs</div>
+      <div class="join-list" id="join-list"></div>
+      <div class="empty-state" id="join-empty" hidden>No public clubs match that search.</div>
+
+      <div class="join-divider"><span>or join with a code</span></div>
+
+      <div class="code-entry">
+        <input id="club-code" type="text" placeholder="ABC123" maxlength="8" autocomplete="off" spellcheck="false" />
+        <button class="btn primary" id="code-join">Join</button>
+      </div>
+      <p class="code-hint" id="code-hint">Ask a club admin for the 6-character join code.</p>
+    </div>
+  </div>
+
+  <!-- ══ CREATE MODAL ══ -->
+  <div class="modal" id="create-modal" hidden>
+    <div class="modal-card create-card">
+      <button class="icon-btn modal-close" data-close-create title="Close">✕</button>
+      <h3>Create your club</h3>
+
+      <div class="create-body">
+        <div class="field-block">
+          <label for="new-name">Club name</label>
+          <input id="new-name" type="text" placeholder="North Creek Chess Club" autocomplete="off" />
+          <div class="domain-preview">
+            <span class="domain-fixed" data-host>…/clubs/</span><span class="domain-slug" id="slug-preview">your-club</span>
+            <span class="slug-state" id="slug-state"></span>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <label for="new-desc">Short description <span class="opt">optional</span></label>
+          <textarea id="new-desc" rows="2" placeholder="What is this club about?"></textarea>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-block">
+            <label>Club icon</label>
+            <div class="icon-picker" id="icon-picker"></div>
+          </div>
+          <div class="field-block">
+            <label>Club colour</label>
+            <div class="color-picker" id="color-picker"></div>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <label>Who can join?</label>
+          <div class="seg-choice" id="visibility-choice">
+            <button type="button" class="seg-opt on" data-vis="public">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.2 9.5h17.6M3.2 14.5h17.6M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/></svg>
+              <span><b>Public</b><small>Listed in search, anyone can join</small></span>
+            </button>
+            <button type="button" class="seg-opt" data-vis="private">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="3"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/></svg>
+              <span><b>Private</b><small>Join code required</small></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <label>Join code</label>
+          <div class="code-row">
+            <div class="code-display" id="code-display">------</div>
+            <button class="btn subtle sm" id="code-regen" type="button">Regenerate</button>
+            <button class="btn subtle sm" id="code-copy" type="button">Copy</button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <label for="admin-email-input">Admins</label>
+          <div class="email-chips" id="admin-chips">
+            <input id="admin-email-input" type="text" placeholder="Add an admin by email, press Enter…" autocomplete="off" />
+          </div>
+          <p class="field-hint">You are an admin automatically. Anyone you list here becomes an admin the moment they join.</p>
+        </div>
+
+        <div class="field-block">
+          <label>Start from</label>
+          <div class="template-picker" id="template-picker">
+            <button type="button" class="template-opt on" data-template="starter">
+              <span class="template-emoji">♟</span>
+              <b>Starter chess club</b>
+              <small>Dashboard, events, puzzles, newsletters, leaderboard, store and donations — everything set up.</small>
+            </button>
+            <button type="button" class="template-opt" data-template="blank">
+              <span class="template-emoji">◻</span>
+              <b>Blank</b>
+              <small>Just a dashboard and profiles. Add the blocks you want, when you want them.</small>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="create-foot">
+        <span class="create-error" id="create-error"></span>
+        <button class="btn subtle" data-close-create>Cancel</button>
+        <button class="btn primary" id="create-submit">Create club</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/firebase-config.js"></script>
+  <script type="module" src="../assets/js/theme.js"></script>
+  <script type="module" src="../assets/js/clubs.js"></script>
+</body>
+</html>

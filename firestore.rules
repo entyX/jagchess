@@ -1,0 +1,206 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════════
+//  JagChess — Firestore security rules
+//
+//  Model:
+//    users/{uid}                        global profile, club index, ban index
+//    clubs/{clubId}                     club directory entry (clubId == slug)
+//    clubs/{clubId}/members/{uid}       membership, role, points, streak
+//    clubs/{clubId}/bans/{uid}          kick / ban record and any appeal
+//    clubs/{clubId}/<content>           events, puzzles, announcements, …
+//    clubCodes/{CODE}                   join-code → clubId (get only, never list)
+//
+//  Roles: founder > admin > student.
+//    founder — one per club, cannot be demoted, kicked or banned by anyone
+//    admin   — everything a founder can do except changing roles and
+//              moderating other staff
+//    student — member
+// ═══════════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn()  { return request.auth != null; }
+    function uid()       { return request.auth.uid; }
+
+    function memberDoc(clubId) {
+      return get(/databases/$(database)/documents/clubs/$(clubId)/members/$(uid()));
+    }
+
+    function isMember(clubId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/clubs/$(clubId)/members/$(uid()));
+    }
+
+    function roleIn(clubId) { return memberDoc(clubId).data.role; }
+
+    // staff == admin or founder; used wherever "can manage the club" is meant
+    function isStaff(clubId) {
+      return isMember(clubId) && (roleIn(clubId) == 'admin' || roleIn(clubId) == 'founder');
+    }
+
+    function isFounder(clubId) {
+      return isMember(clubId) && roleIn(clubId) == 'founder';
+    }
+
+    function touchesOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    function changes(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(keys);
+    }
+
+    // ── global user profile ────────────────────────────────────────────
+    match /users/{userId} {
+      allow read:   if signedIn();
+      allow create: if signedIn() && uid() == userId;
+      // your own profile is yours; anyone else may only touch the club and
+      // ban indexes, which is what joining, importing and moderating do —
+      // plus `rating`, so the winner of a global duel can post both new
+      // ratings even if the loser has already closed the tab
+      allow update: if signedIn() &&
+                       (uid() == userId || touchesOnly(['clubs', 'bannedFrom', 'rating']));
+      allow delete: if false;
+    }
+
+    // ── club directory ─────────────────────────────────────────────────
+    match /clubs/{clubId} {
+      allow get, list: if signedIn();
+      allow create:    if signedIn() && request.resource.data.ownerUid == uid();
+      allow update:    if isStaff(clubId)
+                       // the owner can always administer their own club, even
+                       // in the moment before their membership row exists
+                       || (signedIn() && resource.data.ownerUid == uid())
+                       // a joining member may only bump the member counter
+                       || (signedIn() && touchesOnly(['memberCount']));
+      allow delete:    if isStaff(clubId) || (signedIn() && resource.data.ownerUid == uid());
+
+      match /members/{memberId} {
+        allow read:   if isMember(clubId) || uid() == memberId;
+        allow create: if (signedIn() && uid() == memberId) || isStaff(clubId);
+
+        // Only a founder may set roles. Admins may edit any non-founder row
+        // (points, for instance) but never a role. You may edit your own row
+        // but never your own role. Any member may write `rating` on any row,
+        // which is how a finished duel settles both players' ratings when
+        // only one of them is still on the page.
+        allow update: if isFounder(clubId)
+                      || (uid() == memberId && !changes(['role']))
+                      || (isStaff(clubId) && resource.data.role != 'founder' && !changes(['role']))
+                      || (isMember(clubId) && touchesOnly(['rating']));
+
+        // Founders cannot be removed; admins may only remove students.
+        allow delete: if isFounder(clubId)
+                      || (isStaff(clubId) && resource.data.role == 'student')
+                      || uid() == memberId;
+      }
+
+      // kick / ban records, plus the appeal the affected person may file
+      match /bans/{banId} {
+        allow read:   if isStaff(clubId) || uid() == banId;
+        allow create: if isStaff(clubId);
+        allow update: if isStaff(clubId)
+                      || (uid() == banId && touchesOnly(['appeal']));
+        allow delete: if isStaff(clubId);
+      }
+
+      // admin-authored content
+      match /events/{id}          { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
+      match /puzzles/{id}         { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
+      match /announcements/{id}   { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
+      match /shopItems/{id}       { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
+      match /attendanceForms/{id} { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
+
+      // member-authored content — a member may only write rows that are theirs,
+      // while staff may write any (needed to manage and to import a roster)
+      match /shopOrders/{id} {
+        allow read:   if isMember(clubId);
+        allow create: if isStaff(clubId) ||
+                         (isMember(clubId) && request.resource.data.userId == uid());
+        allow update, delete: if isStaff(clubId);
+      }
+      match /attendanceResponses/{id} {
+        allow read:   if isMember(clubId);
+        allow create: if isStaff(clubId) ||
+                         (isMember(clubId) && request.resource.data.userId == uid());
+        allow update, delete: if isStaff(clubId);
+      }
+      match /puzzleAttempts/{id} {
+        allow read:   if isMember(clubId);
+        allow create, update: if isStaff(clubId) ||
+                                 (isMember(clubId) && request.resource.data.userId == uid());
+        allow delete: if isStaff(clubId);
+      }
+    }
+
+    // ── duels (1v1 chess) ──────────────────────────────────────────────
+    //
+    //  Games sit at the root rather than under a club because a global duel
+    //  can be between two people who share no club at all. `uids` holds the
+    //  two players and is what every write is checked against.
+
+    match /duels/{gameId} {
+      function isPlayer() { return signedIn() && uid() in resource.data.uids; }
+
+      allow read:   if signedIn();          // anyone signed in may spectate
+      allow create: if signedIn() && uid() in request.resource.data.uids;
+      // moves, clocks and results come from the players; the viewer tally and
+      // the "ratings have been posted" flag may come from anyone watching
+      allow update: if isPlayer()
+                    || (signedIn() && touchesOnly(['viewerCount']))
+                    || (signedIn() && touchesOnly(['ratingApplied']));
+      allow delete: if false;
+
+      // one heartbeat row per spectator, which is what the viewer count sums
+      match /viewers/{viewerId} {
+        allow read:  if signedIn();
+        allow write: if signedIn() && viewerId == uid();
+      }
+    }
+
+    // the matchmaking queue — one row per player, keyed by uid
+    match /duelSeeks/{seekId} {
+      allow read:   if signedIn();
+      allow create: if signedIn() && seekId == uid();
+      // whoever pairs the two of you stamps the game id onto both rows
+      allow update: if signedIn() &&
+                       (seekId == uid() || touchesOnly(['gameId', 'matchedAt']));
+      // your own row, a row that has already been paired, or one whose tab
+      // died over a minute ago and is now just litter
+      allow delete: if signedIn() &&
+                       (seekId == uid()
+                        || resource.data.gameId != null
+                        || request.time.toMillis() - resource.data.heartbeat > 60000);
+    }
+
+    // "play me" sent to one specific person
+    match /duelChallenges/{id} {
+      allow read:   if signedIn();
+      allow create: if signedIn() && request.resource.data.from.uid == uid();
+      allow update, delete: if signedIn() &&
+                       (resource.data.from.uid == uid() || resource.data.toUid == uid());
+    }
+
+    // ── join codes ─────────────────────────────────────────────────────
+    // `get` needs the exact code, and `list` is denied, so codes cannot be
+    // enumerated by a signed-in user.
+    match /clubCodes/{code} {
+      allow get:    if signedIn();
+      allow list:   if false;
+      allow create: if signedIn();
+      allow update, delete: if signedIn() && isStaff(resource.data.clubId);
+    }
+
+    // ── legacy root collections (pre-clubs) ────────────────────────────
+    match /events/{id}              { allow read, write: if signedIn(); }
+    match /puzzles/{id}             { allow read, write: if signedIn(); }
+    match /announcements/{id}       { allow read, write: if signedIn(); }
+    match /shopItems/{id}           { allow read, write: if signedIn(); }
+    match /shopOrders/{id}          { allow read, write: if signedIn(); }
+    match /attendanceForms/{id}     { allow read, write: if signedIn(); }
+    match /attendanceResponses/{id} { allow read, write: if signedIn(); }
+    match /puzzleAttempts/{id}      { allow read, write: if signedIn(); }
+  }
+}

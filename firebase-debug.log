@@ -1,0 +1,168 @@
+[debug] [2026-08-13T17:31:41.271Z] ----------------------------------------------------------------------
+[debug] [2026-08-13T17:31:41.273Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\entyt\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting:jagchess
+[debug] [2026-08-13T17:31:41.274Z] CLI Version:   15.22.4
+[debug] [2026-08-13T17:31:41.274Z] Platform:      win32
+[debug] [2026-08-13T17:31:41.274Z] Node Version:  v24.18.0
+[debug] [2026-08-13T17:31:41.274Z] Detected Agent: claude-code_2-1-231_agent
+[debug] [2026-08-13T17:31:41.274Z] Time:          Thu Aug 13 2026 10:31:41 GMT-0700 (Pacific Daylight Time)
+[debug] [2026-08-13T17:31:41.274Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-08-13T17:31:43.639Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-13T17:31:43.639Z] > authorizing via signed-in user (shaurya.sahdev7@gmail.com)
+[debug] [2026-08-13T17:31:43.640Z] [iam] checking project nchs-chess-club for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-08-13T17:31:43.644Z] Checked if tokens are valid: false, expires at: 1786643192777
+[debug] [2026-08-13T17:31:43.645Z] Checked if tokens are valid: false, expires at: 1786643192777
+[debug] [2026-08-13T17:31:43.646Z] > refreshing access token with scopes: []
+[debug] [2026-08-13T17:31:43.652Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-13T17:31:43.652Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-13T17:31:44.048Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-08-13T17:31:44.048Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-13T17:31:44.091Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/nchs-chess-club:testIamPermissions [none]
+[debug] [2026-08-13T17:31:44.091Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/nchs-chess-club:testIamPermissions  x-goog-user-project=nchs-chess-club
+[debug] [2026-08-13T17:31:44.092Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/nchs-chess-club:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-08-13T17:31:44.426Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/nchs-chess-club:testIamPermissions 200
+[debug] [2026-08-13T17:31:44.427Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/nchs-chess-club:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-08-13T17:31:44.429Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:44.429Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:44.430Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/nchs-chess-club [none]
+[debug] [2026-08-13T17:31:44.776Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/nchs-chess-club 200
+[debug] [2026-08-13T17:31:44.777Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/nchs-chess-club {"projectId":"nchs-chess-club","projectNumber":"683171999944","displayName":"nchs chess club","name":"projects/nchs-chess-club","resources":{"hostingSite":"nchs-chess-club"},"state":"ACTIVE","labels":{"firebase":"enabled"},"etag":"1_141e22eb-07be-468d-a455-2c696cf21c67"}
+[info] 
+[info] === Deploying to 'nchs-chess-club'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2026-08-13T17:31:44.786Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:44.787Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:44.787Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/nchs-chess-club/sites/jagchess [none]
+[debug] [2026-08-13T17:31:45.649Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/nchs-chess-club/sites/jagchess 200
+[debug] [2026-08-13T17:31:45.649Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/nchs-chess-club/sites/jagchess {"name":"projects/nchs-chess-club/sites/jagchess","defaultUrl":"https://jagchess.web.app","type":"USER_SITE"}
+[debug] [2026-08-13T17:31:45.669Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:45.669Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:45.669Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/versions [none]
+[debug] [2026-08-13T17:31:45.669Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2026-08-13T17:31:46.634Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/versions 200
+[debug] [2026-08-13T17:31:46.634Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/versions {"name":"projects/683171999944/sites/jagchess/versions/e078070733df92b6","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[info] i  hosting[jagchess]: beginning deploy... 
+[info] i  hosting[jagchess]: found 58 files in . 
+[debug] [2026-08-13T17:31:46.722Z] [hosting] uploading with 200 concurrency
+[debug] [2026-08-13T17:31:46.748Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:46.748Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:46.752Z] [hosting] hash cache [] stored for 58 files
+[debug] [2026-08-13T17:31:46.753Z] [hosting][hash queue][FINAL] {"max":14,"min":0,"avg":0.6121558105291397,"active":0,"complete":58,"success":58,"errored":0,"retried":0,"total":58,"elapsed":26}
+[debug] [2026-08-13T17:31:46.754Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/683171999944/sites/jagchess/versions/e078070733df92b6:populateFiles [none]
+[debug] [2026-08-13T17:31:46.754Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/683171999944/sites/jagchess/versions/e078070733df92b6:populateFiles {"files":{"/logo.png":"a72773890066752899b9e37537eabe5aad995842085743ff28b2ace325418a18","/login.html":"626059b339e91cfd08bbb82fd42901754fbc153eaff42fe1bad1cc000850adeb","/index.html":"c51e4645ebd816fa1a96b4dc6017615d10ecdf4d49698bd9ad71e1a302f922cd","/fixes.js":"9431bbddf14ae1561a51ec4eec0eea9191aa46c74f9149c323644fca5ca1d6d2","/club.html":"f3e4de6f98ae59433c3c776052f71924c72b841c3ce6163e914772ee1e4e6e6d","/student/dashboard.html":"30bb130007eab3128c52865bc67f1178b029e2e49b4f18125592dffaebcecbc9","/clubs/index.html":"3141516f7960c439ef930e99703834f89207ad6b00e9cb77d3e3617985fb4ae8","/assets/email-template.html":"688b8640d31eb67aef2c808d574f58a3c95c52ab43fbe49e31ee1bc04007aa62","/assets/vendor/jquery-ui/jquery-ui.min.js":"ea9a32f29efbc04f30e201e5ebb678180cbaa863c3ca6ac0fe67d63a14c68e57","/assets/vendor/jquery-ui/jquery-ui.min.css":"cbe104cedf4ad60b693e54c607afc1bf23180087a3929edbc1428e0acb5169c9","/assets/vendor/jquery/jquery.min.js":"816c5e2b8d19536e325a829047b4236131de89d07832ff5e374ce4cf49cecb6b","/assets/vendor/chessboard/chessboard-1.0.0.min.js":"230a830657a915f4e99e7ab7abdc246c342d8d98c184d162a38935ddcfbc3135","/assets/vendor/chessboard/chessboard-1.0.0.min.css":"372d36583044ec528574838fd41aab28d6a66e561f691fb5ab5845977b00d001","/assets/vendor/chessboard/img/chesspieces/wikipedia/wR.png":"70e7dfe60da0478422f3cbde25bd20d451368bce534f7545f643feba770c446f","/assets/vendor/chessboard/img/chesspieces/wikipedia/wQ.png":"26980b2e84b37cc66c764e87eca15028fd1ef2555e53f530e0e690a20e760b22","/assets/vendor/chessboard/img/chesspieces/wikipedia/wP.png":"6e9345402a2407135af71b7c31a439a1954c9c38efd119aac19f612ca4005de3","/assets/vendor/chessboard/img/chesspieces/wikipedia/wN.png":"a64b648171ec7e13ec13f7cda2bd46a692108a00c8511c11e0f27c688f1e40a2","/assets/vendor/chessboard/img/chesspieces/wikipedia/wK.png":"dd44a118801892a07e7ce70637e0bc95697c4bf841bc1bf07a6bef1b1e0678f5","/assets/vendor/chessboard/img/chesspieces/wikipedia/wB.png":"cc5592fba33d862372fa8b21cc885f9a3bb552a2d017de1415cbd43827905853","/assets/vendor/chessboard/img/chesspieces/wikipedia/bR.png":"86aec5539146d2a74ee9fa8b008d20edc6bd54ed5e0da5a1ab43b839a75bafa3","/assets/vendor/chessboard/img/chesspieces/wikipedia/bQ.png":"624981268f0664ac386d08d200d4239ca3eda128f0a19c7823d7214d6dcf491b","/assets/vendor/chessboard/img/chesspieces/wikipedia/bP.png":"314bb9d48303f73961a142e29c197dbdf87a09aec6cbc324c29168920ffe1edd","/assets/vendor/chessboard/img/chesspieces/wikipedia/bN.png":"b8bb392c6ab2aae46fb12d2c9e18c5e5b3bcca03b0340c3855e4259ba3667263","/assets/vendor/chessboard/img/chesspieces/wikipedia/bK.png":"edf8aec00db28d2bb2efbd0c6c56d6f5cae16edf6aca1bdcfac8d30be3b3ac1a","/assets/vendor/chessboard/img/chesspieces/wikipedia/bB.png":"a83b659a775a3cbe6a8eb9a601f82282ce6b5c70c9f0239795c10d0151be2812","/assets/vendor/chess/chess.min.js":"8b4d5f9d5c96f97b16ed8fcadf65f890d42d00602d4c922a062b3be9027feb9d","/assets/js/ui-select.js":"4dbbacba13d4a2985d3b85c1244edca41e7ac324f151fb02d2e837e3e8aa14a8","/assets/js/theme.js":"6fd83058dae25d603de6323f1e25957bad1e6e08eaa55508ccb9b71880f694e4","/assets/js/student.js":"fcba2bf1f7904a67f87080a4c3f10017e2be7c795ae95e39f47ff07514945a49","/assets/js/qr.js":"d094549df6c33ef10abb331ec3088249c39f76578302cec0c7ad5dcf55e860f5","/assets/js/newsletter-mail.js":"0d6cb8f7ceb26532961e2040bfce8f41ab45bdda0c7533513331fd3b4febd03e","/assets/js/landing.js":"ee5de64458b1a1419da0582b1c11884277a1d9b9b6a08c24cb751d0059b45983","/assets/js/glicko2.js":"82e1c037a0081f2c88723dc8e8449b57426ecdd866bfd66f3abf97123b52a604","/assets/js/firebase-config.js":"fa0925fea656728fe14b68e277807def3242fb297529f46a234ff28e69447c3d","/assets/js/clubs.js":"9ecafc98adec6565f7ed1e234c607b4310001267fd6b44737e9f31ec5a0cfbb6","/assets/js/club.js":"7a6c17fa4ea874248583fab0c718d82c8f06e7e2389a77ce901a9652e7d25fef","/assets/js/club-share.js":"bf080ecd124199222673ace2feee8f8b43cb5e937c2cff93ec1461603891f206","/assets/js/club-import.js":"edb4154c917436d2028a77a20436b7cb732be268301337ed660befa22a7c37f9","/assets/js/club-duels.js":"c49e19efe659521259a46a0eabdfd29c75ba28b18b09c708b1f8b6a9a8d36e76","/assets/js/club-dash.js":"d7f5d74669aaaaa1a8619fd907c3270644dfe89954989ca45b055b4daa3b3279","/assets/js/club-core.js":"31386ce6b4d13814fb31681ab45c8e0b48f473df687523d0670c20ff18f99408","/assets/js/club-blocks.js":"0d7bc64d7f2758e1537f390b4d4477e4bee29614946f11384fc83397365ab3f5","/assets/js/club-attendance.js":"b3406a043a8d0bc29a5a97b521300e631c0e39eb5c5ce1d0a6f40aa0fb8ab2dc","/assets/js/auth.js":"f1c3f96916d5802bd70c5d916819ea8703a8c4fb2dc778752ade5541cb6e91cb","/assets/js/admin.js":"f538c9b2ec67f1c541c8614a10f002a4d819247e4d0980c3bd48a3eec0f3ca11","/assets/css/styles.css":"890b720a28bf42234e0d2f8748674d6fdd395913ada59819e64e46b015b26b36","/assets/css/student.css":"079d578375746087f3dab751523ce9258a660e0202310d0b89f28737c0683f4c","/assets/css/share.css":"7c3e897c79304412fb972f0454d728c4ad88583a73731a2ee158ce24b79bdd17","/assets/css/newsletter-mail.css":"65dafb7544a75b909aff2c275469aecf7d86629bcc2a469d32ae5b0b1de52305","/assets/css/landing.css":"9302d132c2bd90e8c8a260d4acd142c724f11cd71e5ba06ace7fdde60a75d6a2","/assets/css/duels.css":"6be2fef14d76a6322e51b9ca960254f09034e1603dca3b9946b20eb2dae98e31","/assets/css/clubs.css":"2983535653e0c7d261558cbf0ecf1e1d36390ef9467b9cb1c66681b3a9a7d3d4","/assets/css/club.css":"a88954e4893f9b6d5296c96cb153ffd4ab6377896a54ed9b069763e637ab0c2a","/assets/css/auth.css":"4c34b24b114e75cc661f3da38dc47251e36de9b0b4fb435cc54836ad95ce26d3","/assets/css/admin.css":"91557671820d5865d5d40f4875308935e99a260c1cc218618f974cae29573d7a","/admin/dashboard.html":"16dfbb5cdca6c10237b89bbf0035eb6a11b196dd2a28d13c1ab28264d906457f","/assets/js/mail-config.js":"3c7ca1b53db9d0b1fed615dcccd3c493f35fd5758c1a37f3afba00005821f0e6","/assets/js/gmail-send.js":"4a72196859559ff1eeaf04e0001021fc9b4cb8c5c43f90ca6c4096181a7ca7f7"}}
+[debug] [2026-08-13T17:31:47.565Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/683171999944/sites/jagchess/versions/e078070733df92b6:populateFiles 200
+[debug] [2026-08-13T17:31:47.566Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/683171999944/sites/jagchess/versions/e078070733df92b6:populateFiles {"uploadRequiredHashes":["3c7ca1b53db9d0b1fed615dcccd3c493f35fd5758c1a37f3afba00005821f0e6","4a72196859559ff1eeaf04e0001021fc9b4cb8c5c43f90ca6c4096181a7ca7f7"],"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/jagchess/versions/e078070733df92b6/files"}
+[debug] [2026-08-13T17:31:47.568Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:47.568Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:47.569Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:47.569Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:47.569Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/jagchess/versions/e078070733df92b6/files/3c7ca1b53db9d0b1fed615dcccd3c493f35fd5758c1a37f3afba00005821f0e6 [none]
+[debug] [2026-08-13T17:31:47.569Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/jagchess/versions/e078070733df92b6/files/3c7ca1b53db9d0b1fed615dcccd3c493f35fd5758c1a37f3afba00005821f0e6 [stream]
+[debug] [2026-08-13T17:31:47.572Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/jagchess/versions/e078070733df92b6/files/4a72196859559ff1eeaf04e0001021fc9b4cb8c5c43f90ca6c4096181a7ca7f7 [none]
+[debug] [2026-08-13T17:31:47.573Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/jagchess/versions/e078070733df92b6/files/4a72196859559ff1eeaf04e0001021fc9b4cb8c5c43f90ca6c4096181a7ca7f7 [stream]
+[debug] [2026-08-13T17:31:47.577Z] [hosting][populate queue][FINAL] {"max":822,"min":822,"avg":822,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":830}
+[debug] [2026-08-13T17:31:47.577Z] [hosting] uploads queued: 2
+[debug] [2026-08-13T17:31:48.552Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/jagchess/versions/e078070733df92b6/files/3c7ca1b53db9d0b1fed615dcccd3c493f35fd5758c1a37f3afba00005821f0e6 200
+[debug] [2026-08-13T17:31:48.552Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/jagchess/versions/e078070733df92b6/files/3c7ca1b53db9d0b1fed615dcccd3c493f35fd5758c1a37f3afba00005821f0e6 [stream]
+[debug] [2026-08-13T17:31:48.680Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/jagchess/versions/e078070733df92b6/files/4a72196859559ff1eeaf04e0001021fc9b4cb8c5c43f90ca6c4096181a7ca7f7 200
+[debug] [2026-08-13T17:31:48.680Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/jagchess/versions/e078070733df92b6/files/4a72196859559ff1eeaf04e0001021fc9b4cb8c5c43f90ca6c4096181a7ca7f7 [stream]
+[debug] [2026-08-13T17:31:48.681Z] [hosting][upload queue][FINAL] {"max":1113,"min":987,"avg":1050,"active":0,"complete":2,"success":2,"errored":0,"retried":0,"total":2,"elapsed":1115}
+[info] i  hosting: upload complete 
+[info] +  hosting[jagchess]: file upload complete 
+[debug] [2026-08-13T17:31:48.682Z] [hosting] deploy completed after 2041ms
+[debug] [2026-08-13T17:31:48.683Z] [
+  {
+    "config": {
+      "site": "jagchess",
+      "public": ".",
+      "ignore": [
+        "firebase.json",
+        ".firebaserc",
+        ".gitignore",
+        "node_modules/**",
+        ".vercel/**",
+        ".claude/**",
+        "package.json",
+        "package-lock.json",
+        "example.png",
+        "assets/js/firebase-config.example.js",
+        "**/client_secret*.json",
+        "**/*adminsdk*.json",
+        "**/*service-account*.json",
+        "**/serviceAccountKey*.json",
+        "firestore.rules"
+      ],
+      "cleanUrls": true,
+      "trailingSlash": false,
+      "rewrites": [
+        {
+          "source": "/admin",
+          "destination": "/admin/dashboard.html"
+        },
+        {
+          "source": "/student",
+          "destination": "/student/dashboard.html"
+        },
+        {
+          "source": "/signup",
+          "destination": "/login.html"
+        },
+        {
+          "source": "/clubs/**",
+          "destination": "/club.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(css|js)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(png|jpg|jpeg|svg|webp|woff2)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=604800"
+            }
+          ]
+        }
+      ]
+    },
+    "version": "projects/683171999944/sites/jagchess/versions/e078070733df92b6"
+  }
+]
+[info] i  hosting[jagchess]: finalizing version... 
+[debug] [2026-08-13T17:31:48.689Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:48.689Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:48.691Z] >>> [apiv2][query] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/versions/e078070733df92b6 updateMask=status%2Cconfig
+[debug] [2026-08-13T17:31:48.691Z] >>> [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/versions/e078070733df92b6 {"status":"FINALIZED","config":{"rewrites":[{"glob":"/admin","path":"/admin/dashboard.html"},{"glob":"/student","path":"/student/dashboard.html"},{"glob":"/signup","path":"/login.html"},{"glob":"/clubs/**","path":"/club.html"}],"headers":[{"glob":"**/*.@(css|js)","headers":{"Cache-Control":"public, max-age=0, must-revalidate"}},{"glob":"**/*.@(png|jpg|jpeg|svg|webp|woff2)","headers":{"Cache-Control":"public, max-age=604800"}}],"cleanUrls":true,"trailingSlashBehavior":"REMOVE"}}
+[debug] [2026-08-13T17:31:49.339Z] <<< [apiv2][status] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/versions/e078070733df92b6 200
+[debug] [2026-08-13T17:31:49.340Z] <<< [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/versions/e078070733df92b6 {"name":"projects/683171999944/sites/jagchess/versions/e078070733df92b6","status":"FINALIZED","config":{"headers":[{"headers":{"Cache-Control":"public, max-age=0, must-revalidate"},"glob":"**/*.@(css|js)"},{"headers":{"Cache-Control":"public, max-age=604800"},"glob":"**/*.@(png|jpg|jpeg|svg|webp|woff2)"}],"rewrites":[{"glob":"/admin","path":"/admin/dashboard.html"},{"glob":"/student","path":"/student/dashboard.html"},{"glob":"/signup","path":"/login.html"},{"glob":"/clubs/**","path":"/club.html"}],"cleanUrls":true,"trailingSlashBehavior":"REMOVE"},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-08-13T17:31:45.706712Z","createUser":{"email":"shaurya.sahdev7@gmail.com"},"finalizeTime":"2026-08-13T17:31:48.911315Z","finalizeUser":{"email":"shaurya.sahdev7@gmail.com"}}
+[debug] [2026-08-13T17:31:49.340Z] [hosting] finalized version for jagchess:[object Object]
+[info] +  hosting[jagchess]: version finalized 
+[info] i  hosting[jagchess]: releasing new version... 
+[debug] [2026-08-13T17:31:49.342Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:49.342Z] Checked if tokens are valid: true, expires at: 1786645903049
+[debug] [2026-08-13T17:31:49.342Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/channels/live/releases versionName=projects%2F683171999944%2Fsites%2Fjagchess%2Fversions%2Fe078070733df92b6
+[debug] [2026-08-13T17:31:49.343Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/channels/live/releases {}
+[debug] [2026-08-13T17:31:49.972Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/channels/live/releases 200
+[debug] [2026-08-13T17:31:49.972Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/jagchess/channels/live/releases {"name":"projects/683171999944/sites/jagchess/channels/live/releases/1786642308890000","version":{"name":"projects/683171999944/sites/jagchess/versions/e078070733df92b6","status":"FINALIZED","config":{"headers":[{"headers":{"Cache-Control":"public, max-age=0, must-revalidate"},"glob":"**/*.@(css|js)"},{"headers":{"Cache-Control":"public, max-age=604800"},"glob":"**/*.@(png|jpg|jpeg|svg|webp|woff2)"}],"rewrites":[{"glob":"/admin","path":"/admin/dashboard.html"},{"glob":"/student","path":"/student/dashboard.html"},{"glob":"/signup","path":"/login.html"},{"glob":"/clubs/**","path":"/club.html"}],"cleanUrls":true,"trailingSlashBehavior":"REMOVE"},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-08-13T17:31:45.706712Z","createUser":{"email":"shaurya.sahdev7@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJilddUf9drSzROyX-LJf4d8uCYIlpa0TkeAp1lzIqvDkFjiYY"},"finalizeTime":"2026-08-13T17:31:48.911315Z","finalizeUser":{"email":"shaurya.sahdev7@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJilddUf9drSzROyX-LJf4d8uCYIlpa0TkeAp1lzIqvDkFjiYY"}},"type":"DEPLOY","releaseTime":"2026-08-13T17:31:48.890Z","releaseUser":{"email":"shaurya.sahdev7@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJilddUf9drSzROyX-LJf4d8uCYIlpa0TkeAp1lzIqvDkFjiYY"}}
+[debug] [2026-08-13T17:31:49.973Z] [hosting] release: {"name":"projects/683171999944/sites/jagchess/channels/live/releases/1786642308890000","version":{"name":"projects/683171999944/sites/jagchess/versions/e078070733df92b6","status":"FINALIZED","config":{"headers":[{"headers":{"Cache-Control":"public, max-age=0, must-revalidate"},"glob":"**/*.@(css|js)"},{"headers":{"Cache-Control":"public, max-age=604800"},"glob":"**/*.@(png|jpg|jpeg|svg|webp|woff2)"}],"rewrites":[{"glob":"/admin","path":"/admin/dashboard.html"},{"glob":"/student","path":"/student/dashboard.html"},{"glob":"/signup","path":"/login.html"},{"glob":"/clubs/**","path":"/club.html"}],"cleanUrls":true,"trailingSlashBehavior":"REMOVE"},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-08-13T17:31:45.706712Z","createUser":{"email":"shaurya.sahdev7@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJilddUf9drSzROyX-LJf4d8uCYIlpa0TkeAp1lzIqvDkFjiYY"},"finalizeTime":"2026-08-13T17:31:48.911315Z","finalizeUser":{"email":"shaurya.sahdev7@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJilddUf9drSzROyX-LJf4d8uCYIlpa0TkeAp1lzIqvDkFjiYY"}},"type":"DEPLOY","releaseTime":"2026-08-13T17:31:48.890Z","releaseUser":{"email":"shaurya.sahdev7@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJilddUf9drSzROyX-LJf4d8uCYIlpa0TkeAp1lzIqvDkFjiYY"}}
+[info] +  hosting[jagchess]: release complete 
+[info] 
+[info] +  Deploy complete! 
+[info] 
+[info] Project Console: https://console.firebase.google.com/project/nchs-chess-club/overview
+[info] Hosting URL: https://jagchess.web.app
+[debug] [2026-08-13T17:31:55.094Z] Error: Timed out.
+    at Timeout._onTimeout (C:\Users\entyt\AppData\Roaming\npm\node_modules\firebase-tools\lib\utils.js:313:49)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[error] 
+[error] Error: An unexpected error has occurred.

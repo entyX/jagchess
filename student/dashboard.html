@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    // Legacy console — the club now lives at /clubs/northcreekchess.
+    // Remove this block to restore the standalone dashboard.
+    (function () {
+      var target = '/clubs/northcreekchess';
+      if (location.search.indexOf('legacy=1') === -1) location.replace(target);
+    })();
+  </script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My club · JagChess</title>
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/vendor/jquery-ui/jquery-ui.min.css" />
+  <link rel="stylesheet" href="../assets/vendor/chessboard/chessboard-1.0.0.min.css" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <link rel="stylesheet" href="../assets/css/student.css" />
+</head>
+<body class="stu app" id="app">
+
+  <div class="nav-scrim" id="nav-scrim"></div>
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">♞</div>
+      <div class="brand-text">
+        <h2>JagChess</h2>
+        <span class="brand-role">Student</span>
+      </div>
+    </div>
+
+    <div class="nav-scroll">
+      <div class="nav-group">
+        <div class="nav-group-label">Play</div>
+        <div class="tabs">
+          <button class="tab active" data-tab="dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.2 12 3l9 7.2"/><path d="M5.5 9.4V20h13V9.4"/><path d="M9.8 20v-5.4h4.4V20"/></svg>
+            <span>Home</span>
+          </button>
+          <button class="tab" data-tab="puzzles">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.4" height="7.4" rx="2"/><rect x="13.6" y="3" width="7.4" height="7.4" rx="2"/><rect x="3" y="13.6" width="7.4" height="7.4" rx="2"/><rect x="13.6" y="13.6" width="7.4" height="7.4" rx="2"/></svg>
+            <span>Puzzles</span>
+          </button>
+          <button class="tab" data-tab="events">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.8" width="18" height="16.2" rx="3.2"/><path d="M3 9.8h18M8 2.6v4.2M16 2.6v4.2"/></svg>
+            <span>Events</span>
+          </button>
+          <button class="tab" data-tab="attendance" id="att-tab" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.4" width="14" height="16.4" rx="3.2"/><path d="M9.2 4.4V3.2h5.6v1.2"/><path d="M9 12.6l2.1 2.1 4-4"/></svg>
+            <span>Attendance</span>
+            <span class="tab-badge live">Open</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Progress</div>
+        <div class="tabs">
+          <button class="tab" data-tab="leaderboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7.6 4.2h8.8v4.6a4.4 4.4 0 0 1-8.8 0Z"/><path d="M7.6 5.8H4.9v1a3 3 0 0 0 2.9 3M16.4 5.8h2.7v1a3 3 0 0 1-2.9 3"/><path d="M12 13.2v3.4M8.4 20.2h7.2l-.9-3.6H9.3Z"/></svg>
+            <span>Leaderboard</span>
+          </button>
+          <button class="tab" data-tab="points">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5.4 8h13.2l-1.1 12.2H6.5Z"/><path d="M9 8V5.9a3 3 0 0 1 6 0V8"/></svg>
+            <span>Rewards shop</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Club</div>
+        <div class="tabs">
+          <button class="tab" data-tab="news">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.4v3.2a1.4 1.4 0 0 0 1.4 1.4h2.3l5.6 4.2V5L7.2 9.2H4.9a1.4 1.4 0 0 0-1.4 1.2Z"/><path d="M16.8 9a4.2 4.2 0 0 1 0 6"/><path d="M19.4 6.4a7.6 7.6 0 0 1 0 11.2"/></svg>
+            <span>News</span>
+          </button>
+          <button class="tab" data-tab="donations">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 8.9c0 4.7-8.8 10.6-8.8 10.6S3.2 13.6 3.2 8.9a4.7 4.7 0 0 1 8.8-2 4.7 4.7 0 0 1 8.8 2Z"/></svg>
+            <span>Donate</span>
+          </button>
+          <button class="tab" data-tab="profile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c0-3.7 3.4-6.2 7.5-6.2s7.5 2.5 7.5 6.2"/></svg>
+            <span>Profile</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-foot">
+      <div class="nav-user">
+        <div id="stu-avatar-sm" class="user-avatar-circle"></div>
+        <div class="nav-user-info">
+          <div class="nav-user-name" id="stat-username">—</div>
+          <div class="nav-user-mail" id="stat-email">&nbsp;</div>
+        </div>
+      </div>
+      <div class="nav-foot-actions">
+        <button id="theme-toggle" class="nav-mini icon-only" title="Toggle theme" aria-label="Toggle theme">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.5A8.5 8.5 0 0 1 9.5 3a.75.75 0 0 0-.78-.98A10 10 0 1 0 22 15.28a.75.75 0 0 0-1-.78z"/></svg>
+        </button>
+        <button id="logout" class="nav-mini">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20H12"/></svg>
+          Log out
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ═════════════════════════════════════════════════════ -->
+  <div class="app-main">
+
+    <header class="topbar">
+      <button class="menu-btn" id="menu-btn" aria-label="Open navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="topbar-head">
+        <div class="topbar-title"><span id="greet-time">Welcome back</span>, <span class="dim" id="greet-name">player</span></div>
+        <div class="topbar-sub">Keep the streak alive — every session counts.</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="stu-streak-tile" id="stu-streak-tile"></div>
+        <div class="chip gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.2 2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.4l5.9-.8Z"/></svg>
+          <span id="stat-points">—</span>
+          <small>pts</small>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+
+    <!-- ══ HOME ══ -->
+    <section id="dashboard" class="section active">
+
+      <div class="stu-hero">
+        <div class="stu-hero-card">
+          <div class="stu-hero-eyebrow">Today's training</div>
+          <div class="stu-hero-title">Solve the daily puzzle and climb the board.</div>
+          <div class="stu-hero-sub">Sharpen your tactics, earn points, and unlock rewards in the club shop.</div>
+          <div class="stu-hero-actions">
+            <button class="btn" onclick="document.querySelector('.tab[data-tab=puzzles]').click()">Start puzzle</button>
+            <button class="btn on-hero-ghost" onclick="document.querySelector('.tab[data-tab=events]').click()">View calendar</button>
+          </div>
+          <div class="stu-hero-art" aria-hidden="true">
+            <div class="stu-hero-art-board">
+              <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
+              <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
+              <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
+              <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
+              <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
+              <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
+              <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
+              <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="stu-hero-side">
+          <div class="tile stu-stat-tile">
+            <div class="stu-stat-ico gold">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7.6 4.2h8.8v4.6a4.4 4.4 0 0 1-8.8 0Z"/><path d="M7.6 5.8H4.9v1a3 3 0 0 0 2.9 3M16.4 5.8h2.7v1a3 3 0 0 1-2.9 3"/><path d="M12 13.2v3.4M8.4 20.2h7.2l-.9-3.6H9.3Z"/></svg>
+            </div>
+            <div>
+              <div class="stu-stat-num" id="stat-rank">—</div>
+              <div class="stu-stat-label">Your rank</div>
+            </div>
+          </div>
+          <div class="tile stu-stat-tile">
+            <div class="stu-stat-ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.8" width="18" height="16.2" rx="3.2"/><path d="M3 9.8h18M8 2.6v4.2M16 2.6v4.2"/></svg>
+            </div>
+            <div>
+              <div class="stu-stat-num" id="stat-upcoming">—</div>
+              <div class="stu-stat-label">Upcoming events</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stu-dash-actions">
+        <button class="stu-dash-act" onclick="document.querySelector('.tab[data-tab=puzzles]').click()">
+          <span class="stu-dash-act-icon" aria-hidden="true">♟</span>
+          <div class="stu-dash-act-body">
+            <div class="stu-dash-act-title">Daily puzzle</div>
+            <div class="stu-dash-act-sub">Solve today's challenge</div>
+          </div>
+        </button>
+        <button class="stu-dash-act" onclick="document.querySelector('.tab[data-tab=points]').click()">
+          <span class="stu-dash-act-icon" aria-hidden="true">🎁</span>
+          <div class="stu-dash-act-body">
+            <div class="stu-dash-act-title">Rewards shop</div>
+            <div class="stu-dash-act-sub">Spend your points</div>
+          </div>
+        </button>
+        <button class="stu-dash-act" onclick="document.querySelector('.tab[data-tab=leaderboard]').click()">
+          <span class="stu-dash-act-icon" aria-hidden="true">♛</span>
+          <div class="stu-dash-act-body">
+            <div class="stu-dash-act-title">Leaderboard</div>
+            <div class="stu-dash-act-sub">See where you rank</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="stu-dash-main">
+        <div class="tile">
+          <div class="dash-head">
+            <span class="dash-heading">Upcoming events</span>
+            <button class="dash-link" onclick="document.querySelector('.tab[data-tab=events]').click()">View all →</button>
+          </div>
+          <div id="dash-events-preview"></div>
+          <div class="empty-state" id="dash-events-empty" hidden>No upcoming events yet.</div>
+        </div>
+        <div class="stu-dash-col">
+          <div class="tile stu-dash-tip-tile">
+            <div class="dash-heading" style="margin-bottom:10px">Tip of the day</div>
+            <div id="dash-tip" class="stu-dash-tip-text"></div>
+          </div>
+          <div class="tile">
+            <div class="dash-head">
+              <span class="dash-heading">Leaderboard</span>
+              <button class="dash-link" onclick="document.querySelector('.tab[data-tab=leaderboard]').click()">Full board →</button>
+            </div>
+            <div id="dash-leaders-preview"></div>
+            <div class="empty-state" id="dash-leaders-empty" hidden>No entries yet.</div>
+          </div>
+          <div class="tile">
+            <div class="dash-head">
+              <span class="dash-heading">Latest news</span>
+              <button class="dash-link" onclick="document.querySelector('.tab[data-tab=news]').click()">See all →</button>
+            </div>
+            <div id="dash-news-preview"></div>
+            <div class="empty-state" id="dash-news-empty" hidden>No announcements yet.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ EVENTS ══ -->
+    <section id="events" class="section">
+      <div class="grid calendar-layout">
+        <div class="tile calendar-card">
+          <div class="calendar-head">
+            <button class="icon-btn" id="cal-prev" title="Previous month">←</button>
+            <div id="cal-title" class="calendar-title">Month</div>
+            <button class="icon-btn" id="cal-next" title="Next month">→</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+        <div class="tile events-side">
+          <div class="events-side-header">
+            <h3>Upcoming events</h3>
+            <span id="events-range" class="muted"></span>
+          </div>
+          <div class="list" id="events-upcoming"></div>
+          <div class="empty-state" id="events-empty" hidden>No upcoming events yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ PUZZLES ══ -->
+    <section id="puzzles" class="section">
+      <div class="grid puzzle-layout">
+        <div class="tile puzzle-board">
+          <div class="puzzle-header">
+            <h3>Daily puzzle</h3>
+            <div class="puzzle-status" id="student-puzzle-status">Select a puzzle to start.</div>
+          </div>
+          <div id="student-board" class="chessboard"></div>
+          <div class="puzzle-controls">
+            <button class="btn subtle" id="puzzle-reset-student">Reset board</button>
+          </div>
+          <div class="puzzle-sequence">
+            <h4>Progress</h4>
+            <div class="list" id="puzzle-progress-list"></div>
+          </div>
+        </div>
+        <div class="tile puzzle-side">
+          <div class="puzzle-side-header">
+            <h3>Puzzle history</h3>
+            <span id="puzzle-history-meta" class="muted"></span>
+          </div>
+          <div class="list" id="puzzle-history-list"></div>
+          <div class="empty-state" id="puzzle-history-empty" hidden>No puzzles posted yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ POINTS & SHOP ══ -->
+    <section id="points" class="section">
+      <div class="points-page-head">
+        <div>
+          <h2 class="points-heading">Rewards shop</h2>
+          <p class="muted" style="font-size:14px;margin:0" id="points-balance-text">—</p>
+        </div>
+        <div class="cart-btn-wrap">
+          <button id="cart-btn" class="btn blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.4 8h13.2l-1.1 12.2H6.5Z"/><path d="M9 8V5.9a3 3 0 0 1 6 0V8"/></svg>
+            Cart
+          </button>
+          <span class="cart-badge" id="cart-badge" hidden>0</span>
+        </div>
+      </div>
+      <div class="points-shop-layout">
+        <div class="tile">
+          <h4>Your orders</h4>
+          <div id="my-orders-list"></div>
+          <div class="empty-state" id="my-orders-empty">No orders yet.</div>
+        </div>
+        <div class="tile">
+          <div class="shop-section-head">
+            <h4 style="margin:0">Club shop</h4>
+            <span style="font-size:13px;color:var(--muted)" id="shop-pts-display"></span>
+          </div>
+          <div class="shop-grid" id="shop-grid" style="margin-top:16px"></div>
+          <div class="empty-state" id="shop-empty" hidden>No items in the shop yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ LEADERBOARD ══ -->
+    <section id="leaderboard" class="section">
+      <div class="lb-page-head">
+        <h2 class="lb-title">Leaderboard</h2>
+        <p class="lb-sub muted" id="lb-sub">Ranked by points</p>
+      </div>
+      <div class="tile lb-tile">
+        <div class="lb-row lb-row-head">
+          <span class="lb-col-rank">Rank</span>
+          <span class="lb-col-player">Player</span>
+          <span class="lb-col-pts">Points</span>
+        </div>
+        <div id="lb-list"></div>
+        <div class="empty-state" id="lb-empty" hidden>No entries yet.</div>
+      </div>
+    </section>
+
+    <!-- ══ NEWS ══ -->
+    <section id="news" class="section">
+      <div class="stu-news-wrap" id="news-list"></div>
+    </section>
+
+    <!-- ══ DONATIONS ══ -->
+    <section id="donations" class="section">
+      <div class="tile" style="max-width:620px">
+        <h3>Support the club</h3>
+        <p>Donations help fund equipment, coaching, and tournament travel for every member of the team.</p>
+        <button class="btn subtle" disabled>Donate (coming soon)</button>
+      </div>
+    </section>
+
+    <!-- ══ PROFILE ══ -->
+    <section id="profile" class="section">
+      <div class="profile-layout">
+        <div class="tile profile-hero">
+          <div id="profile-avatar-lg" class="profile-avatar-lg"></div>
+          <div class="profile-hero-name" id="profile-username-display">—</div>
+          <div class="profile-hero-pts"><strong id="profile-pts-num">0</strong> points earned</div>
+        </div>
+        <div class="tile profile-edit">
+          <div>
+            <div class="profile-edit-section-label">Avatar colour</div>
+            <div class="avatar-palette" id="avatar-palette"></div>
+          </div>
+          <div>
+            <div class="profile-edit-section-label">Username</div>
+            <div class="form-inline">
+              <input id="profile-username-input" placeholder="Your username" />
+              <div><button id="profile-save" class="btn primary">Save Changes</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ ATTENDANCE ══ -->
+    <section id="attendance" class="section">
+      <div class="stu-att-wrap">
+        <div class="tile stu-att-card">
+          <div id="stu-att-banner"></div>
+          <div id="stu-att-done" hidden>
+            <div class="stu-att-done-icon">✓</div>
+            <p class="stu-att-done-text">Attendance submitted! You earned <strong id="stu-att-done-pts"></strong>.</p>
+          </div>
+          <div id="stu-att-form">
+            <p style="font-size:14px;color:var(--text-2);margin:0 0 18px">Confirm you attended this event. Points are awarded automatically on submit.</p>
+            <label class="stu-att-confirm-label">
+              <input type="checkbox" id="stu-att-check" />
+              <span>I confirm I attended <strong id="stu-att-event-name">this event</strong></span>
+            </label>
+            <div id="stu-att-extra-qs" style="margin-top:18px"></div>
+            <button class="btn primary block" id="stu-att-submit" disabled style="margin-top:22px">Submit attendance</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    </main>
+  </div>
+
+  <!-- ══ MODALS ═══════════════════════════════════════════════════ -->
+  <div id="att-prompt-modal" class="modal" hidden>
+    <div class="modal-card" style="max-width:420px;text-align:center">
+      <div class="stu-att-prompt-icon">📋</div>
+      <h3 style="margin:0">Attendance is open</h3>
+      <p id="att-prompt-event-name" style="font-family:var(--font);font-weight:800;font-size:16px;margin:0;color:var(--text)"></p>
+      <p style="font-size:14px;color:var(--text-2);margin:0">An event is in progress. Complete your attendance to earn points!</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:6px">
+        <button class="btn subtle" id="att-prompt-later">Later</button>
+        <button class="btn primary" id="att-prompt-go">Go to attendance →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="event-modal" class="modal" hidden>
+    <div class="modal-card">
+      <button class="icon-btn modal-close" id="modal-close" title="Close">✕</button>
+      <div class="modal-tag" id="modal-tag"></div>
+      <h3 id="modal-title">Event</h3>
+      <div class="modal-meta" id="modal-date"></div>
+      <p id="modal-desc"></p>
+    </div>
+  </div>
+
+  <div id="puzzle-complete-modal" class="modal" hidden>
+    <div class="modal-card" style="max-width:400px;text-align:center">
+      <button class="icon-btn modal-close" id="puzzle-complete-close" title="Close">✕</button>
+      <h3>Puzzle complete!</h3>
+      <div class="modal-meta">Points earned</div>
+      <div id="puzzle-complete-points" class="puzzle-points-count">0</div>
+      <button class="btn primary block" id="puzzle-complete-ok">Nice!</button>
+    </div>
+  </div>
+
+  <div id="cart-modal" class="modal" hidden>
+    <div class="modal-card" style="max-width:480px">
+      <button class="icon-btn modal-close" id="cart-close" title="Close">✕</button>
+      <h3>Your cart</h3>
+      <div id="cart-items-wrap"></div>
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span id="cart-total">0 pts</span>
+      </div>
+      <p id="cart-pts-warning" hidden style="font-size:13px;color:var(--red-dark);margin:0">Not enough points to place this order.</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn subtle" id="cart-cancel-btn">Close</button>
+        <button class="btn primary" id="cart-confirm-btn">Confirm order</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="username-modal" class="modal" hidden>
+    <div class="modal-card" style="max-width:420px">
+      <button class="icon-btn modal-close" id="username-modal-close" title="Close">✕</button>
+      <h3>Welcome to JagChess!</h3>
+      <p class="modal-meta" style="margin:0">Choose a username to show on the leaderboard. You can change it later in your profile.</p>
+      <input id="username-modal-input" placeholder="Enter a username" autocomplete="off" />
+      <div style="display:flex;gap:10px">
+        <button class="btn primary" id="username-modal-save" style="flex:1">Set username</button>
+        <button class="btn subtle" id="username-modal-skip">Skip</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var app = document.getElementById('app');
+      document.getElementById('menu-btn').addEventListener('click', function () { app.classList.add('nav-open'); });
+      document.getElementById('nav-scrim').addEventListener('click', function () { app.classList.remove('nav-open'); });
+      document.querySelectorAll('.tab').forEach(function (t) {
+        t.addEventListener('click', function () { app.classList.remove('nav-open'); });
+      });
+      var h = new Date().getHours();
+      document.getElementById('greet-time').textContent =
+        h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    })();
+  </script>
+
+  <script src="../assets/vendor/jquery/jquery.min.js"></script>
+  <script src="../assets/vendor/jquery-ui/jquery-ui.min.js"></script>
+  <script src="../assets/vendor/chess/chess.min.js"></script>
+  <script src="../assets/vendor/chessboard/chessboard-1.0.0.min.js"></script>
+  <script src="../assets/js/ui-select.js"></script>
+  <script src="../assets/js/firebase-config.js"></script>
+  <script type="module" src="../assets/js/theme.js"></script>
+  <script type="module" src="../assets/js/student.js"></script>
+</body>
+</html>
