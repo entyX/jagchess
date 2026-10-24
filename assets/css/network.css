@@ -3,7 +3,7 @@
    Builds on landing.css, which owns the palette, the shell and the buttons.
    ═══════════════════════════════════════════════════════════════════════ */
 
-.net-page { padding-top: 0; }
+.net-page .net-hero { padding-top: 130px; }
 
 /* ── HERO ───────────────────────────────────────────────────────────── */
 
