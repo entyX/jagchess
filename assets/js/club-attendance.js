@@ -109,7 +109,7 @@ const mirrorPayload = (club, event, form) => ({
   clubSlug: club.slug || club.id,
   clubName: club.name || '',
   clubIcon: club.icon || '♞',
-  clubColor: club.color || '#58cc02',
+  clubColor: club.color || '#1faf5a',
   /* The card a guest sees is drawn from this copy and nothing else, so the
      club's picture has to travel with it or the check-in looks like a
      different club's. */
@@ -692,7 +692,7 @@ function openClosedNotice(f, over) {
     <div class="modal att-modal">
       <div class="modal-card att-card att-closed">
         <div class="att-card-head">
-          <span class="att-card-avatar" style="background:${esc(f.clubColor || '#58cc02')}">${esc(f.clubIcon || '♞')}</span>
+          <span class="att-card-avatar" style="background:${esc(f.clubColor || '#1faf5a')}">${esc(f.clubIcon || '♞')}</span>
           <div>
             <span class="att-card-club">${esc(f.clubName || '')}</span>
             <h3>${esc(f.title || 'This event')}</h3>

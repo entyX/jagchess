@@ -3,30 +3,30 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --green:      #58cc02;
-  --green-hi:   #61e002;
-  --green-dark: #46a302;
-  --green-soft: #eef9e2;
-  --blue:       #1cb0f6;
-  --blue-dark:  #1590cc;
+  --green:      #1faf5a;
+  --green-hi:   #27c267;
+  --green-dark: #158445;
+  --green-soft: #e7f7ee;
+  --blue:       #2e90fa;
+  --blue-dark:  #1f6fd1;
   --blue-soft:  #e4f4fd;
   --gold:       #ffc800;
   --orange:     #ff9600;
   --red:        #ff4b4b;
   --red-dark:   #d93a3a;
   --red-soft:   #ffeaea;
-  --ink:        #0e2a36;
-  --ink-2:      #123240;
+  --ink:        #0a2c21;
+  --ink-2:      #0f3b2d;
   --bg:         #ffffff;
-  --bg-alt:     #f5f9fb;
-  --border:     #e4ebf0;
-  --border-2:   #d3dee6;
-  --text:       #12262f;
-  --text-2:     #526b7a;
-  --muted:      #7b93a1;
+  --bg-alt:     #f4f6f3;
+  --border:     #e3e8e2;
+  --border-2:   #d3dad2;
+  --text:       #12221a;
+  --text-2:     #4f6157;
+  --muted:      #7a8a81;
 
-  --font:    'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font:    'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-ui: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --ease:    cubic-bezier(.22,.68,0,1);
 }
 
@@ -44,7 +44,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3 { font-family: var(--font); font-weight: 900; letter-spacing: -0.03em; margin: 0; }
+h1, h2, h3 { font-family: var(--font); font-weight: 700; letter-spacing: -0.03em; margin: 0; }
 a { color: var(--blue); text-decoration: none; }
 
 .auth {
@@ -61,7 +61,7 @@ a { color: var(--blue); text-decoration: none; }
   padding: 42px 56px;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(155deg, var(--ink-2) 0%, var(--ink) 60%, #071c25 100%);
+  background: var(--ink-2);
   color: #fff;
 }
 .auth-brand::before {
@@ -78,7 +78,7 @@ a { color: var(--blue); text-decoration: none; }
   right: -220px;
   top: -180px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(88,204,2,.22), transparent 70%);
+  background: radial-gradient(closest-side, rgba(39,194,103,.18), transparent 70%);
 }
 .auth-brand > * { position: relative; z-index: 1; }
 
@@ -88,13 +88,13 @@ a { color: var(--blue); text-decoration: none; }
   height: 44px;
   border-radius: 14px;
   background: linear-gradient(160deg, var(--green-hi), var(--green-dark));
-  box-shadow: 0 3px 0 #2f7a06, inset 0 1px 0 rgba(255,255,255,.35);
+  box-shadow: 0 3px 0 #0b5e2f, inset 0 1px 0 rgba(255,255,255,.35);
   display: grid;
   place-items: center;
   font-size: 24px;
   color: #fff;
 }
-.ab-name { font-family: var(--font); font-size: 22px; font-weight: 900; letter-spacing: -0.03em; }
+.ab-name { font-family: var(--font); font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
 
 /* The wordmark carries the lion and the name together, so it stands in for
    the mark and the text at once. The dark panel swallows the black half of
@@ -173,7 +173,7 @@ a { color: var(--blue); text-decoration: none; }
   box-shadow: 0 50px 60px rgba(0,0,0,.4);
 }
 .ab-board-inner i { background: rgba(255,255,255,.07); }
-.ab-board-inner i.d { background: rgba(88,204,2,.32); }
+.ab-board-inner i.d { background: rgba(39,194,103,.3); }
 @keyframes ab-float {
   0%, 100% { transform: rotateX(60deg) rotateZ(-40deg) translateZ(0); }
   50%      { transform: rotateX(56deg) rotateZ(-35deg) translateZ(22px); }
@@ -222,7 +222,7 @@ a { color: var(--blue); text-decoration: none; }
   padding: 5px;
   border-radius: 999px;
   background: var(--bg-alt);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   margin-bottom: 26px;
 }
 .auth-tab {
@@ -273,7 +273,7 @@ a { color: var(--blue); text-decoration: none; }
 
 input[type="text"], input[type="email"], input[type="password"] {
   width: 100%;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 14px;
   background: #fff;
   color: var(--text);
@@ -283,9 +283,9 @@ input[type="text"], input[type="email"], input[type="password"] {
   outline: none;
   transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
 }
-input::placeholder { color: #a8b9c4; }
+input::placeholder { color: #a9b5ae; }
 input:hover { border-color: var(--border-2); }
-input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(28,176,246,.15); }
+input:focus { border-color: var(--green); box-shadow: 0 0 0 4px rgba(31,175,90,.16); }
 input.bad { border-color: var(--red); box-shadow: 0 0 0 4px rgba(255,75,75,.13); }
 
 .peek {
@@ -361,19 +361,19 @@ input.bad { border-color: var(--red); box-shadow: 0 0 0 4px rgba(255,75,75,.13);
   gap: 9px;
   width: 100%;
   padding: 15px 24px;
-  border: 2px solid transparent;
-  border-radius: 15px;
+  border: 1px solid transparent;
+  border-radius: 14px;
   background: var(--green);
   color: #fff;
-  font-family: var(--font);
-  font-size: 15.5px;
-  font-weight: 800;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 0 var(--sh);
+  box-shadow: 0 3px 0 var(--sh);
   transition: transform .1s var(--ease), box-shadow .1s var(--ease), background .18s, opacity .18s;
 }
 .btn3d:hover:not(:disabled) { background: var(--green-hi); }
-.btn3d:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 var(--sh); }
+.btn3d:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 var(--sh); }
 .btn3d:disabled { opacity: .6; cursor: not-allowed; }
 
 .btn3d.white {
@@ -465,7 +465,7 @@ input.bad { border-color: var(--red); box-shadow: 0 0 0 4px rgba(255,75,75,.13);
   display: none;
   place-items: center;
   padding: 24px;
-  background: rgba(12,32,42,.55);
+  background: rgba(10,26,18,.45);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
@@ -473,7 +473,7 @@ input.bad { border-color: var(--red); box-shadow: 0 0 0 4px rgba(255,75,75,.13);
 .acct-card {
   width: min(400px, 100%);
   background: #fff;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 34px 30px;
   text-align: center;

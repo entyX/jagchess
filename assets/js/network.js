@@ -49,14 +49,17 @@ function init() {
 }
 
 function wireChrome() {
-  const burger = $('lp-burger');
-  const mobile = $('lp-mobile');
+  const burger = $('nav-burger');
+  const sheet = $('nav-sheet');
   burger.onclick = () => {
-    const open = mobile.classList.toggle('open');
+    const open = sheet.hidden;
+    sheet.hidden = !open;
+    burger.setAttribute('aria-expanded', String(open));
     document.body.style.overflow = open ? 'hidden' : '';
   };
-  mobile.querySelectorAll('a').forEach((a) => (a.onclick = () => {
-    mobile.classList.remove('open');
+  sheet.querySelectorAll('a').forEach((a) => (a.onclick = () => {
+    sheet.hidden = true;
+    burger.setAttribute('aria-expanded', 'false');
     document.body.style.overflow = '';
   }));
 

@@ -4,9 +4,9 @@ import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword,
   sendPasswordResetEmail, setPersistence,
   browserLocalPersistence, browserSessionPersistence,
-  GoogleAuthProvider, signInWithPopup
+  GoogleAuthProvider, signInWithPopup, connectAuthEmulator
 } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js';
 import { rememberSignedIn, forgetSignedIn } from './session-hint.js';
 
 const ADMIN_EMAILS = [
@@ -132,6 +132,10 @@ if (!cfg) {
   const app = initializeApp(cfg);
   const auth = getAuth(app);
   const db = getFirestore(app);
+  if (window.JAG_EMULATORS) {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  }
 
   let blocked = false; // set when an account is suspended/deleted
 

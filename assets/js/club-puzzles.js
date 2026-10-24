@@ -1676,7 +1676,7 @@ export async function openCompletions(ctx, puzzle, api = {}) {
           const earned = on && row && row.source !== 'admin';
           return `<label class="pzdone-row${on ? ' is-on' : ''}">
             <input type="checkbox" data-uid="${esc(m.id)}"${on ? ' checked' : ''} />
-            <span class="user-avatar-circle" style="background:${esc(m.avatarColor || '#1cb0f6')}">${esc(initials(m.username || m.email))}</span>
+            <span class="user-avatar-circle" style="background:${esc(m.avatarColor || '#2e90fa')}">${esc(initials(m.username || m.email))}</span>
             <span class="pzdone-who">
               <span class="pzdone-name">${esc(m.username || 'Player')}
                 <span class="role-pill ${esc(m.role || 'student')}">${esc(ROLE_LABEL[m.role] || 'Student')}</span>

@@ -34,16 +34,15 @@
   width: 52px;
   padding: 11px 4px 9px;
   background: var(--card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: var(--lift-card);
   cursor: pointer;
   color: var(--text-2);
   font-family: var(--font);
-  font-size: 10px;
+  font-size: 12.5px;
   font-weight: 800;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   transition: all .16s var(--ease);
 }
 .adm .pib-btn:hover { border-color: var(--blue); color: var(--blue-dark); transform: translateY(-2px); }
@@ -64,7 +63,7 @@
   gap: 10px;
   padding: 18px;
   background: var(--card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--pop);
 }
@@ -118,7 +117,7 @@
 .adm .shop-item-card {
   overflow: hidden;
   background: var(--card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--lift-card);
   transition: transform .18s var(--ease), border-color .18s;
@@ -210,7 +209,7 @@
 .adm .order-cost-pill {
   font-family: var(--font);
   font-size: 12.5px;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--gold-dark);
   background: var(--gold-soft);
   padding: 4px 11px;
@@ -220,10 +219,9 @@
 
 .adm .order-status-pill {
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 12.5px;
   font-weight: 800;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   padding: 4px 11px;
   border-radius: 999px;
   white-space: nowrap;
@@ -251,7 +249,7 @@
   display: grid;
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 2px solid var(--border);
+  border-top: 1px solid var(--border);
 }
 
 .adm .adm-att-pts-row { margin-bottom: 22px; }
@@ -259,10 +257,9 @@
 .adm .adm-field-label {
   display: block;
   font-family: var(--font-ui);
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 800;
-  letter-spacing: .09em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--muted);
 }
 
@@ -305,7 +302,7 @@
   gap: 16px;
   margin-bottom: 20px;
   padding-bottom: 18px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 .adm .adm-att-resp-head h3 { font-size: 19px; margin: 0 0 3px; }
 
@@ -313,7 +310,7 @@
   flex-shrink: 0;
   font-family: var(--font);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
   background: var(--green-soft);
   color: var(--green-dark);
   border-radius: 999px;
@@ -346,7 +343,7 @@
   gap: 15px;
   margin-bottom: 22px;
   padding-bottom: 20px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────────────── */

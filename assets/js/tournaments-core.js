@@ -82,7 +82,7 @@ export async function createTournament(ctx, form) {
     host: {
       uid: ctx.user.uid,
       username: (ctx.member && ctx.member.username) || (ctx.user.email || '').split('@')[0] || 'Player',
-      avatarColor: (ctx.member && ctx.member.avatarColor) || '#1cb0f6'
+      avatarColor: (ctx.member && ctx.member.avatarColor) || '#2e90fa'
     },
     status: 'scheduled',
     createdAt: Date.now(),
@@ -151,7 +151,7 @@ export function blankPlayer(uid, username, avatarColor, rating) {
   return {
     uid,
     username: username || 'Player',
-    avatarColor: avatarColor || '#1cb0f6',
+    avatarColor: avatarColor || '#2e90fa',
     rating: { r: rating.r, rd: rating.rd, vol: rating.vol, games: rating.games },
     state: 'ready',
     score: 0,
@@ -186,7 +186,7 @@ export async function myTournamentProfile(ctx, t) {
     source,
     username: source.username || (ctx.member && ctx.member.username) ||
       (ctx.user.email || '').split('@')[0] || 'Player',
-    avatarColor: source.avatarColor || (ctx.member && ctx.member.avatarColor) || '#1cb0f6',
+    avatarColor: source.avatarColor || (ctx.member && ctx.member.avatarColor) || '#2e90fa',
     rating: source.rating ? readRating(source) : newRating()
   };
 }

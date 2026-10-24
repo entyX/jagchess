@@ -1,200 +1,246 @@
-/* JagChess — landing page interactions */
+/* ═══════════════════════════════════════════════════════════════════════
+   landing.js — the marketing page: the nav, and the puzzle in the hero.
+
+   The puzzle is real. It is one position with one mating move, played by
+   tapping or dragging, and solving it does what solving one in a club
+   does: points go up. No chess library on this page — one fixed answer
+   doesn't need one.
+   ═══════════════════════════════════════════════════════════════════════ */
+
 (function () {
-  'use strict';
+  var PIECE = function (p) { return '/assets/vendor/chessboard/img/chesspieces/wikipedia/' + p + '.png'; };
 
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* ── nav ── */
 
-  /* ── sticky nav ─────────────────────────────────────────────────── */
-  var nav = document.getElementById('lp-nav');
-  var onScroll = function () {
-    nav.classList.toggle('stuck', window.scrollY > 14);
-  };
-  onScroll();
+  var nav = document.getElementById('nav');
+  var onScroll = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
   window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
-  /* ── mobile menu ────────────────────────────────────────────────── */
-  var burger = document.getElementById('lp-burger');
-  var mobile = document.getElementById('lp-mobile');
+  var burger = document.getElementById('nav-burger');
+  var sheet = document.getElementById('nav-sheet');
   burger.addEventListener('click', function () {
-    var open = mobile.classList.toggle('open');
-    document.body.style.overflow = open ? 'hidden' : '';
+    var open = sheet.hidden;
+    sheet.hidden = !open;
+    burger.setAttribute('aria-expanded', String(open));
+    document.body.classList.toggle('sheet-open', open);
   });
-  mobile.querySelectorAll('a').forEach(function (a) {
+  sheet.querySelectorAll('a').forEach(function (a) {
     a.addEventListener('click', function () {
-      mobile.classList.remove('open');
-      document.body.style.overflow = '';
+      sheet.hidden = true;
+      burger.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('sheet-open');
     });
   });
 
-  /* ── hero 3-D parallax ──────────────────────────────────────────── */
-  var stage = document.getElementById('stage');
-  var inner = document.getElementById('stage-inner');
-  if (stage && inner && !reduce && window.matchMedia('(pointer: fine)').matches) {
-    var raf = null;
-    var target = { x: 0, y: 0 };
-    var current = { x: 0, y: 0 };
+  /* ── boards ── */
 
-    var tick = function () {
-      current.x += (target.x - current.x) * 0.09;
-      current.y += (target.y - current.y) * 0.09;
-      inner.style.transform = 'rotateX(' + current.y.toFixed(2) + 'deg) rotateY(' + current.x.toFixed(2) + 'deg)';
-      if (Math.abs(target.x - current.x) > 0.01 || Math.abs(target.y - current.y) > 0.01) {
-        raf = requestAnimationFrame(tick);
-      } else {
-        raf = null;
-      }
-    };
-
-    var move = function (e) {
-      var r = stage.getBoundingClientRect();
-      var px = (e.clientX - r.left) / r.width - 0.5;
-      var py = (e.clientY - r.top) / r.height - 0.5;
-      target.x = px * 17;
-      target.y = -py * 13;
-      if (!raf) raf = requestAnimationFrame(tick);
-    };
-
-    window.addEventListener('mousemove', move, { passive: true });
-    inner.style.transition = 'none';
-  }
-
-  /* ── scroll reveal ──────────────────────────────────────────────── */
-  var revealables = document.querySelectorAll('[data-reveal]');
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry, i) {
-        if (!entry.isIntersecting) return;
-        var el = entry.target;
-        var delay = el.parentElement && el.parentElement.children.length > 2
-          ? Array.prototype.indexOf.call(el.parentElement.children, el) * 70
-          : 0;
-        setTimeout(function () { el.classList.add('in'); }, Math.min(delay, 420));
-        io.unobserve(el);
-      });
-    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.12 });
-    revealables.forEach(function (el) { io.observe(el); });
-  } else {
-    revealables.forEach(function (el) { el.classList.add('in'); });
-  }
-
-  /* ── bento 3-D tilt ─────────────────────────────────────────────── */
-  if (!reduce && window.matchMedia('(pointer: fine)').matches) {
-    document.querySelectorAll('.tilt').forEach(function (card) {
-      card.addEventListener('mousemove', function (e) {
-        var r = card.getBoundingClientRect();
-        var px = (e.clientX - r.left) / r.width - 0.5;
-        var py = (e.clientY - r.top) / r.height - 0.5;
-        card.style.transform =
-          'perspective(900px) rotateX(' + (-py * 7).toFixed(2) + 'deg) rotateY(' +
-          (px * 9).toFixed(2) + 'deg) translateY(-5px)';
-      });
-      card.addEventListener('mouseleave', function () { card.style.transform = ''; });
-    });
-  }
-
-  /* ── builder: blocks drop in when the canvas scrolls into view ──── */
-  var canvas = document.getElementById('canvas');
-  if (canvas && 'IntersectionObserver' in window) {
-    var blocks = canvas.querySelectorAll('[data-block]');
-    var bo = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        blocks.forEach(function (b, i) {
-          setTimeout(function () { b.classList.add('in'); }, 260 + i * 220);
-        });
-        bo.disconnect();
-      });
-    }, { threshold: 0.35 });
-    bo.observe(canvas);
-
-    // clicking a palette block "adds" the next empty slot
-    var chips = document.querySelectorAll('.block-chip');
-    chips.forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        var next = canvas.querySelector('.cv-block:not(.solid)');
-        if (!next) return;
-        next.classList.add('solid');
-        next.innerHTML = chip.innerHTML.replace('<span class="grip">⠿</span>', '');
-        next.style.transform = 'scale(1.03)';
-        setTimeout(function () { next.style.transform = ''; }, 220);
+  function squaresOf(fen) {
+    var out = [];
+    fen.split(' ')[0].split('/').forEach(function (row) {
+      row.split('').forEach(function (ch) {
+        if (/\d/.test(ch)) { for (var i = 0; i < +ch; i++) out.push(null); }
+        else out.push((ch === ch.toUpperCase() ? 'w' : 'b') + ch.toUpperCase());
       });
     });
+    return out;
   }
 
-  /* ── builder: club color swatches ──────────────────────────────── */
-  var swatches = document.querySelectorAll('.swatch');
-  swatches.forEach(function (s) {
-    s.addEventListener('click', function () {
-      swatches.forEach(function (o) { o.classList.remove('on'); });
-      s.classList.add('on');
-      if (!canvas) return;
-      canvas.style.setProperty('--accent-a', s.dataset.a);
-      canvas.style.setProperty('--accent-b', s.dataset.b);
-    });
-  });
-
-  /* ── metrics count-up ───────────────────────────────────────────── */
-  var counters = document.querySelectorAll('[data-count]');
-  if (counters.length && 'IntersectionObserver' in window) {
-    var co = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        var el = entry.target;
-        co.unobserve(el);
-        if (el.dataset.literal) { el.textContent = el.dataset.literal; return; }
-        var end = parseInt(el.dataset.count, 10) || 0;
-        var suffix = el.dataset.suffix || '';
-        if (reduce) { el.textContent = end + suffix; return; }
-        var start = performance.now();
-        var dur = 1100;
-        var step = function (now) {
-          var p = Math.min((now - start) / dur, 1);
-          var eased = 1 - Math.pow(1 - p, 3);
-          el.textContent = Math.round(end * eased) + suffix;
-          if (p < 1) requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-      });
-    }, { threshold: 0.5 });
-    counters.forEach(function (el) { co.observe(el); });
+  function nameOf(i, flip) {
+    var idx = flip ? 63 - i : i;
+    return 'abcdefgh'[idx % 8] + (8 - Math.floor(idx / 8));
   }
 
-  /* ── pricing toggle ─────────────────────────────────────────────── */
-  var toggle = document.getElementById('bill-toggle');
-  if (toggle) {
-    toggle.addEventListener('click', function (e) {
-      var btn = e.target.closest('button[data-cycle]');
-      if (!btn) return;
-      toggle.querySelectorAll('button').forEach(function (b) { b.classList.remove('on'); });
-      btn.classList.add('on');
-      var yearly = btn.dataset.cycle === 'year';
-      document.querySelectorAll('[data-price-month]').forEach(function (el) {
-        el.textContent = yearly ? el.dataset.priceYear : el.dataset.priceMonth;
-      });
-      document.querySelectorAll('[data-cycle-label]').forEach(function (el) {
-        el.textContent = yearly ? '/month, billed yearly' : '/month';
-      });
-    });
+  /* draws a still board into a host, for the product pictures further down */
+  function still(host, fen, opts) {
+    if (!host) return;
+    opts = opts || {};
+    var sq = squaresOf(fen);
+    var marks = opts.marks || [];
+    var html = '';
+    for (var i = 0; i < 64; i++) {
+      var idx = opts.flip ? 63 - i : i;
+      var f = idx % 8, r = 8 - Math.floor(idx / 8);
+      var name = 'abcdefgh'[f] + r;
+      var p = sq[idx];
+      html += '<span class="sq' + ((f + r) % 2 === 0 ? ' d' : '') + (marks.indexOf(name) >= 0 ? ' hl' : '') + '">' +
+        (p ? '<img src="' + PIECE(p) + '" alt="" draggable="false">' : '') + '</span>';
+    }
+    host.innerHTML = html;
   }
 
-  /* ── FAQ accordion ──────────────────────────────────────────────── */
-  document.querySelectorAll('.qa-q').forEach(function (q) {
-    q.addEventListener('click', function () {
-      var qa = q.parentElement;
-      var body = qa.querySelector('.qa-a');
-      var isOpen = qa.classList.contains('open');
-      document.querySelectorAll('.qa.open').forEach(function (other) {
-        other.classList.remove('open');
-        other.querySelector('.qa-a').style.maxHeight = '';
-      });
-      if (!isOpen) {
-        qa.classList.add('open');
-        body.style.maxHeight = body.scrollHeight + 'px';
+  still(document.getElementById('shot-board'), 'r2q1rk1/ppp2ppp/2n5/3np3/2B5/2N2N2/PPP2PPP/R2Q1RK1', { flip: true, marks: ['d5'] });
+  still(document.getElementById('shot-game'), 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R', { marks: ['d2', 'd3'] });
+
+  /* ── the hero puzzle: White to move, Rd8 is mate ──────────────────── */
+
+  var FEN = '6k1/5ppp/p7/4n3/8/PB6/2r2PPP/3R2K1';
+  var ANSWER = { from: 'd1', to: 'd8' };
+  var board = document.getElementById('pz-board');
+  var msg = document.getElementById('puzzle-msg');
+  var goal = document.getElementById('puzzle-goal');
+  var reset = document.getElementById('pz-reset');
+  var puzzle = document.getElementById('puzzle');
+  var position, selected = null, solved = false, hintTimer = null;
+
+  function draw() {
+    var html = '';
+    for (var i = 0; i < 64; i++) {
+      var f = i % 8, r = 8 - Math.floor(i / 8);
+      var name = 'abcdefgh'[f] + r;
+      var p = position[i];
+      html += '<button class="sq' + ((f + r) % 2 === 0 ? ' d' : '') + '" data-sq="' + name + '"' +
+        ' aria-label="' + name + (p ? ' ' + ({ K: 'king', Q: 'queen', R: 'rook', B: 'bishop', N: 'knight', P: 'pawn' })[p[1]] : '') + '"' +
+        ' role="gridcell">' +
+        (f === 0 ? '<small class="rk">' + r + '</small>' : '') +
+        (r === 1 ? '<small class="fl">' + 'abcdefgh'[f] + '</small>' : '') +
+        (p ? '<img src="' + PIECE(p) + '" alt="" draggable="false" data-piece="' + p + '">' : '') +
+        '</button>';
+    }
+    board.innerHTML = html;
+  }
+
+  function idxOf(name) { return (8 - +name[1]) * 8 + 'abcdefgh'.indexOf(name[0]); }
+  function cell(name) { return board.querySelector('[data-sq="' + name + '"]'); }
+  function clearMarks() { board.querySelectorAll('.sel,.hint').forEach(function (n) { n.classList.remove('sel', 'hint'); }); }
+
+  /* Rook and bishop moves, enough to show where a piece can go. */
+  function targets(from) {
+    var p = position[idxOf(from)];
+    if (!p || p[0] !== 'w') return [];
+    var dirs = p[1] === 'R' ? [[1, 0], [-1, 0], [0, 1], [0, -1]]
+      : p[1] === 'B' ? [[1, 1], [1, -1], [-1, 1], [-1, -1]]
+      : p[1] === 'K' ? [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]
+      : p[1] === 'P' ? [[0, 1]] : [];
+    var f0 = 'abcdefgh'.indexOf(from[0]), r0 = +from[1], out = [];
+    dirs.forEach(function (d) {
+      var f = f0, r = r0;
+      for (;;) {
+        f += d[0]; r += d[1];
+        if (f < 0 || f > 7 || r < 1 || r > 8) break;
+        var n = 'abcdefgh'[f] + r;
+        var q = position[idxOf(n)];
+        if (q && q[0] === 'w') break;
+        out.push(n);
+        if (q || p[1] === 'K' || p[1] === 'P') break;
       }
     });
+    return out;
+  }
+
+  function select(name) {
+    clearMarks();
+    selected = name;
+    cell(name).classList.add('sel');
+    targets(name).forEach(function (t) { cell(t).classList.add('hint'); });
+  }
+
+  function tryMove(from, to) {
+    var piece = position[idxOf(from)];
+    position[idxOf(to)] = piece;
+    position[idxOf(from)] = null;
+    draw();
+    cell(from).classList.add('last'); cell(to).classList.add('last');
+    if (from === ANSWER.from && to === ANSWER.to) return win();
+    puzzle.classList.add('wrong');
+    msg.textContent = 'Not quite. Black can still escape.';
+    reset.hidden = false;
+    setTimeout(function () { puzzle.classList.remove('wrong'); }, 500);
+  }
+
+  function win() {
+    solved = true;
+    clearTimeout(hintTimer);
+    cell('g8').classList.add('mated');
+    puzzle.classList.add('solved');
+    goal.textContent = 'Checkmate';
+    msg.innerHTML = '<b>Rd8 is mate.</b> The king is trapped behind its own pawns.';
+    reset.hidden = false;
+    reset.textContent = 'Play it again';
+    // what a solve does in a real club: points
+    var pts = document.getElementById('hero-points');
+    var chip = document.getElementById('chip-points');
+    var from = +pts.textContent, to = from + 10, t0 = performance.now();
+    chip.classList.add('bump');
+    (function step(t) {
+      var k = Math.min(1, (t - t0) / 600);
+      pts.textContent = Math.round(from + (to - from) * k);
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
+    var plus = document.createElement('span');
+    plus.className = 'plus-ten';
+    plus.textContent = '+10';
+    chip.appendChild(plus);
+    setTimeout(function () { plus.remove(); chip.classList.remove('bump'); }, 1400);
+  }
+
+  function start() {
+    position = squaresOf(FEN);
+    selected = null;
+    solved = false;
+    puzzle.classList.remove('solved', 'wrong');
+    goal.textContent = 'Find checkmate in one';
+    msg.textContent = 'Tap a white piece, then tap where it goes.';
+    reset.hidden = true;
+    reset.textContent = 'Try again';
+    draw();
+    clearTimeout(hintTimer);
+    // a gentle nudge for anyone who stares at it for a while
+    hintTimer = setTimeout(function () {
+      if (solved || selected) return;
+      msg.textContent = 'Hint: look at the back row. The black king has no way out.';
+    }, 12000);
+  }
+
+  board.addEventListener('click', function (e) {
+    if (solved) return;
+    var b = e.target.closest('[data-sq]');
+    if (!b) return;
+    var name = b.dataset.sq;
+    var p = position[idxOf(name)];
+    if (selected && b.classList.contains('hint')) { var from = selected; selected = null; tryMove(from, name); return; }
+    if (p && p[0] === 'w') select(name);
+    else { selected = null; clearMarks(); }
   });
 
-  /* ── year ───────────────────────────────────────────────────────── */
+  /* dragging, for anyone who reaches for the piece */
+  var drag = null;
+  board.addEventListener('pointerdown', function (e) {
+    if (solved) return;
+    var img = e.target.closest('img[data-piece]');
+    if (!img || img.dataset.piece[0] !== 'w') return;
+    var from = img.parentElement.dataset.sq;
+    select(from);
+    var r = img.getBoundingClientRect();
+    var ghost = img.cloneNode();
+    ghost.className = 'pz-ghost';
+    ghost.style.width = r.width + 'px';
+    document.body.appendChild(ghost);
+    img.style.opacity = '.3';
+    drag = { from: from, ghost: ghost, img: img, w: r.width, moved: false };
+    var move = function (ev) {
+      drag.moved = true;
+      ghost.style.transform = 'translate(' + (ev.clientX - drag.w / 2) + 'px,' + (ev.clientY - drag.w / 2) + 'px)';
+    };
+    move(e);
+    var up = function (ev) {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      ghost.remove();
+      img.style.opacity = '';
+      var under = document.elementFromPoint(ev.clientX, ev.clientY);
+      var target = under && under.closest && under.closest('[data-sq]');
+      if (drag.moved && target && target.classList.contains('hint')) { selected = null; tryMove(drag.from, target.dataset.sq); }
+      drag = null;
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+    e.preventDefault();
+  });
+
+  reset.addEventListener('click', start);
+  start();
+
   var y = document.getElementById('year');
   if (y) y.textContent = new Date().getFullYear();
 })();

@@ -100,7 +100,7 @@ const SWORD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
       return `<div class="lb-row has-duel${me ? ' lb-row-me' : ''}">
         <span class="lb-col-rank ${medal}">${i + 1}</span>
         <span class="lb-col-player">
-          <span class="lb-avatar" style="background:${esc(p.avatarColor || '#1cb0f6')}">${esc(initials(p.username || p.email))}</span>
+          <span class="lb-avatar" style="background:${esc(p.avatarColor || '#2e90fa')}">${esc(initials(p.username || p.email))}</span>
           <span class="lb-player-info">
             <span class="lb-player-name">${esc(p.username || 'Player')}${me ? '<span class="lb-me-badge">You</span>' : ''}</span>
             <span class="lb-player-email">${total ? `${total} rated game${total === 1 ? '' : 's'}` : 'No rated games yet'}</span>

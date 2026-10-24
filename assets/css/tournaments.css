@@ -36,7 +36,7 @@
   text-align: left; cursor: pointer;
   padding: 18px;
   background: var(--card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--lift-card);
   color: var(--text); font-family: var(--font-ui);
@@ -47,7 +47,7 @@
 .tn-card.running:hover, .tn-card.ending:hover { box-shadow: 0 8px 0 var(--green-soft); }
 
 .tn-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.tn-card-name { font-family: var(--font); font-size: 18px; font-weight: 900; letter-spacing: -.02em; line-height: 1.2; }
+.tn-card-name { font-family: var(--font); font-size: 18px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
 .tn-card-terms { display: flex; flex-wrap: wrap; gap: 6px; }
 .tn-when { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .tn-card-foot {
@@ -70,7 +70,7 @@
 
 .tn-status {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  font-size: 12.5px; font-weight: 800; letter-spacing: 0;
   padding: 4px 10px; border-radius: var(--r-pill);
   background: var(--surface-2); color: var(--muted);
 }
@@ -128,7 +128,7 @@
 .tn-hero-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 9px; }
 .tn-hero h2 {
   font-family: var(--font); font-size: clamp(23px, 3.6vw, 32px);
-  font-weight: 900; letter-spacing: -.03em; line-height: 1.1;
+  font-weight: 700; letter-spacing: -.03em; line-height: 1.1;
   margin: 0 0 10px; color: var(--text);
 }
 .tn-hero-terms { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
@@ -141,7 +141,7 @@
 .tn-clock { text-align: center; }
 .tn-clock b {
   display: block; font-family: var(--font);
-  font-size: clamp(28px, 5vw, 38px); font-weight: 900;
+  font-size: clamp(28px, 5vw, 38px); font-weight: 700;
   letter-spacing: -.03em; line-height: 1; color: var(--text);
   font-variant-numeric: tabular-nums;
 }
@@ -160,7 +160,7 @@
   display: inline-flex; align-items: center; gap: 7px;
   font: 800 12.5px var(--font-ui); color: var(--text-2);
   background: var(--card); padding: 8px 13px; border-radius: var(--r-pill);
-  cursor: pointer; border: 2px solid transparent;
+  cursor: pointer; border: 1px solid transparent;
 }
 .tn-berserk-toggle.on { border-color: var(--orange); color: var(--orange-dark); }
 [data-theme="dark"] .tn-berserk-toggle.on { color: var(--orange); }
@@ -182,7 +182,7 @@
 .tn-podium-card {
   display: flex; flex-direction: column; align-items: center; gap: 7px;
   padding: 18px 14px; border-radius: var(--r-lg);
-  background: var(--card); border: 2px solid var(--border);
+  background: var(--card); border: 1px solid var(--border);
   box-shadow: var(--lift-card); position: relative;
 }
 .tn-podium-card.p1 { border-color: var(--gold); background: var(--gold-soft); }
@@ -192,7 +192,7 @@
   position: absolute; top: 10px; left: 12px;
   font: 900 13px var(--font); color: var(--muted);
 }
-.tn-podium-card b { font-family: var(--font); font-size: 16px; font-weight: 900; text-align: center; }
+.tn-podium-card b { font-family: var(--font); font-size: 16px; font-weight: 700; text-align: center; }
 .tn-podium-card small { font-size: 12px; font-weight: 700; color: var(--text-2); }
 
 /* ── LAYOUT ─────────────────────────────────────────────────────────── */
@@ -201,7 +201,7 @@
 .tn-main { min-width: 0; }
 .tn-side { display: flex; flex-direction: column; gap: 14px; }
 .tn-side .tile { padding: 16px 18px; }
-.tn-side h4 { font-family: var(--font); font-size: 15px; font-weight: 900; margin: 0 0 10px; }
+.tn-side h4 { font-family: var(--font); font-size: 15px; font-weight: 700; margin: 0 0 10px; }
 
 /* ── STANDINGS ──────────────────────────────────────────────────────── */
 
@@ -209,7 +209,7 @@
   display: flex; align-items: center; justify-content: space-between;
   gap: 10px; margin-bottom: 12px;
 }
-.tn-standings-head h3 { font-family: var(--font); font-size: 17px; font-weight: 900; margin: 0; }
+.tn-standings-head h3 { font-family: var(--font); font-size: 17px; font-weight: 700; margin: 0; }
 .tn-standings-head .muted { font-size: 12.5px; font-weight: 700; color: var(--muted); }
 
 .tn-row {
@@ -219,15 +219,14 @@
   padding: 9px 10px; border-radius: var(--r-sm);
 }
 .tn-row-head {
-  font-size: 11px; font-weight: 800; letter-spacing: .05em;
-  text-transform: uppercase; color: var(--muted);
+  font-size: 12.5px; font-weight: 800; letter-spacing: 0; color: var(--muted);
   border-bottom: 1px solid var(--border); border-radius: 0; padding-bottom: 8px;
 }
 .tn-rows .tn-row + .tn-row { border-top: 1px solid var(--border); border-radius: 0; }
 .tn-row.me { background: var(--green-soft); border-radius: var(--r-sm); }
 .tn-row.gone { opacity: .5; }
 
-.tn-c-rank { font-family: var(--font); font-size: 15px; font-weight: 900; text-align: center; color: var(--muted); }
+.tn-c-rank { font-family: var(--font); font-size: 15px; font-weight: 700; text-align: center; color: var(--muted); }
 .tn-c-rank.gold { color: var(--gold-dark); }
 .tn-c-rank.silver { color: var(--text-2); }
 .tn-c-rank.bronze { color: var(--orange-dark); }
@@ -243,14 +242,14 @@
 }
 .tn-player-sub { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; }
 .tn-fire {
-  font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  font-size: 12.5px; font-weight: 800; letter-spacing: 0;
   background: var(--orange-soft); color: var(--orange-dark);
   padding: 2px 7px; border-radius: var(--r-pill);
 }
 [data-theme="dark"] .tn-fire { color: var(--orange); }
 
 .tn-c-wdl { font-size: 13px; font-weight: 600; color: var(--text-2); text-align: center; font-variant-numeric: tabular-nums; }
-.tn-c-score { font-family: var(--font); font-size: 17px; font-weight: 900; text-align: right; font-variant-numeric: tabular-nums; }
+.tn-c-score { font-family: var(--font); font-size: 17px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ── SIDE PANELS ────────────────────────────────────────────────────── */
 
@@ -287,7 +286,7 @@
   gap: 10px; padding: 6px 0; font-size: 13.5px; color: var(--text-2);
 }
 .tn-rule + .tn-rule { border-top: 1px solid var(--border); }
-.tn-rule b { font-family: var(--font); font-weight: 900; color: var(--text); }
+.tn-rule b { font-family: var(--font); font-weight: 700; color: var(--text); }
 
 /* A format that no longer exists. The notice reads as an explanation rather
    than an error, because nothing went wrong — the format was retired. */
@@ -297,7 +296,7 @@
   border-radius: var(--r-lg);
   background: var(--surface-2); border: 1px solid var(--border);
 }
-.tn-retired b { font-family: var(--font); font-size: 14.5px; font-weight: 900; color: var(--text); }
+.tn-retired b { font-family: var(--font); font-size: 14.5px; font-weight: 700; color: var(--text); }
 .tn-retired span { font-size: 13px; color: var(--text-2); line-height: 1.5; }
 
 /* ── CREATE FORM ────────────────────────────────────────────────────── */
@@ -313,7 +312,7 @@
 .tn-opt {
   text-align: left; cursor: pointer;
   padding: 12px 14px; border-radius: var(--r-md);
-  border: 2px solid var(--border); background: var(--surface);
+  border: 1px solid var(--border); background: var(--surface);
   font-family: var(--font-ui); color: var(--text);
 }
 .tn-opt.on { border-color: var(--purple); background: var(--purple-soft); }
@@ -323,7 +322,7 @@
 .tn-switch {
   display: flex; align-items: center; justify-content: space-between;
   gap: 14px; margin-top: 14px; padding: 13px 15px;
-  border: 2px solid var(--border); border-radius: var(--r-md);
+  border: 1px solid var(--border); border-radius: var(--r-md);
   background: var(--surface); cursor: pointer;
 }
 .tn-switch b { display: block; font-size: 14px; font-weight: 800; margin-bottom: 2px; }
@@ -344,7 +343,7 @@
   flex: 1; min-width: 0;
   font: 700 13.5px var(--font-mono);
   padding: 11px 13px; border-radius: var(--r-sm);
-  border: 2px solid var(--border); background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
 }
 .ml-terms { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .ml-who {
@@ -414,7 +413,7 @@
 .hub-page { width: min(1180px, 100% - 48px); margin: 0 auto; padding: 34px 0 80px; }
 .hub-page-head { margin-bottom: 24px; }
 .hub-page-head h1 {
-  font-family: var(--font); font-size: 32px; font-weight: 900;
+  font-family: var(--font); font-size: 32px; font-weight: 700;
   letter-spacing: -.03em; margin: 0 0 5px;
 }
 .hub-page-head p { margin: 0; color: var(--text-2); font-size: 15px; }
@@ -431,7 +430,7 @@
 .mlp-card {
   width: min(460px, 100%); text-align: center;
   padding: 36px 30px; border-radius: var(--r-xl);
-  background: var(--card); border: 2px solid var(--border);
+  background: var(--card); border: 1px solid var(--border);
   box-shadow: var(--pop);
 }
 .mlp-mark {
@@ -440,7 +439,7 @@
   background: linear-gradient(160deg, var(--green-hi), var(--green-dark));
   box-shadow: 0 4px 0 #2f7a06;
 }
-.mlp-card h1 { font-family: var(--font); font-size: 25px; font-weight: 900; letter-spacing: -.03em; margin: 0 0 8px; }
+.mlp-card h1 { font-family: var(--font); font-size: 25px; font-weight: 700; letter-spacing: -.03em; margin: 0 0 8px; }
 .mlp-card p { font-size: 14.5px; line-height: 1.6; color: var(--text-2); margin: 0 0 18px; }
 .mlp-terms { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 20px; }
 .mlp-from { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 18px; }
@@ -460,8 +459,7 @@
    the change pills are styled here as well as there. */
 .whats-new-list .cl-kind {
   flex-shrink: 0;
-  font-size: 10.5px; font-weight: 800; letter-spacing: .05em;
-  text-transform: uppercase;
+  font-size: 12.5px; font-weight: 800; letter-spacing: 0;
   padding: 3px 8px; border-radius: var(--r-pill);
   margin-top: 2px; min-width: 62px; text-align: center;
   background: var(--surface-2); color: var(--text-2);

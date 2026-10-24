@@ -62,9 +62,9 @@ export const BLOCK_TYPES = {
     sub: 'Who is ahead this season'
   },
   duels: {
-    name: 'Duels', icon: 'swords', tint: 'var(--blue-soft)',
-    desc: 'One-on-one chess with clocks and Glicko-2 ratings — play the club or the world, and watch live games.',
-    sub: 'Play 1v1 and watch live games'
+    name: 'Play', icon: 'swords', tint: 'var(--blue-soft)',
+    desc: 'Live 1v1 chess with clocks and ratings. Play clubmates or anyone on JagChess, and watch games as they happen.',
+    sub: 'Games against clubmates and anyone on JagChess'
   },
   tournaments: {
     name: 'Tournaments', icon: 'tournament', tint: 'var(--purple-soft)',
@@ -121,7 +121,6 @@ const TAGS = ['classic', 'tournament', 'practice', 'meeting', 'lesson', 'match']
 async function renderEvents(ctx, host, api) {
   const isAdmin = ctx.isAdmin;
   let events = [];
-  let editingId = null;
   let month = new Date();
 
   host.innerHTML = `
@@ -137,24 +136,6 @@ async function renderEvents(ctx, host, api) {
         <div class="calendar-grid" id="cal-grid"></div>
       </div>
       <div class="events-side-col">
-        ${isAdmin ? `
-        <div class="tile">
-          <h3 id="ev-form-title">Add event</h3>
-          <div class="form-inline">
-            <input id="ev-title" placeholder="Title" />
-            <div class="row"><input id="ev-date" type="date" /><input id="ev-time" type="time" /></div>
-            <select id="ev-tag">${TAGS.map((t) => `<option value="${t}">${t[0].toUpperCase() + t.slice(1)}</option>`).join('')}</select>
-            <textarea id="ev-desc" rows="2" placeholder="Short description"></textarea>
-            <div style="display:flex;align-items:center;gap:10px">
-              <input id="ev-dur" type="number" min="5" value="30" style="flex:1" />
-              <span style="font-size:13px;color:var(--muted)">minutes</span>
-            </div>
-            <div class="row">
-              <button class="btn primary" id="ev-save">Add event</button>
-              <button class="btn subtle" id="ev-cancel" hidden>Cancel</button>
-            </div>
-          </div>
-        </div>` : ''}
         <div id="cal-sync"></div>
         <div class="tile events-side">
           <div class="events-side-header"><h3>Upcoming</h3><span class="muted" id="ev-range"></span></div>
@@ -167,7 +148,7 @@ async function renderEvents(ctx, host, api) {
     <div class="tile" style="margin-top:16px">
       <h3>Attendance</h3>
       <p class="muted" style="font-size:13.5px;margin:-6px 0 14px">Pick an event to set its reward, add questions, and read who checked in.</p>
-      <select id="att-event"><option value="">— Select an event —</option></select>
+      <select id="att-event"><option value="">Choose an event</option></select>
       <div id="att-panel" hidden style="margin-top:20px"></div>
     </div>` : ''}`;
 
@@ -196,7 +177,7 @@ async function renderEvents(ctx, host, api) {
       const outside = d.getMonth() !== month.getMonth();
       const dayEvents = shown().filter((e) => new Date(e.date).toDateString() === d.toDateString());
       if (i >= 35 && !dayEvents.length && outside) continue;
-      html += `<div class="day-cell${outside ? ' is-outside' : ''}${d.toDateString() === today ? ' is-today' : ''}">
+      html += `<div class="day-cell${outside ? ' is-outside' : ''}${d.toDateString() === today ? ' is-today' : ''}" data-day="${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}">
         <div class="day-num">${d.getDate()}</div>
         <div class="day-events">${dayEvents.map((e) =>
           `<button class="event-pill tag-${esc(e.tag || 'classic')}${e.source === 'google' ? ' from-google' : ''}" data-ev="${esc(e.id)}"
@@ -232,9 +213,9 @@ async function renderEvents(ctx, host, api) {
     const sel = host.querySelector('#att-event');
     if (!sel) return;
     const cur = sel.value;
-    sel.innerHTML = '<option value="">— Select an event —</option>' +
+    sel.innerHTML = '<option value="">Choose an event</option>' +
       events.slice().reverse().map((e) =>
-        `<option value="${esc(e.id)}">${esc(e.title)} · ${fmtDate(e.date)}</option>`).join('');
+        `<option value="${esc(e.id)}">${esc(e.title)}, ${fmtDate(e.date)}</option>`).join('');
     sel.value = cur;
   };
 
@@ -251,7 +232,7 @@ async function renderEvents(ctx, host, api) {
         <button class="icon-btn modal-close" data-x>✕</button>
         <div class="modal-tag"><span class="tag-badge tag-${esc(e.tag || 'classic')}">${esc(e.tag || 'classic')}</span></div>
         <h3>${esc(e.title)}</h3>
-        <div class="modal-meta">${fmtDate(e.date, { weekday: 'long', month: 'long', day: 'numeric' })} · ${fmtTime(e.date)} · ${e.durationMin || 30} min</div>
+        <div class="modal-meta">${fmtDate(e.date, { weekday: 'long', month: 'long', day: 'numeric' })}, ${fmtTime(e.date)}, ${e.durationMin || 30} minutes</div>
         <p>${esc(e.desc || 'No description.')}</p>
         ${live ? '<div class="live-chip">● Happening now</div>' : ''}
         ${e.source === 'google' ? `<p class="field-hint">From the connected Google Calendar.
@@ -280,64 +261,160 @@ async function renderEvents(ctx, host, api) {
     };
   }
 
-  function startEdit(e) {
-    editingId = e.id;
-    host.querySelector('#ev-form-title').textContent = 'Edit event';
-    host.querySelector('#ev-title').value = e.title || '';
-    const d = new Date(e.date);
-    host.querySelector('#ev-date').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    host.querySelector('#ev-time').value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    const tagSel = host.querySelector('#ev-tag');
-    tagSel.value = e.tag || 'classic';
-    tagSel.dispatchEvent(new Event('change', { bubbles: true }));
-    host.querySelector('#ev-desc').value = e.desc || '';
-    host.querySelector('#ev-dur').value = e.durationMin || 30;
-    host.querySelector('#ev-save').textContent = 'Save changes';
-    host.querySelector('#ev-cancel').hidden = false;
-    host.querySelector('#ev-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+  /* ── the event editor ────────────────────────────────────────────────
+     A sheet that opens when it's wanted, rather than a form that sits on
+     the page all the time. Creating one can repeat it weekly, because most
+     clubs meet on the same day every week and typing that in eight times is
+     how a calendar ends up empty.
+     ─────────────────────────────────────────────────────────────────── */
 
-  function clearForm() {
-    editingId = null;
-    ['#ev-title', '#ev-desc'].forEach((s) => (host.querySelector(s).value = ''));
-    host.querySelector('#ev-date').value = '';
-    host.querySelector('#ev-time').value = '';
-    host.querySelector('#ev-dur').value = 30;
-    host.querySelector('#ev-form-title').textContent = 'Add event';
-    host.querySelector('#ev-save').textContent = 'Add event';
-    host.querySelector('#ev-cancel').hidden = true;
+  const LENGTHS = [30, 45, 60, 90, 120, 180];
+  const pad = (n) => String(n).padStart(2, '0');
+  const dayStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  function startEdit(e) { openEditor(e); }
+
+  function openEditor(e, onDay) {
+    const editing = !!e;
+    const d = e ? new Date(e.date) : null;
+    const date = d ? dayStr(d) : onDay || dayStr(new Date());
+    const time = d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : (e && e.time) || '15:30';
+    const len = (e && e.durationMin) || 60;
+    let tag = (e && e.tag) || 'meeting';
+
+    const sheet = el(`<div class="modal">
+      <div class="modal-card ev-editor">
+        <button class="icon-btn modal-close" data-x aria-label="Close">✕</button>
+        <h3>${editing ? 'Edit event' : 'New event'}</h3>
+        <input id="ed-title" class="ev-title-input" placeholder="Club meeting" maxlength="80" value="${esc((e && e.title) || '')}" />
+        <div class="ev-when">
+          <label>Day<input id="ed-date" type="date" value="${date}" /></label>
+          <label>Starts<input id="ed-time" type="time" value="${time}" /></label>
+          <label>Length<select id="ed-len">${LENGTHS.map((m) => `<option value="${m}"${m === len ? ' selected' : ''}>${m < 60 ? m + ' min' : (m / 60) + (m === 60 ? ' hour' : ' hours')}</option>`).join('')}${LENGTHS.includes(len) ? '' : `<option value="${len}" selected>${len} min</option>`}</select></label>
+        </div>
+        <div class="ev-kind">
+          <span>What kind</span>
+          <div class="ev-tags">${TAGS.map((t) => `<button type="button" class="ev-tag tag-${t}${t === tag ? ' on' : ''}" data-tag="${t}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div>
+        </div>
+        <textarea id="ed-desc" rows="3" placeholder="What to bring, which room, anything people should know">${esc((e && e.desc) || '')}</textarea>
+        ${editing ? '' : `
+        <div class="ev-repeat-box">
+          <button type="button" class="ev-repeat" id="ed-repeat" aria-pressed="false">
+            <span><b>Repeat every week</b><small id="ed-repeat-hint">Off. Just this one date.</small></span>
+            <i class="switch" aria-hidden="true"></i>
+          </button>
+          <div class="ev-weeks" id="ed-weeks" hidden>
+            <span>For</span>${[4, 8, 12, 16].map((n) => `<button type="button" class="ev-tag${n === 8 ? ' on' : ''}" data-weeks="${n}">${n} weeks</button>`).join('')}
+          </div>
+        </div>`}
+        <div class="modal-actions ev-actions">
+          ${editing ? '<button class="btn ghost" data-delete>Delete</button>' : ''}
+          <div class="spacer"></div>
+          <button class="btn subtle" data-x>Cancel</button>
+          <button class="btn primary" data-save>${editing ? 'Save changes' : 'Add to calendar'}</button>
+        </div>
+      </div></div>`);
+    document.body.appendChild(sheet);
+    const q = (sel) => sheet.querySelector(sel);
+    const close = () => sheet.remove();
+    sheet.querySelectorAll('[data-x]').forEach((b) => (b.onclick = close));
+    sheet.onclick = (ev) => { if (ev.target === sheet) close(); };
+    setTimeout(() => q('#ed-title').focus(), 60);
+
+    q('.ev-tags').onclick = (ev) => {
+      const b = ev.target.closest('[data-tag]');
+      if (!b) return;
+      tag = b.dataset.tag;
+      sheet.querySelectorAll('.ev-tag').forEach((x) => x.classList.toggle('on', x === b));
+    };
+
+    let repeat = false;
+    let weeks = 8;
+    const rep = q('#ed-repeat');
+    if (rep) {
+      q('#ed-weeks').onclick = (ev) => {
+        const b = ev.target.closest('[data-weeks]');
+        if (!b) return;
+        weeks = +b.dataset.weeks;
+        sheet.querySelectorAll('[data-weeks]').forEach((x) => x.classList.toggle('on', x === b));
+      };
+      const paintRepeat = () => {
+        rep.classList.toggle('on', repeat);
+        rep.parentElement.classList.toggle('on', repeat);
+        rep.setAttribute('aria-pressed', repeat);
+        q('#ed-weeks').hidden = !repeat;
+        const wd = new Date(q('#ed-date').value + 'T12:00').toLocaleDateString(undefined, { weekday: 'long' });
+        q('#ed-repeat-hint').textContent = repeat ? `Every ${wd}, starting on the day above.` : 'Off. Just this one date.';
+      };
+      rep.onclick = () => { repeat = !repeat; paintRepeat(); };
+      q('#ed-date').onchange = paintRepeat;
+    }
+
+    const del = q('[data-delete]');
+    if (del) del.onclick = async () => {
+      close();
+      if (!await confirmDialog({ title: 'Delete this event?', body: `"${e.title}" will be removed for everyone.`, confirmText: 'Delete', danger: true })) return;
+      if (sync) await sync.removeOne(e);
+      await deleteDoc(clubDoc(ctx.clubId, 'events', e.id));
+      await dropPublicAttendance(ctx.clubId, e.id);
+      toast('Event deleted');
+    };
+
+    q('[data-save]').onclick = async () => {
+      const title = q('#ed-title').value.trim();
+      const day = q('#ed-date').value;
+      const at = q('#ed-time').value || '00:00';
+      if (!title) { toast('Give the event a name', 'error'); q('#ed-title').focus(); return; }
+      if (!day) { toast('Pick a day', 'error'); return; }
+      const base = {
+        title,
+        desc: q('#ed-desc').value.trim(),
+        time: at,
+        tag,
+        durationMin: Math.max(5, parseInt(q('#ed-len').value, 10) || 60),
+        updatedAt: Date.now()
+      };
+      const btn = q('[data-save]');
+      btn.disabled = true;
+      try {
+        if (editing) {
+          const payload = { ...base, date: new Date(`${day}T${at}`).getTime() };
+          await updateDoc(clubDoc(ctx.clubId, 'events', e.id), payload);
+          if (sync) sync.pushOne({ ...e, ...payload }).catch((err) => console.warn('calendar push', err));
+          toast('Event updated', 'ok');
+        } else {
+          const count = repeat ? weeks : 1;
+          const first = new Date(`${day}T${at}`);
+          for (let i = 0; i < count; i++) {
+            const when = new Date(first);
+            when.setDate(first.getDate() + i * 7);
+            const payload = { ...base, date: when.getTime(), createdAt: Date.now() };
+            if (repeat) payload.series = `${first.getTime()}`;
+            const id = (await addDoc(clubCol(ctx.clubId, 'events'), payload)).id;
+            if (sync) sync.pushOne({ ...payload, id }).catch((err) => console.warn('calendar push', err));
+          }
+          toast(count > 1 ? `Added ${count} weekly events` : 'Event added', 'ok');
+        }
+        close();
+      } catch (err) {
+        console.error(err);
+        toast('Could not save the event', 'error');
+        btn.disabled = false;
+      }
+    };
   }
 
   if (isAdmin) {
-    host.querySelector('#ev-save').onclick = async () => {
-      const title = host.querySelector('#ev-title').value.trim();
-      const date = host.querySelector('#ev-date').value;
-      const time = host.querySelector('#ev-time').value || '00:00';
-      if (!title || !date) { toast('A title and date are required', 'error'); return; }
-      const payload = {
-        title,
-        desc: host.querySelector('#ev-desc').value.trim(),
-        date: new Date(`${date}T${time}`).getTime(),
-        time,
-        tag: host.querySelector('#ev-tag').value,
-        durationMin: Math.max(5, parseInt(host.querySelector('#ev-dur').value, 10) || 30),
-        updatedAt: Date.now()
-      };
-      try {
-        let id = editingId;
-        if (editingId) await updateDoc(clubDoc(ctx.clubId, 'events', editingId), payload);
-        else id = (await addDoc(clubCol(ctx.clubId, 'events'), { ...payload, createdAt: Date.now() })).id;
-        clearForm();
-        toast(editingId ? 'Event updated' : 'Event added', 'ok');
-        /* Firestore first, Google second, and a failed copy never fails the
-           save: the club's calendar is the one that has to be right. */
-        if (sync) {
-          const known = events.find((x) => x.id === id) || {};
-          sync.pushOne({ ...known, ...payload, id }).catch((err) => console.warn('calendar push', err));
-        }
-      } catch (e) { console.error(e); toast('Could not save the event', 'error'); }
-    };
-    host.querySelector('#ev-cancel').onclick = clearForm;
+    if (api && api.topbar) {
+      api.topbar.innerHTML = '<button class="btn primary sm" id="ev-new">New event</button>';
+      api.topbar.querySelector('#ev-new').onclick = () => openEditor();
+    }
+    // clicking an empty part of a day starts an event on that day
+    grid.addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-ev]')) return;
+      const cell = ev.target.closest('[data-day]');
+      if (cell) openEditor(null, cell.dataset.day);
+    });
     wireAttendanceAdmin(ctx, host, () => events);
   }
 
@@ -1006,7 +1083,7 @@ async function renderLeaderboard(ctx, host) {
       return `<div class="lb-row has-duel${me ? ' lb-row-me' : ''}">
         <span class="lb-col-rank ${medal}">${i + 1}</span>
         <span class="lb-col-player">
-          <span class="lb-avatar" style="background:${esc(m.avatarColor || '#1cb0f6')}">${esc(initials(m.username || m.email))}</span>
+          <span class="lb-avatar" style="background:${esc(m.avatarColor || '#2e90fa')}">${esc(initials(m.username || m.email))}</span>
           <span class="lb-player-info">
             <span class="lb-player-name">${esc(m.username || 'Player')}${me ? '<span class="lb-me-badge">You</span>' : ''}${isStaff(m.role) ? `<span class="role-pill ${esc(m.role)}" style="margin-left:8px">${esc(ROLE_LABEL[m.role])}</span>` : ''}</span>
             <span class="lb-player-email">${esc(m.email || '')}</span>
@@ -1428,7 +1505,7 @@ async function renderProfile(ctx, host) {
   host.innerHTML = `
     <div class="pf">
       <section class="tile pf-hero">
-        <div class="pf-avatar" id="pf-avatar" style="background:${esc(m.avatarColor || '#1cb0f6')}">${esc(initials(m.username))}</div>
+        <div class="pf-avatar" id="pf-avatar" style="background:${esc(m.avatarColor || '#2e90fa')}">${esc(initials(m.username))}</div>
         <div class="pf-id">
           <h2 id="pf-name">${esc(m.username || 'Player')}</h2>
           <div class="pf-mail">${esc(m.email || ctx.user.email || '')}</div>
@@ -1491,7 +1568,7 @@ async function renderProfile(ctx, host) {
       </section>
     </div>`;
 
-  let color = m.avatarColor || '#1cb0f6';
+  let color = m.avatarColor || '#2e90fa';
   const palette = host.querySelector('#pf-palette');
   palette.innerHTML = CLUB_COLORS.map((c) =>
     `<button class="pf-swatch${c === color ? ' on' : ''}" style="background:${c}" data-c="${c}" aria-label="${c}"></button>`).join('');
@@ -1697,7 +1774,7 @@ async function renderMembers(ctx, host) {
       const manageable = m.uid !== ctx.user.uid && canModerate(myRole, role);
       return `<div class="user-row">
         <div class="user-rank${i === 0 ? ' top' : ''}">${i + 1}</div>
-        <div class="user-avatar-circle" style="background:${esc(m.avatarColor || '#1cb0f6')}">${esc(initials(m.username || m.email))}</div>
+        <div class="user-avatar-circle" style="background:${esc(m.avatarColor || '#2e90fa')}">${esc(initials(m.username || m.email))}</div>
         <div class="user-info">
           <div class="user-uid">${esc(m.username || 'Player')}
             <span class="role-pill ${esc(role)}">${esc(ROLE_LABEL[role] || 'Student')}</span></div>
@@ -1727,7 +1804,7 @@ async function renderMembers(ctx, host) {
       <button class="icon-btn modal-close" data-x>✕</button>
       <h3>${isMe ? 'Your membership' : 'Manage member'}</h3>
       <div class="manage-user-head">
-        <div class="user-avatar-circle" style="width:52px;height:52px;font-size:17px;background:${esc(m.avatarColor || '#1cb0f6')}">${esc(initials(m.username || m.email))}</div>
+        <div class="user-avatar-circle" style="width:52px;height:52px;font-size:17px;background:${esc(m.avatarColor || '#2e90fa')}">${esc(initials(m.username || m.email))}</div>
         <div><div style="font-family:var(--font);font-size:16px;font-weight:800">${esc(m.username || 'Player')}
             <span class="role-pill ${esc(role)}">${esc(ROLE_LABEL[role])}</span></div>
           <div style="font-size:12.5px;color:var(--muted)">${esc(m.email || '')}</div></div>
@@ -1938,7 +2015,7 @@ async function openTransfer(ctx) {
       ${esc(ctx.club.name || 'this club')}. You stay on as an admin.</p>
     <div class="tr-list">${people.length ? people.map((m) => `
       <button class="tr-row" data-uid="${esc(m.id)}" data-role="${esc(m.role || 'student')}" data-name="${esc(m.username || m.email || 'Member')}">
-        <span class="user-avatar-circle" style="background:${esc(m.avatarColor || '#1cb0f6')}">${esc(initials(m.username || m.email))}</span>
+        <span class="user-avatar-circle" style="background:${esc(m.avatarColor || '#2e90fa')}">${esc(initials(m.username || m.email))}</span>
         <span class="tr-info">
           <span class="tr-name">${esc(m.username || 'Player')}</span>
           <span class="tr-mail">${esc(m.email || '')}</span>
@@ -2122,86 +2199,101 @@ function wireClubPhoto(ctx, host) {
   }
 }
 
-async function renderSettings(ctx, host) {
+async function renderSettings(ctx, host, api, startTab) {
   const c = ctx.club;
+  const founder = ctx.member.role === 'founder';
+  const isPrivate = c.visibility === 'private';
   host.innerHTML = `
-    <div class="settings-grid">
-      <div class="tile">
-        <h3>Club details</h3>
-        <div class="form-inline">
-          ${ctx.member.role === 'founder' ? `
-          <div>
-            <label>Club picture</label>
+    <div class="se">
+      <div class="seg se-tabs" id="se-tabs" role="tablist">
+        <button class="seg-btn on" data-tab="club" role="tab">Club</button>
+        <button class="seg-btn" data-tab="join" role="tab">Joining</button>
+        <button class="seg-btn" data-tab="form" role="tab">Sign-up form</button>
+        <button class="seg-btn" data-tab="owner" role="tab">Ownership</button>
+      </div>
+
+      <section class="se-pane on" data-pane="club">
+        <div class="tile se-group">
+          ${founder ? `
+          <div class="se-row se-row-photo">
+            <div class="se-label"><b>Picture</b><small>A logo or team photo. Any shape works.</small></div>
             <div class="se-photo">
               <span class="se-photo-now" data-preview>${clubAvatar(c, 'club-avatar lg')}</span>
               <div class="se-photo-tools">
-                <button class="btn subtle sm" type="button" data-pick>
-                  ${clubPhoto(c) ? 'Change picture' : 'Upload a picture'}</button>
-                ${clubPhoto(c)
-                  ? '<button class="btn subtle sm" type="button" data-drop>Remove</button>'
-                  : ''}
+                <button class="btn subtle sm" type="button" data-pick>${clubPhoto(c) ? 'Change picture' : 'Upload a picture'}</button>
+                ${clubPhoto(c) ? '<button class="btn subtle sm" type="button" data-drop>Remove</button>' : ''}
                 <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden data-file />
-                <p class="field-hint" data-photo-note>Any shape works — the whole picture is
-                  kept, and whatever is left of the square stays clear.</p>
+                <p class="field-hint" data-photo-note></p>
               </div>
             </div>
           </div>
-
-          <div>
-            <label>Badge</label>
-            <p class="field-hint" style="margin:-2px 0 10px">
-              ${clubPhoto(c)
-                ? 'What the club shows if the picture is ever removed.'
-                : 'What the club shows everywhere, until you give it a picture.'}
-            </p>
-            <div class="icon-picker" data-icons></div>
-            <div class="color-picker" style="margin-top:10px" data-colors></div>
+          <div class="se-row">
+            <div class="se-label"><b>Badge and colour</b><small>${clubPhoto(c) ? 'Shown if the picture is ever removed.' : 'Shown everywhere until you add a picture.'}</small></div>
+            <div><div class="icon-picker" data-icons></div><div class="color-picker" style="margin-top:12px" data-colors></div></div>
           </div>` : ''}
-          <div><label>Name</label><input id="se-name" value="${esc(c.name || '')}" /></div>
-          <div><label>Description</label><textarea id="se-desc" rows="3">${esc(c.description || '')}</textarea></div>
-          <div><label>Web address</label>
-            <div class="domain-preview"><span class="domain-fixed">${esc(location.host)}/clubs/</span><span class="domain-slug">${esc(c.slug || c.id)}</span></div>
-            <p class="field-hint">The address is fixed once the club is created, so member links never break.</p>
+          <div class="se-row">
+            <label class="se-label" for="se-name"><b>Name</b></label>
+            <input id="se-name" value="${esc(c.name || '')}" maxlength="60" />
           </div>
-          <div><label>Who can join?</label>
-            <div class="seg-choice" id="se-vis">
-              <button class="seg-opt${c.visibility !== 'private' ? ' on' : ''}" data-v="public"><span><b>Public</b><small>Listed and open to anyone</small></span></button>
-              <button class="seg-opt${c.visibility === 'private' ? ' on' : ''}" data-v="private"><span><b>Private</b><small>Join code required</small></span></button>
+          <div class="se-row">
+            <label class="se-label" for="se-desc"><b>Description</b><small>One or two lines. Shown on the home page and in search.</small></label>
+            <textarea id="se-desc" rows="3" maxlength="240">${esc(c.description || '')}</textarea>
+          </div>
+          <div class="se-row">
+            <div class="se-label"><b>Web address</b><small>Fixed, so links people have saved keep working.</small></div>
+            <div class="domain-preview"><span class="domain-fixed">${esc(location.host)}/clubs/</span><span class="domain-slug">${esc(c.slug || c.id)}</span></div>
+          </div>
+          <div class="se-foot"><button class="btn primary" id="se-save">Save changes</button></div>
+        </div>
+      </section>
+
+      <section class="se-pane" data-pane="join">
+        <div class="tile se-group">
+          <button class="se-toggle${isPrivate ? '' : ' on'}" id="se-vis" aria-pressed="${!isPrivate}">
+            <span><b>Anyone with the link can join</b>
+            <small>${isPrivate ? 'Off. People need the join code, and the club is hidden from search.' : 'On. The club is listed so students can find it and join in one tap.'}</small></span>
+            <i class="switch${isPrivate ? '' : ' on'}" aria-hidden="true"></i>
+          </button>
+          <div class="se-row">
+            <div class="se-label"><b>Join code</b><small>Students type this at ${esc(location.host)}/clubs to join.</small></div>
+            <div class="code-row">
+              <div class="code-display" id="se-code">${esc(c.code || '------')}</div>
+              <button class="btn subtle sm" id="se-copy">Copy</button>
+              <button class="btn subtle sm" id="se-regen">New code</button>
             </div>
           </div>
-          <div><button class="btn primary" id="se-save">Save changes</button></div>
+          <div class="se-foot"><button class="btn primary" id="se-share">Invite link, QR code and message</button></div>
         </div>
-      </div>
+      </section>
 
-      <div class="tile">
-        <h3>Join code</h3>
-        <p class="muted" style="font-size:13.5px;margin:-6px 0 14px">Share this with people you want in the club.</p>
-        <div class="code-row">
-          <div class="code-display" id="se-code">${esc(c.code || '——————')}</div>
-          <button class="btn subtle sm" id="se-copy">Copy</button>
-          <button class="btn subtle sm" id="se-regen">Regenerate</button>
+      <section class="se-pane" data-pane="form">
+        <div id="se-registration"></div>
+      </section>
+
+      <section class="se-pane" data-pane="owner">
+        <div class="tile se-group">
+          ${founder ? `
+          <div class="se-row">
+            <div class="se-label"><b>Hand the club over</b><small>Someone else becomes founder, and you become an admin.</small></div>
+            <div><button class="btn subtle" id="se-transfer">Transfer ownership</button></div>
+          </div>` : ''}
+          <div class="se-row">
+            <div class="se-label"><b>Delete this club</b><small>Removes it for every member, with its events, puzzles and news. This can't be undone.</small></div>
+            <div><button class="btn danger" id="se-delete">Delete club</button></div>
+          </div>
         </div>
-        <button class="btn primary block" id="se-share" style="margin-top:12px">Invite link & QR code</button>
-        <p class="field-hint" style="margin-top:8px">
-          ${c.visibility === 'private'
-            ? 'This club is private, so only admins can see the invite link and QR code.'
-            : 'This club is public, so any member can share its invite link and QR code.'}
-        </p>
+      </section>
+    </div>`;
 
-        ${ctx.member.role === 'founder' ? `
-        <h3 style="margin-top:26px">Ownership</h3>
-        <p class="muted" style="font-size:13.5px;margin:-6px 0 14px">
-          You are the founder of ${esc(c.name || 'this club')}. Handing it over makes someone else
-          founder and drops you to admin.</p>
-        <button class="btn subtle" id="se-transfer">Transfer ownership…</button>` : ''}
-
-        <h3 style="margin-top:26px">Danger zone</h3>
-        <p class="muted" style="font-size:13.5px;margin:-6px 0 14px">Deleting a club removes it for every member. This can't be undone.</p>
-        <button class="btn danger" id="se-delete">Delete this club</button>
-      </div>
-    </div>
-
-    <div id="se-registration"></div>`;
+  const showTab = (t) => {
+    host.querySelectorAll('#se-tabs [data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
+    host.querySelectorAll('.se-pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === t));
+  };
+  host.querySelector('#se-tabs').onclick = (e) => {
+    const b = e.target.closest('[data-tab]');
+    if (b) showTab(b.dataset.tab);
+  };
+  if (startTab) showTab(startTab);
 
   /* The registration form is its own box under the two above: it is the one
      part of club settings aimed at people who are not members yet. */
@@ -2214,22 +2306,26 @@ async function renderSettings(ctx, host) {
   const badge = wireClubBadge(ctx, host);
 
   let visibility = c.visibility || 'public';
-  host.querySelector('#se-vis').onclick = (e) => {
-    const b = e.target.closest('[data-v]');
-    if (!b) return;
-    visibility = b.dataset.v;
-    host.querySelectorAll('#se-vis .seg-opt').forEach((o) => o.classList.toggle('on', o === b));
+  /* The switch saves itself: it is one decision, not part of a form. */
+  host.querySelector('#se-vis').onclick = async () => {
+    const next = visibility === 'private' ? 'public' : 'private';
+    try {
+      await updateDoc(clubRef(ctx.clubId), { visibility: next });
+      ctx.club.visibility = next;
+      visibility = next;
+      await syncPublicClub(ctx.club);
+      toast(next === 'public' ? 'Anyone with the link can join now' : 'The club now needs a join code', 'ok');
+      renderSettings(ctx, host, api, 'join');
+    } catch (e) { console.error(e); toast('Could not change that', 'error'); }
   };
 
   host.querySelector('#se-save').onclick = async () => {
     const btn = host.querySelector('#se-save');
-    const wasPrivate = (ctx.club.visibility || 'public') === 'private';
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
       const patch = {
         name: host.querySelector('#se-name').value.trim() || c.name,
         description: host.querySelector('#se-desc').value.trim(),
-        visibility,
         ...badge.value()
       };
       await updateDoc(clubRef(ctx.clubId), patch);
@@ -2241,12 +2337,6 @@ async function renderSettings(ctx, host) {
 
       toast('Club updated', 'ok');
 
-      // the registration box is editable in one of those states and not the
-      // other, so the page has to be redrawn when that flips
-      if (wasPrivate !== (visibility === 'private')) {
-        renderSettings(ctx, host);
-        return;
-      }
     } catch (e) { console.error(e); toast('Could not save', 'error'); }
     btn.disabled = false; btn.textContent = 'Save changes';
   };
@@ -2291,7 +2381,7 @@ async function renderSettings(ctx, host) {
       console.error(e);
       toast('Could not delete the club', 'error');
       btn.disabled = false;
-      btn.textContent = 'Delete this club';
+      btn.textContent = 'Delete club';
     }
   };
 

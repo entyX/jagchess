@@ -1,0 +1,13 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/m/**", "destination": "/match.html" },
+    { "source": "/admin", "destination": "/admin/dashboard.html" },
+    { "source": "/student", "destination": "/student/dashboard.html" },
+    { "source": "/signup", "destination": "/login.html" },
+    { "source": "/clubs/:slug", "destination": "/club.html" },
+    { "source": "/tournaments/**", "destination": "/tournaments.html" },
+    { "source": "/players/**", "destination": "/tournaments.html" }
+  ]
+}

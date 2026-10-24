@@ -217,16 +217,17 @@ const out = await page.evaluate(async () => {
   // ── the badge behind it ───────────────────────────────────────────
   {
     say('there are plenty of glyphs to pick from', C.CLUB_ICONS.length >= 30, C.CLUB_ICONS.length);
-    say('and plenty of colours', C.CLUB_COLORS.length >= 18, C.CLUB_COLORS.length);
+    say('and enough colours to tell clubs apart', C.CLUB_COLORS.length >= 12, C.CLUB_COLORS.length);
     say('no glyph is listed twice', new Set(C.CLUB_ICONS).size === C.CLUB_ICONS.length);
     say('no colour is either', new Set(C.CLUB_COLORS).size === C.CLUB_COLORS.length);
     say('every colour is a hex value', C.CLUB_COLORS.every((c) => /^#[0-9a-f]{6}$/i.test(c)),
       C.CLUB_COLORS.filter((c) => !/^#[0-9a-f]{6}$/i.test(c)).join(','));
 
     /* The first of each is what a new club gets and what every fallback
-       reaches for, so appending must never reorder them. */
+       reaches for, so appending must never reorder them. The colour is the
+       brand green, which the fallbacks in club-core also use. */
     say('the original default is still first', C.CLUB_ICONS[0] === '♞', C.CLUB_ICONS[0]);
-    say('and so is the original colour', C.CLUB_COLORS[0] === '#58cc02', C.CLUB_COLORS[0]);
+    say('and the brand green leads the colours', C.CLUB_COLORS[0] === '#1faf5a', C.CLUB_COLORS[0]);
   }
 
   // ── the listing carries it ────────────────────────────────────────

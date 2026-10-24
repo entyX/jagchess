@@ -60,7 +60,7 @@ if (!linkId) {
         ${mark('♞')}
         <h1>${rejoined ? 'Back to your game' : 'Match accepted'}</h1>
         <div class="mlp-from">
-          <span class="lb-avatar" style="background:${esc(link.from.avatarColor || '#1cb0f6')}">${esc(initials(link.from.username))}</span>
+          <span class="lb-avatar" style="background:${esc(link.from.avatarColor || '#2e90fa')}">${esc(initials(link.from.username))}</span>
           <span><b>${esc(link.from.username)}</b></span>
         </div>
         <div class="mlp-terms">

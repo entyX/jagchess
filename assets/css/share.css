@@ -20,7 +20,7 @@
   padding: 12px;
   border-radius: var(--r-lg);
   background: #fff;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   box-shadow: var(--lift-card);
 }
 .share-qr svg { display: block; width: 100%; height: auto; }
@@ -33,19 +33,17 @@
   padding: 10px 16px;
   border-radius: var(--r-md);
   background: var(--surface-2);
-  border: 2px dashed var(--border-2);
+  border: 1px dashed var(--border-2);
 }
 .share-code span {
   font-family: var(--font-ui);
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 550;
   color: var(--muted);
 }
 .share-code b {
-  font-family: var(--font-mono);
-  font-size: 20px;
+  font-family: var(--font);
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: .16em;
   color: var(--text);
@@ -63,6 +61,23 @@
 
 .share-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .share-actions .btn { flex: 1; min-width: 110px; }
+
+/* ── the invite hub ─────────────────────────────────────────────────── */
+
+.share-hub { width: min(720px, 100%); gap: 14px; }
+.share-hint { margin: 0; color: var(--text-2); font-size: 14px; line-height: 1.5; }
+.share-hub-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
+.share-hub .share-qr { width: 100%; margin: 0; }
+.share-hub-side { display: grid; gap: 8px; }
+.share-hub-side .share-code { justify-content: space-between; margin-bottom: 6px; }
+.share-label { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 4px; }
+.share-hub textarea { font-size: 14px; line-height: 1.5; resize: vertical; }
+.share-hub .share-actions { justify-content: flex-start; margin-top: 4px; }
+.share-hub .share-actions .btn { flex: 0 0 auto; min-width: 0; }
+@media (max-width: 640px) {
+  .share-hub-body { grid-template-columns: 1fr; }
+  .share-hub .share-qr { width: min(220px, 70vw); margin: 0 auto; }
+}
 
 /* the topbar's invite button */
 .topbar-invite { flex-shrink: 0; }
@@ -101,8 +116,8 @@
 
 .att-prompt-event {
   font-family: var(--font);
-  font-size: 17px;
-  font-weight: 900;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--text);
   line-height: 1.25;
 }

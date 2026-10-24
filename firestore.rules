@@ -199,6 +199,9 @@ service cloud.firestore {
          member screen needs to know that. */
       match /integrations/{id}    { allow read, write: if isStaff(clubId); }
       match /announcements/{id}   { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
+      // pictures placed on the club home page, one per document so a few
+      // posters never push the club document past its size limit
+      match /media/{id}           { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
 
       /* ── puzzle collections ───────────────────────────────────────────
          The shelves. Staff decide what they are, who may put a puzzle on

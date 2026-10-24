@@ -39,10 +39,9 @@
 .stu .stu-hero-eyebrow {
   position: relative;
   font-family: var(--font-ui);
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 800;
-  letter-spacing: .14em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: rgba(255,255,255,0.72);
 }
 
@@ -50,7 +49,7 @@
   position: relative;
   font-family: var(--font);
   font-size: clamp(24px, 2.6vw, 32px);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.12;
   max-width: 22ch;
@@ -146,7 +145,7 @@
 .stu .stu-stat-num {
   font-family: var(--font);
   font-size: 30px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1;
   color: var(--text);
@@ -155,10 +154,9 @@
 
 .stu .stu-stat-label {
   font-family: var(--font-ui);
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: .09em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -176,7 +174,7 @@
   padding: 0 14px;
   border-radius: 999px;
   background: var(--orange-soft);
-  border: 2px solid rgba(255,150,0,0.28);
+  border: 1px solid rgba(255,150,0,0.28);
   white-space: nowrap;
 }
 
@@ -197,17 +195,16 @@
 .stu .stu-stk-num {
   font-family: var(--font);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--orange-dark);
   line-height: 1;
 }
 
 .stu .stu-stk-label {
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 12.5px;
   font-weight: 800;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--orange-dark);
   opacity: .8;
 }
@@ -215,7 +212,7 @@
 .stu .stu-stk-mult {
   font-family: var(--font);
   font-size: 11.5px;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--muted);
   background: rgba(0,0,0,0.05);
   border-radius: 999px;
@@ -238,7 +235,7 @@
   gap: 15px;
   padding: 17px 19px;
   background: var(--card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--lift-card);
   cursor: pointer;
@@ -302,7 +299,7 @@
   margin-bottom: 18px;
   flex-wrap: wrap;
 }
-.stu .points-heading { font-size: 26px; font-weight: 900; margin: 0 0 2px; }
+.stu .points-heading { font-size: 26px; font-weight: 700; margin: 0 0 2px; }
 
 .stu .cart-btn-wrap { position: relative; display: inline-block; }
 .stu .cart-badge {
@@ -317,7 +314,7 @@
   color: #fff;
   font-family: var(--font);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 700;
   display: grid;
   place-items: center;
   box-shadow: 0 2px 0 var(--red-dark);
@@ -349,7 +346,7 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--lift-card);
   transition: transform .18s var(--ease), border-color .18s, box-shadow .18s;
@@ -386,7 +383,7 @@
 .stu .shop-card-cost {
   font-family: var(--font);
   font-size: 17px;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--gold-dark);
 }
 .stu .shop-card-cost.low-pts { color: var(--muted); }
@@ -427,7 +424,7 @@
 .stu .qty-btn:hover:not(:disabled) { background: var(--green); color: #fff; }
 .stu .qty-btn:active:not(:disabled) { transform: scale(.92); }
 .stu .qty-btn:disabled { opacity: .35; cursor: default; box-shadow: none; }
-.stu .qty-num { font-family: var(--font); font-size: 14px; font-weight: 900; min-width: 20px; text-align: center; }
+.stu .qty-num { font-family: var(--font); font-size: 14px; font-weight: 700; min-width: 20px; text-align: center; }
 
 /* orders */
 .stu .my-order-row {
@@ -454,10 +451,9 @@
 .stu .order-pill {
   flex-shrink: 0;
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 12.5px;
   font-weight: 800;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   padding: 4px 10px;
   border-radius: 999px;
   white-space: nowrap;
@@ -488,7 +484,7 @@
 }
 .stu .cart-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .stu .cart-item-name { flex: 1; font-family: var(--font); font-size: 14.5px; font-weight: 800; }
-.stu .cart-item-cost { font-family: var(--font); font-size: 14.5px; font-weight: 900; color: var(--gold-dark); }
+.stu .cart-item-cost { font-family: var(--font); font-size: 14.5px; font-weight: 700; color: var(--gold-dark); }
 .stu .cart-item-remove {
   border: none;
   background: none;
@@ -506,9 +502,9 @@
   align-items: center;
   margin-top: 6px;
   padding-top: 14px;
-  border-top: 2px solid var(--border);
+  border-top: 1px solid var(--border);
   font-family: var(--font);
-  font-weight: 900;
+  font-weight: 700;
   font-size: 16px;
 }
 
@@ -540,24 +536,22 @@
   place-items: center;
   font-family: var(--font);
   font-size: 36px;
-  font-weight: 900;
+  font-weight: 700;
   color: #fff;
-  text-transform: uppercase;
   box-shadow: inset 0 -4px 0 rgba(0,0,0,0.16), 0 8px 22px -8px rgba(20,38,47,0.4);
   transition: background .24s var(--ease);
 }
 
-.stu .profile-hero-name { font-family: var(--font); font-size: 23px; font-weight: 900; color: var(--text); }
+.stu .profile-hero-name { font-family: var(--font); font-size: 23px; font-weight: 700; color: var(--text); }
 .stu .profile-hero-pts { font-size: 14px; color: var(--text-2); }
-.stu .profile-hero-pts strong { font-family: var(--font); font-size: 20px; font-weight: 900; color: var(--gold-dark); }
+.stu .profile-hero-pts strong { font-family: var(--font); font-size: 20px; font-weight: 700; color: var(--gold-dark); }
 
 .stu .profile-edit { display: grid; gap: 26px; }
 .stu .profile-edit-section-label {
   font-family: var(--font-ui);
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 800;
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--muted);
   margin-bottom: 12px;
 }
@@ -590,9 +584,9 @@
   gap: 16px;
   padding-bottom: 20px;
   margin-bottom: 22px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
-.stu .stu-att-event-title { font-family: var(--font); font-size: 21px; font-weight: 900; letter-spacing: -0.02em; }
+.stu .stu-att-event-title { font-family: var(--font); font-size: 21px; font-weight: 700; letter-spacing: -0.02em; }
 .stu .stu-att-event-meta { font-size: 13px; color: var(--text-2); margin-top: 4px; }
 
 .stu .stu-att-confirm-label {
@@ -602,7 +596,7 @@
   font-size: 15px;
   cursor: pointer;
   padding: 15px 17px;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
   transition: border-color .16s, background .16s;

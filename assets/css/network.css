@@ -3,7 +3,7 @@
    Builds on landing.css, which owns the palette, the shell and the buttons.
    ═══════════════════════════════════════════════════════════════════════ */
 
-.net-page { padding-top: 72px; }
+.net-page { padding-top: 0; }
 
 /* ── HERO ───────────────────────────────────────────────────────────── */
 
@@ -14,7 +14,7 @@
   border-bottom: 1px solid var(--border);
   overflow: hidden;
 }
-.net-hero::before {
+.net-hero::before { display: none;
   content: '';
   position: absolute;
   top: -180px;
@@ -36,7 +36,7 @@
   align-items: center;
   max-width: 620px;
   background: var(--card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: 0 4px 0 var(--border);
   transition: border-color .16s, box-shadow .16s;
@@ -93,7 +93,7 @@
 .net-stats b {
   font-family: var(--font);
   font-size: 19px;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--text);
   margin-right: 5px;
 }
@@ -111,7 +111,7 @@
   margin-top: 26px;
   padding: 14px 20px;
   border-radius: 16px;
-  border: 2px solid var(--green);
+  border: 1px solid var(--green);
   background: var(--green-soft);
   flex-wrap: wrap;
 }
@@ -151,7 +151,7 @@
 
 .net-sort { display: flex; gap: 6px; }
 .net-sort-opt {
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   background: var(--card);
   color: var(--text-2);
   border-radius: 11px;
@@ -177,7 +177,7 @@
   gap: 13px;
   padding: 22px;
   border-radius: 20px;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   background: var(--card);
   box-shadow: 0 4px 0 var(--border);
   cursor: pointer;
@@ -267,7 +267,7 @@
 .net-card-go {
   font-family: var(--font);
   font-size: 13.5px;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--green-dark);
 }
 
@@ -287,7 +287,7 @@
 .net-empty {
   text-align: center;
   padding: 70px 20px;
-  border: 2px dashed var(--border-2);
+  border: 1px dashed var(--border-2);
   border-radius: 22px;
 }
 .net-empty-art { font-size: 44px; margin-bottom: 10px; }
@@ -317,7 +317,7 @@
   width: min(1120px, 100%);
   background: var(--card);
   border-radius: 26px;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   box-shadow: 0 30px 80px rgba(10, 32, 42, .3);
   overflow: hidden;
   animation: net-rise .26s var(--ease) both;
@@ -332,7 +332,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   background: var(--card);
   color: var(--text-2);
   font-size: 14px;
@@ -399,7 +399,7 @@
   display: block;
   font-family: var(--font);
   font-size: 21px;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--text);
   line-height: 1.1;
 }
@@ -407,9 +407,8 @@
 
 .cm-section { margin-top: 24px; }
 .cm-section h4 {
-  font-size: 12px;
-  letter-spacing: .09em;
-  text-transform: uppercase;
+  font-size: 12.5px;
+  letter-spacing: 0;
   color: var(--muted);
   margin-bottom: 11px;
 }
@@ -434,7 +433,7 @@
   margin-top: 24px;
   padding: 16px 18px;
   border-radius: 17px;
-  border: 2px solid var(--green);
+  border: 1px solid var(--green);
   background: var(--green-soft);
 }
 .cm-pitch-mark {
@@ -464,7 +463,7 @@
 
 .cm-panel {
   background: var(--card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 19px;
   padding: 22px;
 }
@@ -490,7 +489,7 @@
   background: var(--green);
   color: #fff;
   font-size: 27px;
-  font-weight: 900;
+  font-weight: 700;
   box-shadow: 0 4px 0 var(--green-dark);
 }
 .cm-done-next {
@@ -515,7 +514,7 @@
   width: min(460px, 100%);
   padding: 34px 30px 28px;
   border-radius: 24px;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   background: var(--card);
   box-shadow: 0 30px 80px rgba(10, 32, 42, .3);
   text-align: center;
@@ -533,7 +532,7 @@
   background: var(--green);
   color: #fff;
   font-size: 27px;
-  font-weight: 900;
+  font-weight: 700;
   box-shadow: 0 4px 0 var(--green-dark);
 }
 
@@ -614,7 +613,7 @@
 }
 
 @media (max-width: 720px) {
-  .net-page { padding-top: 66px; }
+  .net-page { padding-top: 0; }
   .net-hero { padding: 40px 0 34px; }
   .net-modal { padding: 14px 10px; }
   .net-pitch { gap: 12px; padding: 14px 16px; }

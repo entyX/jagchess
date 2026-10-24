@@ -7,8 +7,9 @@ import {
   auth, db, requireUser, currentUser, signOut, joinClub, syncPublicClub, syncMemberEmails,
   doc, getDoc, getDocs, setDoc, updateDoc, onSnapshot, clubCol,
   clubRef, memberRef, initials, esc, toast, confirmDialog, promptDialog, ROLE_LABEL,
-  clubAvatar
+  clubAvatar, myClubs, openMenu, query, limit
 } from './club-core.js';
+import { toggleTheme, currentTheme } from './theme.js';
 
 import { BLOCK_TYPES, renderBlock } from './club-blocks.js';
 import { renderDashboard } from './club-dash.js';
@@ -44,6 +45,10 @@ export const ctx = {
   member: null,
   isStaff: false,
   mode: 'admin',      // 'admin' | 'member' (staff only)
+  /* Arranging the home page is something an admin chooses to do, not the
+     state the page is always in — otherwise an admin never once sees the
+     page their members see. */
+  editing: false,
   page: 'dashboard',
   cleanup: null,
   get isAdmin() { return this.isStaff && this.mode !== 'member'; }
@@ -111,6 +116,12 @@ let myGame = null;
      member, so the index is corrected on the spot. */
   syncClubIndex(slug, ctx.member.role);
 
+  /* When you were last here, for the "active this week" count on Insights.
+     A few times a day at most: it is a rough signal, not a log. */
+  if (!ctx.member.lastSeenAt || Date.now() - ctx.member.lastSeenAt > 6 * 3600e3) {
+    updateDoc(memberRef(slug, ctx.user.uid), { lastSeenAt: Date.now() }).catch(() => {});
+  }
+
   $('club-boot').hidden = true;
   $('sidebar').hidden = false;
   $('app-main').hidden = false;
@@ -120,6 +131,7 @@ let myGame = null;
   buildNav();
   wireChrome();
   document.body.classList.toggle('is-editor', ctx.isAdmin);
+  paintSetup();
 
   // your own member row drives the header chips and your club rating, so it
   // stays live rather than being read once at boot
@@ -160,11 +172,17 @@ let myGame = null;
     ctx.club = next;
     paintIdentity();
     if (navChanged) buildNav();
+    paintSetup();
   });
 
   if (params.get('welcome') === '1') {
-    toast('Club created — you\'re the founder ♞', 'ok');
     history.replaceState({}, '', location.pathname);
+    import('./club-welcome.js')
+      .then((m) => m.showClubWelcome(ctx))
+      .catch((e) => { console.warn(e); toast('Your club is ready', 'ok'); });
+  } else {
+    // the first time anyone opens this club on this device, show them round
+    import('./tour.js').then((m) => m.maybeRunClubTour(ctx)).catch(() => {});
   }
 
   route(location.hash.replace(/^#/, '') || 'dashboard');
@@ -291,16 +309,18 @@ function paintIdentity() {
   paintClubAvatar($('club-icon'), c);
   $('club-name').textContent = c.name || c.id;
   $('club-name').title = c.name || c.id;
+  const count = c.memberCount || 1;
   $('club-role').textContent = ctx.mode === 'member'
-    ? 'Student view'
-    : (ROLE_LABEL[ctx.member.role] || 'Member');
+    ? 'Previewing as a student'
+    : `${ROLE_LABEL[ctx.member.role] || 'Member'}, ${count} ${count === 1 ? 'member' : 'members'}`;
+  $('mode-switch').classList.toggle('on', ctx.mode === 'member');
 
   const name = ctx.member.username || (ctx.user.email || '').split('@')[0];
   $('me-name').textContent = name;
   $('me-email').textContent = ctx.user.email || '';
   const av = $('me-avatar');
   av.textContent = initials(name);
-  av.style.background = ctx.member.avatarColor || '#1cb0f6';
+  av.style.background = ctx.member.avatarColor || '#2e90fa';
 
   // a private club's link carries its join code, so only admins may hand it out
   $('invite-btn').hidden = !canShareClub(ctx);
@@ -332,15 +352,14 @@ function paintStats() {
 
 /* ═══ navigation ═════════════════════════════════════════════════════ */
 
-const FIXED_PAGES = [
-  { id: 'dashboard', name: 'Dashboard', icon: 'home' },
-  { id: 'profile', name: 'Profile', icon: 'user' }
-];
-
 const ADMIN_PAGES = [
   { id: 'members', name: 'Members', icon: 'users' },
-  { id: 'settings', name: 'Club settings', icon: 'cog' }
+  { id: 'metrics', name: 'Insights', icon: 'chart' },
+  { id: 'settings', name: 'Settings', icon: 'cog' }
 ];
+
+/* Pages only staff can reach, whether by the sidebar or by typing a hash. */
+const STAFF_ONLY = ['members', 'settings', 'metrics'];
 
 const ICONS = {
   home: '<path d="M3 10.2 12 3l9 7.2"/><path d="M5.5 9.4V20h13V9.4"/><path d="M9.8 20v-5.4h4.4V20"/>',
@@ -354,7 +373,18 @@ const ICONS = {
   bag: '<path d="M5.4 8h13.2l-1.1 12.2H6.5Z"/><path d="M9 8V5.9a3 3 0 0 1 6 0V8"/>',
   heart: '<path d="M20.8 8.9c0 4.7-8.8 10.6-8.8 10.6S3.2 13.6 3.2 8.9a4.7 4.7 0 0 1 8.8-2 4.7 4.7 0 0 1 8.8 2Z"/>',
   swords: '<path d="M14.6 14.6 20 9.2V4h-5.2l-5.4 5.4"/><path d="m9.4 14.6-5.4-5.4V4h5.2l5.4 5.4"/><path d="m13 16.4 3.4 3.4M11 16.4l-3.4 3.4"/>',
-  tournament: '<path d="M7.6 4.2h8.8v4.6a4.4 4.4 0 0 1-8.8 0Z"/><path d="M7.6 5.8H4.9v1a3 3 0 0 0 2.9 3M16.4 5.8h2.7v1a3 3 0 0 1-2.9 3"/><path d="M12 13.2v3.4M8.4 20.2h7.2l-.9-3.6H9.3Z"/>'
+  tournament: '<path d="M7.6 4.2h8.8v4.6a4.4 4.4 0 0 1-8.8 0Z"/><path d="M7.6 5.8H4.9v1a3 3 0 0 0 2.9 3M16.4 5.8h2.7v1a3 3 0 0 1-2.9 3"/><path d="M12 13.2v3.4M8.4 20.2h7.2l-.9-3.6H9.3Z"/>',
+  chart: '<path d="M4 20h16"/><rect x="5.5" y="11" width="3.4" height="6.5" rx="1"/><rect x="10.3" y="6.5" width="3.4" height="11" rx="1"/><rect x="15.1" y="3.5" width="3.4" height="14" rx="1"/>',
+  more: '<circle cx="5.5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18.5" cy="12" r="1.4"/>',
+  share: '<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5v5.3A2.2 2.2 0 0 0 7.2 20h9.6a2.2 2.2 0 0 0 2.2-2.2v-5.3"/>',
+  moon: '<path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5a8.5 8.5 0 1 0 10.8 10.8Z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/>',
+  logout: '<path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20H12"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.8"/><path d="M12 17.2h.01"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  sparkle: '<path d="M12 3.5 13.8 9a2 2 0 0 0 1.2 1.2l5.5 1.8-5.5 1.8a2 2 0 0 0-1.2 1.2L12 20.5 10.2 15a2 2 0 0 0-1.2-1.2L3.5 12 9 10.2A2 2 0 0 0 10.2 9Z"/>'
 };
 
 export const icon = (name) =>
@@ -429,15 +459,13 @@ function buildNav() {
   blocks.innerHTML = '';
   admin.innerHTML = '';
 
-  fixed.appendChild(navButton('dashboard', 'Dashboard', 'home'));
+  fixed.appendChild(navButton('dashboard', 'Home', 'home'));
 
   (ctx.club.blocks || []).forEach((b) => {
     const meta = BLOCK_TYPES[b.type];
     if (!meta) return;
-    blocks.appendChild(navButton(b.id, b.name || meta.name, meta.icon, { editable: ctx.isAdmin }));
+    blocks.appendChild(navButton(b.id, blockName(b), meta.icon, { editable: ctx.isAdmin }));
   });
-
-  fixed.appendChild(navButton('profile', 'Profile', 'user'));
 
   if (ctx.isAdmin) enableReorder(blocks, { onReorder: saveOrder });
 
@@ -449,10 +477,140 @@ function buildNav() {
   /* The switch itself answers to your row, not to the mode — otherwise
      student view would hide the way back out of it. */
   $('mode-switch').hidden = !ctx.isStaff;
+
+  buildTabbar();
+}
+
+/* Clubs made before the Play page was renamed still carry its old default
+   name. A name somebody chose is kept; only the untouched default changes. */
+const blockName = (b) => (b.type === 'duels' && (!b.name || b.name === 'Duels'))
+  ? 'Play' : (b.name || (BLOCK_TYPES[b.type] || {}).name);
+
+/* ═══ the phone tab bar ══════════════════════════════════════════════
+   Four places a member actually goes, plus everything else behind More.
+   Which four depends on the pages the club has: a club without puzzles
+   doesn't get a dead Puzzles tab.
+   ─────────────────────────────────────────────────────────────────── */
+
+const TABBAR_PREFERENCE = ['duels', 'puzzles', 'events', 'leaderboard', 'newsletters', 'tournaments'];
+const TABBAR_LABEL = { duels: 'Play', puzzles: 'Puzzles', events: 'Events', leaderboard: 'Ranks', newsletters: 'News', tournaments: 'Arenas' };
+
+function buildTabbar() {
+  const bar = $('tabbar');
+  const blocks = ctx.club.blocks || [];
+  const picks = [];
+  for (const type of TABBAR_PREFERENCE) {
+    const b = blocks.find((x) => x.type === type);
+    if (b) picks.push({ id: b.id, label: TABBAR_LABEL[type], icon: BLOCK_TYPES[type].icon });
+    if (picks.length === 3) break;
+  }
+  const items = [{ id: 'dashboard', label: 'Home', icon: 'home' }, ...picks];
+  bar.innerHTML = items.map((t) => `
+    <button class="tabbar-btn${ctx.page === t.id ? ' on' : ''}" data-tab="${esc(t.id)}">
+      ${icon(t.icon)}<span>${esc(t.label)}</span>
+    </button>`).join('') + `
+    <button class="tabbar-btn" data-tab="__more">${icon('more')}<span>More</span></button>`;
+  bar.hidden = false;
+  bar.onclick = (e) => {
+    const b = e.target.closest('[data-tab]');
+    if (!b) return;
+    if (b.dataset.tab === '__more') { $('app').classList.add('nav-open'); return; }
+    location.hash = b.dataset.tab;
+  };
+}
+
+/* ═══ the setup checklist ════════════════════════════════════════════
+   What a brand-new club still needs, in the order it's worth doing, for
+   the people who can do it. Each step checks something real rather than
+   remembering a click, so a club that already has events never sees
+   "add an event". It goes away once everything is done, or when an
+   admin dismisses it.
+   ─────────────────────────────────────────────────────────────────── */
+
+let setupCounts = null;
+let setupLoading = false;
+
+async function loadSetupCounts() {
+  if (setupCounts || setupLoading) return;
+  setupLoading = true;
+  const has = async (name) => {
+    try { return !(await getDocs(query(clubCol(ctx.clubId, name), limit(1)))).empty; }
+    catch (_) { return false; }
+  };
+  const [events, puzzles, news] = await Promise.all([has('events'), has('puzzles'), has('announcements')]);
+  setupCounts = { events, puzzles, news };
+  setupLoading = false;
+  paintSetup();
+}
+
+function setupSteps() {
+  const c = ctx.club;
+  const blockOf = (type) => ((c.blocks || []).find((b) => b.type === type) || {}).id;
+  return [
+    { id: 'invite', label: 'Invite your first members', done: (c.memberCount || 1) > 1, go: () => openClubShare(ctx) },
+    { id: 'event', label: 'Schedule your first meeting', done: setupCounts.events,
+      go: () => { location.hash = blockOf('events') || 'dashboard'; } },
+    { id: 'puzzle', label: 'Post a puzzle', done: setupCounts.puzzles,
+      go: () => { location.hash = blockOf('puzzles') || 'dashboard'; } },
+    { id: 'home', label: 'Make the home page yours', done: !!(c.layout && c.layout.length && c.layoutCustomized),
+      go: () => startEditing() }
+  ];
+}
+
+function paintSetup() {
+  const card = $('setup-card');
+  if (!card) return;
+  if (!ctx.isAdmin || ctx.club.setupDismissed) { card.hidden = true; return; }
+  if (!setupCounts) { card.hidden = true; loadSetupCounts(); return; }
+
+  const steps = setupSteps();
+  const done = steps.filter((s) => s.done).length;
+  if (done === steps.length) { card.hidden = true; return; }
+
+  card.hidden = false;
+  const next = steps.find((s) => !s.done);
+  const open = card.classList.contains('open');
+  card.innerHTML = `
+    <div class="setup-head">
+      <button class="setup-toggle" data-toggle aria-expanded="${open}">
+        <b>Get your club going</b>
+        <small>${done} of ${steps.length} done</small>
+      </button>
+      <button class="setup-x" data-dismiss title="Hide this checklist" aria-label="Hide this checklist">✕</button>
+    </div>
+    <div class="setup-bar"><i style="width:${Math.round((done / steps.length) * 100)}%"></i></div>
+    <div class="setup-steps">
+      ${steps.map((s) => `
+        <button class="setup-step${s.done ? ' done' : ''}${s === next ? ' next' : ''}" data-step="${s.id}"${s.done ? ' disabled' : ''}>
+          <span class="setup-tick">${s.done ? icon('check') : ''}</span>${esc(s.label)}
+        </button>`).join('')}
+    </div>`;
+  card.querySelector('[data-toggle]').onclick = () => {
+    card.classList.toggle('open');
+    card.querySelector('[data-toggle]').setAttribute('aria-expanded', card.classList.contains('open'));
+  };
+  card.querySelector('[data-dismiss]').onclick = async () => {
+    card.hidden = true;
+    try { await updateDoc(clubRef(ctx.clubId), { setupDismissed: true }); } catch (_) {}
+  };
+  card.querySelectorAll('[data-step]').forEach((b) => {
+    b.onclick = () => {
+      const step = steps.find((s) => s.id === b.dataset.step);
+      $('app').classList.remove('nav-open');
+      if (step) step.go();
+    };
+  });
+}
+
+/* re-checked when a page that can complete a step is left */
+export function refreshSetup() {
+  setupCounts = null;
+  paintSetup();
 }
 
 function markActive() {
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.page === ctx.page));
+  document.querySelectorAll('.tabbar-btn').forEach((t) => t.classList.toggle('on', t.dataset.tab === ctx.page));
 }
 
 /* ═══ routing ════════════════════════════════════════════════════════ */
@@ -460,7 +618,7 @@ function markActive() {
 /* Duels and tournaments are always reachable, block or no block: a member who
    was challenged has to be able to answer, and somebody handed a tournament
    link has to be able to open it, even if nobody has added the page. */
-const STANDALONE = ['profile', 'members', 'settings', 'duels', 'tournaments'];
+const STANDALONE = ['profile', 'members', 'settings', 'metrics', 'duels', 'tournaments'];
 
 /* The hash of this club's tournaments page — its block id when one has been
    added, the standalone route when it hasn't. */
@@ -488,7 +646,10 @@ async function route(raw) {
   const host = $('page-host');
   host.innerHTML = '';
   $('topbar-actions').innerHTML = '';
-  $('editor-bar').hidden = !(ctx.isAdmin && pageId === 'dashboard');
+  if (pageId !== 'dashboard') ctx.editing = false;
+  $('editor-bar').hidden = !(ctx.isAdmin && ctx.editing && pageId === 'dashboard');
+  document.body.classList.toggle('is-customizing', ctx.isAdmin && ctx.editing && pageId === 'dashboard');
+  $('app-main').scrollTop = 0;
   if (!duel) closeDuelStage();
   if (!liGame) {
     const { closeLichessGame } = await import('./lichess-board.js');
@@ -498,7 +659,7 @@ async function route(raw) {
   closeDuelWaiting();
 
   // admin-only pages are never reachable by typing the hash
-  if (!ctx.isAdmin && (pageId === 'members' || pageId === 'settings')) {
+  if (!ctx.isAdmin && STAFF_ONLY.includes(pageId)) {
     location.hash = 'dashboard';
     return;
   }
@@ -529,10 +690,22 @@ async function route(raw) {
   const meta = block ? BLOCK_TYPES[block.type] : null;
 
   if (pageId === 'dashboard') {
-    setTitle('Dashboard', ctx.isAdmin
-      ? 'Arrange the widgets your members see.'
+    setTitle(ctx.club.name || 'Home', ctx.editing
+      ? 'What you arrange here is what every member sees first.'
       : (ctx.club.description || ''));
+    if (ctx.isAdmin && !ctx.editing) {
+      $('topbar-actions').innerHTML =
+        `<button class="btn subtle sm" id="customize-btn">${icon('grid')}Customize</button>`;
+      $('customize-btn').onclick = startEditing;
+    }
     ctx.cleanup = await renderDashboard(ctx, host, { setTitle });
+    return;
+  }
+
+  if (pageId === 'metrics') {
+    setTitle('Insights', 'How the club is doing, and who is showing up.');
+    const { renderMetrics } = await import('./club-metrics.js');
+    ctx.cleanup = await renderMetrics(ctx, host);
     return;
   }
 
@@ -543,10 +716,10 @@ async function route(raw) {
 
   const type = block ? block.type : pageId;
   const fallbackName = {
-    profile: 'Profile', members: 'Members', settings: 'Club settings',
-    duels: 'Duels', tournaments: 'Tournaments'
+    profile: 'Your profile', members: 'Members', settings: 'Settings',
+    duels: 'Play', tournaments: 'Tournaments'
   };
-  const name = block ? (block.name || meta.name) : fallbackName[pageId];
+  const name = block ? blockName(block) : fallbackName[pageId];
   const fallbackSub = BLOCK_TYPES[pageId] ? BLOCK_TYPES[pageId].sub : '';
   setTitle(name, block ? meta.sub : fallbackSub);
 
@@ -566,16 +739,19 @@ export function setTitle(title, sub) {
 function wireChrome() {
   $('menu-btn').onclick = () => $('app').classList.add('nav-open');
   $('nav-scrim').onclick = () => $('app').classList.remove('nav-open');
-  $('logout').onclick = () => signOut(auth).then(() => (location.href = '/login'));
   $('invite-btn').onclick = () => openClubShare(ctx);
 
-  $('mode-switch').onclick = (e) => {
-    const b = e.target.closest('[data-mode]');
-    if (!b) return;
-    setMode(b.dataset.mode);
-  };
-  $('editor-done').onclick = () => setMode('member');
+  // the topbar gets its hairline only once there is something under it
+  $('app-main').addEventListener('scroll', () => {
+    $('app-main').classList.toggle('scrolled', $('app-main').scrollTop > 4);
+  }, { passive: true });
+
+  $('mode-switch').onclick = () => setMode(ctx.mode === 'member' ? 'admin' : 'member');
+  $('editor-done').onclick = stopEditing;
   $('editor-reset').onclick = resetLayout;
+
+  $('club-switch').onclick = openClubMenu;
+  $('nav-user').onclick = openUserMenu;
 
   $('add-block-btn').onclick = openBlockPicker;
   document.querySelectorAll('[data-close-blocks]').forEach((b) => (b.onclick = () => ($('add-block-modal').hidden = true)));
@@ -585,19 +761,90 @@ function wireChrome() {
 
 function setMode(mode) {
   ctx.mode = mode;
+  ctx.editing = false;
   document.body.classList.toggle('is-editor', ctx.isAdmin);
   document.body.classList.toggle('is-student-view', mode === 'member');
-  $('mode-switch').querySelectorAll('.mode-opt').forEach((o) => o.classList.toggle('on', o.dataset.mode === mode));
   buildNav();
   paintIdentity();
   paintStats();
+  paintSetup();
+  if (mode === 'member') toast('Previewing as a student. Switch it off to manage the club again.');
 
-  /* Members and Settings do not exist for a student, so student view cannot
-     be entered while standing on one. Everything else survives the switch,
+  /* Staff pages do not exist for a student, so student view cannot be
+     entered while standing on one. Everything else survives the switch,
      which is the point: you see the page you were looking at, as they see it. */
-  const stuck = !ctx.isAdmin && (ctx.page === 'members' || ctx.page === 'settings');
+  const stuck = !ctx.isAdmin && STAFF_ONLY.includes(ctx.page);
   if (stuck) location.hash = 'dashboard';
   else route(ctx.page);
+}
+
+/* ═══ customizing the home page ══════════════════════════════════════ */
+
+function startEditing() {
+  if (!ctx.isAdmin) return;
+  ctx.editing = true;
+  if (ctx.page === 'dashboard') route('dashboard');
+  else location.hash = 'dashboard';
+}
+
+function stopEditing() {
+  ctx.editing = false;
+  route('dashboard');
+  toast('Home page saved', 'ok');
+}
+
+/* ═══ the two menus ══════════════════════════════════════════════════ */
+
+async function openClubMenu() {
+  const anchor = $('club-switch');
+  const menu = openMenu(anchor, `
+    <div class="pop-menu-label">Your clubs</div>
+    <div data-clubs><div class="pop-menu-label">Loading…</div></div>
+    <hr>
+    <a class="pop-item" data-act="all" href="/clubs">${icon('grid')}<span>All clubs</span></a>
+    <a class="pop-item" data-act="new" href="/clubs?create=1">${icon('plus')}<span>Start a new club</span></a>`,
+    { width: 272 });
+  if (!menu) return;
+  let clubs = [];
+  try { clubs = await myClubs(ctx.user); } catch (e) { console.warn(e); }
+  const slot = menu.querySelector('[data-clubs]');
+  if (!slot) return;
+  slot.innerHTML = clubs.map((c) => `
+    <a class="pop-item${c.id === ctx.clubId ? ' current' : ''}" data-act="club" href="/clubs/${esc(c.id)}">
+      ${clubAvatar(c, 'club-avatar')}
+      <span>${esc(c.name || c.id)}</span>
+      <small>${esc(ROLE_LABEL[c.role] || '')}</small>
+    </a>`).join('') || '<div class="pop-menu-label">No other clubs yet</div>';
+}
+
+function openUserMenu() {
+  const dark = currentTheme() === 'dark';
+  openMenu($('nav-user'), `
+    <button class="pop-item" data-act="profile">${icon('user')}<span>Your profile</span></button>
+    <button class="pop-item" data-act="theme">${icon(dark ? 'sun' : 'moon')}<span>${dark ? 'Light mode' : 'Dark mode'}</span></button>
+    <button class="pop-item" data-act="tour">${icon('sparkle')}<span>Show me around</span></button>
+    <a class="pop-item" data-act="help" href="/guide" target="_blank" rel="noopener">${icon('help')}<span>Help guide</span></a>
+    <hr>
+    <button class="pop-item danger" data-act="logout">${icon('logout')}<span>Log out</span></button>`,
+  {
+    place: 'above',
+    onPick: (act) => {
+      if (act === 'profile') { location.hash = 'profile'; $('app').classList.remove('nav-open'); }
+      if (act === 'theme') toggleTheme();
+      if (act === 'tour') startTour();
+      if (act === 'logout') signOut(auth).then(() => (location.href = '/login'));
+    }
+  });
+}
+
+/* ═══ the guided tour ═══════════════════════════════════════════════ */
+
+async function startTour() {
+  $('app').classList.remove('nav-open');
+  try {
+    const { runClubTour } = await import('./tour.js');
+    runClubTour(ctx);
+  } catch (e) { console.error(e); }
 }
 
 /* ═══ block management ═══════════════════════════════════════════════ */
@@ -692,4 +939,4 @@ async function resetLayout() {
   toast('Layout reset');
 }
 
-export { setMode };
+export { setMode, startEditing };

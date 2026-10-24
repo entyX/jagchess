@@ -53,7 +53,7 @@ const el = (html) => {
 };
 
 const avatarHTML = (p, size) =>
-  `<span class="lb-avatar" style="background:${esc((p && p.avatarColor) || '#1cb0f6')};width:${size}px;height:${size}px;font-size:${Math.round(size / 2.8)}px">${esc(initials((p && p.username) || '?'))}</span>`;
+  `<span class="lb-avatar" style="background:${esc((p && p.avatarColor) || '#2e90fa')};width:${size}px;height:${size}px;font-size:${Math.round(size / 2.8)}px">${esc(initials((p && p.username) || '?'))}</span>`;
 
 /* "2d 4h", "3h 12m", "48:12", "9s" — the unit shrinks as the moment nears. */
 function countdown(ms) {

@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400..700&display=swap" rel="stylesheet">
   <script>
     /* The marketing site and the Network are for people without an account.
        This reads the one-bit hint left by the app (see session-hint.js) before
@@ -23,50 +23,43 @@
   <link rel="stylesheet" href="/assets/css/registration.css" />
   <link rel="stylesheet" href="/assets/css/network.css" />
 </head>
-<body class="pricing-hidden net-page">
+<body class="net-page">
 
 <!-- ══ NAV ═══════════════════════════════════════════════════════════ -->
-<header class="lp-nav stuck" id="lp-nav">
-  <div class="lp-nav-inner">
-    <a href="/" class="lp-logo">
-      <img class="lp-logo-img" src="/assets/img/jagchess-wordmark.png" alt="JagChess"
-           width="444" height="132" />
-    </a>
-    <nav class="lp-links">
-      <a href="/#modules">Modules</a>
-      <a href="/#builder">Customize</a>
-      <a href="/#faq">FAQ</a>
-      <a href="/guide">Guide</a>
-      <a href="/network" class="lp-link-net">JagChess Network</a>
-    </nav>
-    <div class="lp-nav-cta">
-      <a class="btn3d ghost" href="/login">Log in</a>
-      <a class="btn3d" href="/login?mode=signup">Start free</a>
-      <button class="lp-burger" id="lp-burger" aria-label="Menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-      </button>
-    </div>
+<header class="nav scrolled" id="nav">
+  <a href="/" class="nav-logo" aria-label="JagChess home">
+    <img src="/assets/img/jagchess-wordmark.png" alt="JagChess" width="148" height="44" />
+  </a>
+  <nav class="nav-pill" aria-label="Main">
+    <a href="/#how">How it works</a>
+    <a href="/#features">Features</a>
+    <a href="/#coaches">For coaches</a>
+    <a href="/network" aria-current="page">Find a club</a>
+  </nav>
+  <div class="nav-right">
+    <a class="nav-login" href="/login">Log in</a>
+    <a class="btn btn-dark" href="/login?mode=signup">Start a club</a>
+    <button class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span>
+    </button>
   </div>
 </header>
-
-<div class="lp-mobile" id="lp-mobile">
-  <a href="/#modules">Modules</a>
-  <a href="/#builder">Customize</a>
-  <a href="/#faq">FAQ</a>
-  <a href="/guide">Guide</a>
-  <a href="/network">JagChess Network</a>
+<div class="nav-sheet" id="nav-sheet" hidden>
+  <a href="/#how">How it works</a>
+  <a href="/#features">Features</a>
+  <a href="/#coaches">For coaches</a>
+  <a href="/network">Find a club</a>
   <a href="/login">Log in</a>
-  <a class="btn3d block" href="/login?mode=signup">Start free</a>
+  <a class="btn btn-green" href="/login?mode=signup">Start a club, free</a>
 </div>
 
 <!-- ══ HERO + SEARCH ═════════════════════════════════════════════════ -->
 <section class="net-hero">
   <div class="shell">
-    <span class="kicker">JagChess Network</span>
-    <h1>Find a chess club. <span class="hl">Join it today.</span></h1>
+        <h1>Find your chess club.</h1>
     <p class="lead">
-      Every public club on JagChess, open for new members — school teams, academies,
-      and community clubs running their puzzles, events and ratings right here.
+      Every public club on JagChess is listed here. Search for your school, then join in a tap
+      or sign up and let the club's admins add you.
     </p>
 
     <div class="net-search">
@@ -120,43 +113,30 @@
 </section>
 
 <!-- ══ FOOTER ════════════════════════════════════════════════════════ -->
-<footer class="lp-foot">
-  <div class="shell">
-    <div class="foot-grid">
-      <div>
-        <div class="foot-brand">
-          <span class="lp-logo-mark" aria-hidden="true">♞</span>
-          <span class="lp-logo-text">JagChess</span>
-        </div>
-        <p class="foot-blurb">The operating system for chess clubs — puzzles, events, learning, newsletters and rewards, in one customizable platform.</p>
-      </div>
-      <div class="foot-col">
-        <h4>Product</h4>
-        <a href="/#modules">Modules</a>
-        <a href="/#builder">Customization</a>
-        <a href="/network">JagChess Network</a>
-        <a href="/guide">Guide</a>
-        <a href="/login">Log in</a>
-      </div>
-      <div class="foot-col">
-        <h4>Join a club</h4>
-        <a href="/network">Browse public clubs</a>
-        <a href="/login?mode=signup">Create an account</a>
-        <a href="/clubs">Join with a code</a>
-        <a href="/login?mode=signup">Start your own club</a>
-      </div>
-      <div class="foot-col">
-        <h4>Company</h4>
-        <a href="mailto:northcreekchessclub@gmail.com">Contact</a>
-        <a href="/#faq">FAQ</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/terms">Terms</a>
-      </div>
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <img src="/assets/img/jagchess-wordmark.png" alt="JagChess" width="128" height="38" />
+      <p>A home for school chess clubs: puzzles, games, meetings and news, together.</p>
     </div>
-    <div class="foot-bottom">
-      <span>© <span id="year">2026</span> JagChess. All rights reserved.</span>
-      <span>Made for clubs that take the game seriously.</span>
+    <div class="foot-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/network">Find a club</a>
+      <a href="/guide">Guide</a>
+      <a href="/login">Log in</a>
     </div>
+    <div class="foot-col">
+      <h4>Help</h4>
+      <a href="/#faq">Questions</a>
+      <a href="mailto:northcreekchessclub@gmail.com">Contact</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+    </div>
+  </div>
+  <div class="wrap foot-bottom">
+    <span>© <span id="year">2026</span> JagChess</span>
+    <span>Made for clubs that love the game.</span>
   </div>
 </footer>
 

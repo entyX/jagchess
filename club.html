@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700;800&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400..700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/vendor/jquery-ui/jquery-ui.min.css" />
   <link rel="stylesheet" href="/assets/vendor/chessboard/chessboard-1.0.0.min.css" />
   <link rel="stylesheet" href="/assets/css/styles.css" />
@@ -21,6 +21,8 @@
   <link rel="stylesheet" href="/assets/css/share.css" />
   <link rel="stylesheet" href="/assets/css/newsletter-mail.css" />
   <link rel="stylesheet" href="/assets/css/registration.css" />
+  <link rel="stylesheet" href="/assets/css/home.css" />
+  <link rel="stylesheet" href="/assets/css/ui.css" />
 </head>
 <body class="club app" id="app">
 
@@ -36,7 +38,7 @@
 
   <div class="club-gate" id="club-gate" hidden>
     <div class="club-gate-card">
-      <span class="club-avatar" id="gate-avatar" style="background:#58cc02">♞</span>
+      <span class="club-avatar" id="gate-avatar" style="background:#1faf5a">♞</span>
       <h1 id="gate-name">This club</h1>
       <p id="gate-desc">You're not a member of this club yet.</p>
       <div id="gate-actions" class="club-gate-actions"></div>
@@ -46,61 +48,47 @@
 
   <!-- ══ SIDEBAR ══ -->
   <aside class="sidebar" id="sidebar" hidden>
-    <a class="brand club-brand" href="/clubs" title="All my clubs">
-      <div class="brand-mark" id="club-icon" aria-hidden="true">♞</div>
-      <div class="brand-text">
-        <h2 id="club-name">Club</h2>
-        <span class="brand-role" id="club-role">Member</span>
-      </div>
-      <svg class="brand-switch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5 4.5 9 8 12.5"/><path d="M4.5 9h11.2a3.8 3.8 0 0 1 0 7.6H10"/></svg>
-    </a>
+    <button class="club-switch" id="club-switch" aria-haspopup="menu" aria-expanded="false" title="Switch club">
+      <span class="brand-mark" id="club-icon" aria-hidden="true">♞</span>
+      <span class="club-switch-text">
+        <b id="club-name">Club</b>
+        <small id="club-role">Member</small>
+      </span>
+      <svg class="club-switch-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 9.5 5-5 5 5M7 14.5l5 5 5-5"/></svg>
+    </button>
 
     <div class="nav-scroll">
-      <div class="nav-group">
-        <div class="nav-group-label">Club</div>
-        <div class="tabs" id="nav-fixed"></div>
-      </div>
+      <div class="tabs" id="nav-fixed"></div>
       <div class="nav-group" id="nav-blocks-group">
         <div class="nav-group-label">
-          <span>Pages</span>
-          <button class="nav-add" id="add-block-btn" title="Add a block" hidden>+</button>
+          <span>Club</span>
+          <button class="nav-add" id="add-block-btn" title="Add a page" aria-label="Add a page" hidden>+</button>
         </div>
         <div class="tabs" id="nav-blocks"></div>
       </div>
       <div class="nav-group" id="nav-admin-group" hidden>
-        <div class="nav-group-label">Manage</div>
+        <div class="nav-group-label"><span>Manage</span></div>
         <div class="tabs" id="nav-admin"></div>
       </div>
     </div>
 
-    <div class="nav-foot">
-      <div class="mode-switch" id="mode-switch" hidden>
-        <button class="mode-opt" data-mode="member" title="See the club exactly as a student does — and use it as one">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 12S6 5.4 12 5.4 21.6 12 21.6 12 18 18.6 12 18.6 2.4 12 2.4 12Z"/><circle cx="12" cy="12" r="2.9"/></svg>
-          Student
-        </button>
-        <button class="mode-opt on" data-mode="admin" title="Run the club: edit pages, arrange widgets, manage members">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5 15.4 4.1a2.3 2.3 0 0 1 3.2 3.2L7.2 18.7 3 20l1.3-4.2Z"/><path d="M13.4 6.1 17 9.7"/></svg>
-          Admin
-        </button>
-      </div>
+    <div class="setup-card" id="setup-card" hidden></div>
 
-      <div class="nav-user">
+    <div class="nav-foot">
+      <button class="preview-toggle" id="mode-switch" hidden title="See the club exactly as a student does">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 12S6 5.4 12 5.4 21.6 12 21.6 12 18 18.6 12 18.6 2.4 12 2.4 12Z"/><circle cx="12" cy="12" r="2.9"/></svg>
+        <span>Preview as a student</span>
+        <i class="switch" aria-hidden="true"></i>
+      </button>
+
+      <button class="nav-user" id="nav-user" aria-haspopup="menu">
         <div class="user-avatar-circle" id="me-avatar">—</div>
         <div class="nav-user-info">
           <div class="nav-user-name" id="me-name">—</div>
           <div class="nav-user-mail" id="me-email">—</div>
         </div>
-      </div>
-      <div class="nav-foot-actions">
-        <button id="theme-toggle" class="nav-mini icon-only" title="Toggle theme" aria-label="Toggle theme">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.5A8.5 8.5 0 0 1 9.5 3a.75.75 0 0 0-.78-.98A10 10 0 1 0 22 15.28a.75.75 0 0 0-1-.78z"/></svg>
-        </button>
-        <button id="logout" class="nav-mini">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20H12"/></svg>
-          Log out
-        </button>
-      </div>
+        <svg class="club-switch-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18.5" cy="12" r="1"/></svg>
+      </button>
     </div>
   </aside>
 
@@ -111,38 +99,41 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
       <div class="topbar-head">
-        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div class="topbar-title" id="page-title">Home</div>
         <div class="topbar-sub" id="page-sub"></div>
       </div>
-      <button class="btn subtle sm topbar-invite" id="invite-btn" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="7" height="7" rx="1.6"/><rect x="13.8" y="3.2" width="7" height="7" rx="1.6"/><rect x="3.2" y="13.8" width="7" height="7" rx="1.6"/><path d="M13.8 13.8h3v3h-3zM20.8 13.8v3M17.8 20.8h3M13.8 20.8h.01"/></svg>
-        Invite
-      </button>
       <div class="topbar-stats" id="topbar-stats"></div>
       <div class="topbar-actions" id="topbar-actions"></div>
+      <button class="btn subtle sm topbar-invite" id="invite-btn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5v5.3A2.2 2.2 0 0 0 7.2 20h9.6a2.2 2.2 0 0 0 2.2-2.2v-5.3"/></svg>
+        Share club
+      </button>
     </header>
 
     <div class="editor-bar" id="editor-bar" hidden>
       <span class="editor-bar-dot"></span>
-      <b>Admin mode</b>
-      <span>Drag widgets to move them, pull the corner to resize — and drag a page by its handle to reorder the sidebar.</span>
+      <b>Customizing your home page</b>
+      <span class="editor-bar-hint">Drag to move. Pull a corner to resize. Click a widget to change it.</span>
       <div class="spacer"></div>
-      <button class="btn subtle sm" id="editor-reset">Reset layout</button>
-      <button class="btn primary sm" id="editor-done">See it as a student</button>
+      <button class="btn ghost sm" id="editor-reset">Reset</button>
+      <button class="btn primary sm" id="editor-done">Done</button>
     </div>
 
     <main class="container" id="page-host"></main>
   </div>
 
+  <!-- ══ PHONE TAB BAR ══ -->
+  <nav class="tabbar" id="tabbar" hidden></nav>
+
   <!-- ══ ADD BLOCK PANEL ══ -->
   <div class="modal" id="add-block-modal" hidden>
     <div class="modal-card block-picker">
       <button class="icon-btn modal-close" data-close-blocks title="Close">✕</button>
-      <h3>Add a block</h3>
-      <p class="modal-meta" style="margin:0">Blocks are pages in your club's sidebar. Add what you need, rename them, remove them any time.</p>
+      <h3>Add a page</h3>
+      <p class="modal-meta" style="margin:0">Pages appear in your club's menu. Add what you need, rename them, remove them any time.</p>
       <div class="search-wrap" style="margin-top:6px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
-        <input id="block-search" type="text" placeholder="Search blocks and templates…" autocomplete="off" />
+        <input id="block-search" type="text" placeholder="Search pages…" autocomplete="off" />
       </div>
       <div class="block-list" id="block-list"></div>
     </div>

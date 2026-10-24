@@ -15,30 +15,30 @@ import {
 import { hubTabsHTML } from './hub-shell.js';
 
 const $ = (id) => document.getElementById(id);
-const STARTER_BLOCKS = [
-  { id: 'events',      type: 'events',      name: 'Events' },
-  { id: 'puzzles',     type: 'puzzles',     name: 'Puzzles' },
-  { id: 'newsletters', type: 'newsletters', name: 'Newsletters' },
-  { id: 'leaderboard', type: 'leaderboard', name: 'Leaderboard' },
-  { id: 'duels',       type: 'duels',       name: 'Duels' },
-  { id: 'tournaments', type: 'tournaments', name: 'Tournaments' },
-  { id: 'store',       type: 'store',       name: 'Store' },
-  { id: 'donate',      type: 'donate',      name: 'Donate' }
-];
+/* What each starting point puts in the club's menu. A school club gets the
+   whole kit; a club that just wants to play gets the three things it will
+   use on day one. Anything can be added or removed later. */
+const TEMPLATES = {
+  starter: [
+    { id: 'events',      type: 'events',      name: 'Events' },
+    { id: 'puzzles',     type: 'puzzles',     name: 'Puzzles' },
+    { id: 'duels',       type: 'duels',       name: 'Play' },
+    { id: 'leaderboard', type: 'leaderboard', name: 'Leaderboard' },
+    { id: 'newsletters', type: 'newsletters', name: 'News' },
+    { id: 'tournaments', type: 'tournaments', name: 'Tournaments' }
+  ],
+  friends: [
+    { id: 'duels',       type: 'duels',       name: 'Play' },
+    { id: 'puzzles',     type: 'puzzles',     name: 'Puzzles' },
+    { id: 'leaderboard', type: 'leaderboard', name: 'Leaderboard' }
+  ],
+  blank: []
+};
 
-const STARTER_LAYOUT = [
-  { i: 'w1', type: 'welcome',      x: 0, y: 0, w: 8, h: 3 },
-  { i: 'w2', type: 'quick-duel',   x: 8, y: 0, w: 4, h: 3 },
-  { i: 'w3', type: 'events-next',  x: 0, y: 3, w: 5, h: 5 },
-  { i: 'w4', type: 'leaderboard',  x: 5, y: 3, w: 4, h: 5 },
-  { i: 'w8', type: 'tournaments',  x: 9, y: 3, w: 3, h: 5 },
-  { i: 'w5', type: 'puzzle-daily', x: 0, y: 8, w: 4, h: 3 },
-  { i: 'w6', type: 'news-latest',  x: 4, y: 8, w: 4, h: 3 },
-  { i: 'w7', type: 'tip',          x: 8, y: 8, w: 4, h: 3 }
-];
-
+/* An empty club starts with just a greeting; the others use the home page's
+   own default arrangement, which knows about the pages above. */
 const BLANK_LAYOUT = [
-  { i: 'w1', type: 'welcome', x: 0, y: 0, w: 12, h: 3 }
+  { i: 'w1', type: 'welcome', x: 0, y: 0, w: 12, h: 5 }
 ];
 
 let user = null;
@@ -146,19 +146,19 @@ async function renderClubs() {
 
   grid.innerHTML = clubs.map((c) => `
     <div class="club-card-wrap">
-      <a class="club-card" href="/clubs/${esc(c.slug || c.id)}">
+      <a class="club-card" href="/clubs/${esc(c.slug || c.id)}" style="--card-tint:${esc(c.color || '#1faf5a')}">
         <div class="club-card-top">
           ${clubAvatar(c, 'club-avatar')}
           <span class="role-pill ${esc(c.role)}">${esc(ROLE_LABEL[c.role] || 'Student')}</span>
         </div>
         <div class="club-card-name">${esc(c.name || c.id)}</div>
-        <div class="club-card-desc">${esc(c.description || 'No description yet.')}</div>
+        <div class="club-card-desc">${esc(c.description || '')}</div>
         <div class="club-card-foot">
           <span class="club-card-meta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.4" r="3.2"/><path d="M2.6 19.4c0-3.3 2.9-5.6 6.4-5.6s6.4 2.3 6.4 5.6"/><path d="M16.6 6.2a3.2 3.2 0 0 1 0 6"/><path d="M18.2 19.4c0-2-.5-3.6-1.5-4.7"/></svg>
             ${c.memberCount || 1} member${(c.memberCount || 1) === 1 ? '' : 's'}
           </span>
-          <span class="club-card-go">Open →</span>
+          <span class="club-card-go">Open</span>
         </div>
       </a>
       <button class="card-menu-btn" data-menu="${esc(c.id)}" aria-label="Club options" aria-haspopup="menu">
@@ -555,49 +555,78 @@ async function joinByCode(ui) {
 
 const draft = {
   icon: '♞',
-  color: '#58cc02',
+  color: '#1faf5a',
   visibility: 'public',
   code: makeCode(),
-  template: 'starter',
-  admins: []
+  template: 'starter'
 };
 
 let slugCheckTimer = null;
+let slugOk = null;          // null while unknown, then true / false
+let wizStep = 1;
 
 function openCreate() {
   $('create-modal').hidden = false;
   $('create-error').textContent = '';
+  goStep(1);
   setTimeout(() => $('new-name').focus(), 60);
+}
+
+function goStep(n) {
+  wizStep = n;
+  document.querySelectorAll('.wiz-step').forEach((s) => s.classList.toggle('on', +s.dataset.step === n));
+  document.querySelectorAll('#wiz-dots i').forEach((d, i) => d.classList.toggle('on', i < n));
+  $('wiz-count').textContent = `Step ${n} of 3`;
+  $('wiz-back').hidden = n === 1;
+  $('create-submit').textContent = n === 3 ? 'Create my club' : 'Continue';
+  $('create-error').textContent = '';
+  if (n === 2) paintPreview();
+}
+
+function paintPreview() {
+  const name = $('new-name').value.trim() || 'Your club';
+  $('wiz-name').textContent = name;
+  const av = $('wiz-avatar');
+  av.textContent = draft.icon;
+  av.style.background = draft.color;
 }
 
 function wireCreate() {
   $('open-create').onclick = openCreate;
-  document.querySelectorAll('[data-close-create]').forEach((b) => (b.onclick = () => ($('create-modal').hidden = true)));
-  $('create-modal').onclick = (e) => { if (e.target === $('create-modal')) $('create-modal').hidden = true; };
+  document.querySelectorAll('[data-open-create]').forEach((b) => (b.onclick = openCreate));
+  const close = () => ($('create-modal').hidden = true);
+  document.querySelectorAll('[data-close-create]').forEach((b) => (b.onclick = close));
+  $('create-modal').onclick = (e) => { if (e.target === $('create-modal')) close(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('create-modal').hidden) close(); });
 
   $('icon-picker').innerHTML = CLUB_ICONS
-    .map((i, n) => `<button type="button" class="icon-opt${n === 0 ? ' on' : ''}" data-icon="${i}">${i}</button>`).join('');
+    .map((i, n) => `<button type="button" class="icon-opt${n === 0 ? ' on' : ''}" data-icon="${i}" aria-label="Badge ${i}">${i}</button>`).join('');
   $('icon-picker').onclick = (e) => {
     const b = e.target.closest('[data-icon]');
     if (!b) return;
     draft.icon = b.dataset.icon;
     $('icon-picker').querySelectorAll('.icon-opt').forEach((o) => o.classList.toggle('on', o === b));
+    paintPreview();
   };
 
   $('color-picker').innerHTML = CLUB_COLORS
-    .map((c, n) => `<button type="button" class="color-opt${n === 0 ? ' on' : ''}" style="background:${c}" data-color="${c}"></button>`).join('');
+    .map((c, n) => `<button type="button" class="color-opt${n === 0 ? ' on' : ''}" style="background:${c}" data-color="${c}" aria-label="Colour ${c}"></button>`).join('');
   $('color-picker').onclick = (e) => {
     const b = e.target.closest('[data-color]');
     if (!b) return;
     draft.color = b.dataset.color;
     $('color-picker').querySelectorAll('.color-opt').forEach((o) => o.classList.toggle('on', o === b));
+    paintPreview();
   };
 
-  $('visibility-choice').onclick = (e) => {
-    const b = e.target.closest('[data-vis]');
-    if (!b) return;
-    draft.visibility = b.dataset.vis;
-    $('visibility-choice').querySelectorAll('.seg-opt').forEach((o) => o.classList.toggle('on', o === b));
+  $('visibility-choice').onclick = () => {
+    draft.visibility = draft.visibility === 'public' ? 'private' : 'public';
+    const pub = draft.visibility === 'public';
+    $('visibility-choice').querySelector('.switch').classList.toggle('on', pub);
+    $('visibility-choice').querySelector('b').textContent = pub ? 'Anyone with the link can join' : 'Only people with the join code';
+    $('vis-hint').textContent = pub
+      ? 'Your club is listed so students can find it. Turn this off to require a join code.'
+      : 'Your club stays unlisted. You\'ll get a code to hand out, and you can change this later.';
   };
 
   $('template-picker').onclick = (e) => {
@@ -607,30 +636,42 @@ function wireCreate() {
     $('template-picker').querySelectorAll('.template-opt').forEach((o) => o.classList.toggle('on', o === b));
   };
 
-  $('code-display').textContent = draft.code;
-  $('code-regen').onclick = () => {
-    draft.code = makeCode();
-    $('code-display').textContent = draft.code;
-  };
-  $('code-copy').onclick = async () => {
-    try {
-      await navigator.clipboard.writeText(draft.code);
-      toast('Join code copied');
-    } catch { toast('Copy failed — select it manually', 'error'); }
-  };
-
   $('new-name').oninput = () => {
     const slug = slugify($('new-name').value) || 'your-club';
     $('slug-preview').textContent = slug;
     clearTimeout(slugCheckTimer);
+    slugOk = null;
     $('slug-state').textContent = '';
     $('slug-state').className = 'slug-state';
+    $('create-error').textContent = '';
     if (!$('new-name').value.trim()) return;
-    slugCheckTimer = setTimeout(() => checkSlug(slug), 400);
+    slugCheckTimer = setTimeout(() => checkSlug(slug), 350);
   };
+  $('new-name').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); next(); } };
+  $('new-desc').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); next(); } };
 
-  wireAdminChips();
-  $('create-submit').onclick = createClub;
+  $('wiz-back').onclick = () => goStep(Math.max(1, wizStep - 1));
+  $('create-submit').onclick = next;
+
+  async function next() {
+    if (wizStep === 1) {
+      const name = $('new-name').value.trim();
+      if (!name) { $('create-error').textContent = 'Give your club a name first.'; $('new-name').focus(); return; }
+      if (!slugify(name)) { $('create-error').textContent = 'The name needs at least one letter or number.'; return; }
+      if (slugOk === null) await checkSlug(slugify(name));
+      if (slugOk === false) { $('create-error').textContent = 'That name is taken. Try adding your school or town.'; return; }
+      goStep(2);
+      return;
+    }
+    if (wizStep === 2) { goStep(3); return; }
+    createClub();
+  }
+
+  // a link from inside a club ("Start a new club") lands here with ?create=1
+  if (new URLSearchParams(location.search).get('create') === '1') {
+    history.replaceState({}, '', location.pathname);
+    openCreate();
+  }
 }
 
 async function checkSlug(slug) {
@@ -639,49 +680,10 @@ async function checkSlug(slug) {
   el.className = 'slug-state';
   try {
     const snap = await getDoc(clubRef(slug));
-    if (snap.exists()) {
-      el.textContent = 'taken';
-      el.className = 'slug-state bad';
-    } else {
-      el.textContent = 'available';
-      el.className = 'slug-state ok';
-    }
-  } catch { el.textContent = ''; }
-}
-
-function wireAdminChips() {
-  const wrap = $('admin-chips');
-  const input = $('admin-email-input');
-
-  const render = () => {
-    wrap.querySelectorAll('.email-chip').forEach((c) => c.remove());
-    draft.admins.forEach((mail, i) => {
-      const chip = document.createElement('span');
-      chip.className = 'email-chip';
-      chip.innerHTML = `${esc(mail)}<button type="button" data-rm="${i}" aria-label="Remove">×</button>`;
-      wrap.insertBefore(chip, input);
-    });
-  };
-
-  const add = () => {
-    const raw = input.value.trim().toLowerCase().replace(/,$/, '');
-    if (!raw) return;
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(raw)) { toast('That doesn\'t look like an email', 'error'); return; }
-    if (!draft.admins.includes(raw)) draft.admins.push(raw);
-    input.value = '';
-    render();
-  };
-
-  input.onkeydown = (e) => {
-    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(); }
-    if (e.key === 'Backspace' && !input.value && draft.admins.length) { draft.admins.pop(); render(); }
-  };
-  input.onblur = add;
-  wrap.onclick = (e) => {
-    const rm = e.target.closest('[data-rm]');
-    if (rm) { draft.admins.splice(+rm.dataset.rm, 1); render(); return; }
-    input.focus();
-  };
+    slugOk = !snap.exists();
+    el.textContent = slugOk ? 'Available' : 'Taken';
+    el.className = 'slug-state ' + (slugOk ? 'ok' : 'bad');
+  } catch { el.textContent = ''; slugOk = null; }
 }
 
 /* Everything a previous club at this address could have left behind. The
@@ -725,17 +727,18 @@ async function createClub() {
   if (!slug) { err.textContent = 'That name needs at least one letter or number.'; return; }
 
   const btn = $('create-submit');
-  btn.disabled = true; btn.textContent = 'Creating…';
+  btn.disabled = true; btn.textContent = 'Setting it up…';
   let step = 'checking the address';
 
   try {
     if ((await getDoc(clubRef(slug))).exists()) {
-      err.textContent = 'That web address is taken — try a slightly different name.';
+      err.textContent = 'That name is taken. Try adding your school or town.';
+      goStep(1);
       return;
     }
 
-    const blocks = draft.template === 'starter' ? STARTER_BLOCKS : [];
-    const layout = draft.template === 'starter' ? STARTER_LAYOUT : BLANK_LAYOUT;
+    const blocks = TEMPLATES[draft.template] || [];
+    const layout = draft.template === 'blank' ? BLANK_LAYOUT : null;
 
     /* Built once and kept, because the public listing written further down
        has to be a field-for-field copy of this document — a second Date.now()
@@ -748,9 +751,10 @@ async function createClub() {
       color: draft.color,
       visibility: draft.visibility,
       ownerUid: user.uid,
-      pendingAdmins: draft.admins,
+      pendingAdmins: [],
       blocks,
       layout,
+      layoutV: 2,
       template: draft.template,
       memberCount: 0,
       code: draft.code,
@@ -792,6 +796,6 @@ async function createClub() {
       ? `Permission denied while ${step}.`
       : (e.message || 'Could not create the club.');
   } finally {
-    btn.disabled = false; btn.textContent = 'Create club';
+    btn.disabled = false; btn.textContent = wizStep === 3 ? 'Create my club' : 'Continue';
   }
 }

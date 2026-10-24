@@ -4,11 +4,11 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, signOut as authSignOut } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
+import { getAuth, onAuthStateChanged, signOut as authSignOut, connectAuthEmulator } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
 import {
   getFirestore, doc, collection, getDoc, getDocs, setDoc, addDoc, updateDoc,
   deleteDoc, onSnapshot, query, where, orderBy, increment, writeBatch, limit,
-  runTransaction
+  runTransaction, connectFirestoreEmulator
 } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js';
 
 import { rememberSignedIn, forgetSignedIn } from './session-hint.js';
@@ -31,6 +31,12 @@ const cfg = window.FIREBASE_CONFIG;
 export const app = getApps().length ? getApps()[0] : initializeApp(cfg);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+/* local development against the emulators — see firebase-config.js */
+if (window.JAG_EMULATORS) {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+}
 
 /* ── club-scoped paths ─────────────────────────────────────────────── */
 
@@ -380,7 +386,7 @@ export function clubAvatar(club, className) {
     return `<span class="${cls} has-photo"><img src="${photo}" alt="" /></span>`;
   }
   const c = club || {};
-  return `<span class="${cls}" style="background:${esc(c.color || '#58cc02')}">${esc(c.icon || '♞')}</span>`;
+  return `<span class="${cls}" style="background:${esc(c.color || '#1faf5a')}">${esc(c.icon || '♞')}</span>`;
 }
 
 /* WebP where it is understood, PNG where it is not — and never JPEG, which
@@ -453,11 +459,11 @@ export async function clubPhotoFrom(file) {
   }
 }
 
+/* Twelve, not twenty-two: enough that two clubs at one school rarely share
+   one, few enough that picking is a glance rather than a decision. */
 export const CLUB_COLORS = [
-  '#58cc02', '#1cb0f6', '#a05cf7', '#ff9600', '#ff4b4b', '#14b8a6',
-  '#ffc800', '#526b7a', '#ff5fa2', '#6366f1', '#0ea5e9', '#84cc16',
-  '#e11d48', '#7c3aed', '#0891b2', '#d946ef', '#b45309', '#166534',
-  '#1e40af', '#9f1239', '#334155', '#78350f'
+  '#1faf5a', '#2e90fa', '#8b5cf6', '#ff8a1f', '#f2484b', '#14b8a6',
+  '#f5a700', '#ec4899', '#4f46e5', '#0f3b2d', '#b45309', '#475569'
 ];
 
 export const CLUB_ICONS = [
@@ -551,6 +557,70 @@ export function promptDialog({ title, label, value = '', confirmText = 'Save', p
 }
 
 /* ── roles ─────────────────────────────────────────────────────────── */
+
+/* ── pop-over menus ──────────────────────────────────────────────────
+   One small menu at a time, anchored under (or above) whatever opened it.
+   Closes on a click elsewhere, Escape, or choosing an item; `onPick` gets
+   the data-act of the item chosen.
+   ─────────────────────────────────────────────────────────────────── */
+
+let openPop = null;
+
+export function closeMenu() {
+  if (!openPop) return;
+  const { el, anchor, off } = openPop;
+  openPop = null;
+  off();
+  el.remove();
+  if (anchor) anchor.setAttribute('aria-expanded', 'false');
+}
+
+export function openMenu(anchor, html, { onPick, place = 'below', width } = {}) {
+  const same = openPop && openPop.anchor === anchor;
+  closeMenu();
+  if (same) return null;           // a second click on the opener closes it
+
+  const el = document.createElement('div');
+  el.className = 'pop-menu';
+  el.setAttribute('role', 'menu');
+  el.innerHTML = html;
+  document.body.appendChild(el);
+
+  const r = anchor.getBoundingClientRect();
+  const w = width || Math.max(r.width, 240);
+  el.style.width = w + 'px';
+  el.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px';
+  if (place === 'above') el.style.bottom = (innerHeight - r.top + 6) + 'px';
+  else el.style.top = (r.bottom + 6) + 'px';
+  anchor.setAttribute('aria-expanded', 'true');
+
+  const onDoc = (e) => {
+    if (el.contains(e.target)) {
+      const item = e.target.closest('[data-act]');
+      if (!item) return;
+      const act = item.dataset.act;
+      closeMenu();
+      if (onPick) onPick(act, item);
+      return;
+    }
+    if (!anchor.contains(e.target)) closeMenu();
+  };
+  const onKey = (e) => { if (e.key === 'Escape') { closeMenu(); anchor.focus(); } };
+  // wait a tick so the click that opened the menu doesn't also close it
+  setTimeout(() => document.addEventListener('click', onDoc), 0);
+  document.addEventListener('keydown', onKey);
+  window.addEventListener('resize', closeMenu, { once: true });
+  openPop = {
+    el, anchor,
+    off: () => {
+      document.removeEventListener('click', onDoc);
+      document.removeEventListener('keydown', onKey);
+    }
+  };
+  const first = el.querySelector('[data-act]');
+  if (first) first.focus({ preventScroll: true });
+  return el;
+}
 
 export const ROLE_LABEL = { founder: 'Founder', admin: 'Admin', student: 'Student' };
 
@@ -663,7 +733,7 @@ export async function joinClub(user, clubId, { role } = {}) {
 const CLUB_SUBCOLLECTIONS = [
   'events', 'puzzles', 'announcements', 'shopItems', 'shopOrders',
   'attendanceForms', 'attendanceResponses', 'puzzleAttempts', 'bans', 'integrations',
-  'applications', 'memberEmails'
+  'applications', 'memberEmails', 'media'
 ];
 
 const purge = async (col) => {

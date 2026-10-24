@@ -26,7 +26,7 @@ const CONTENT = [
   'puzzleAttempts'
 ];
 
-const AVATARS = ['#58cc02', '#1cb0f6', '#a05cf7', '#ff9600', '#ff4b4b', '#14b8a6'];
+const AVATARS = ['#1faf5a', '#2e90fa', '#a05cf7', '#ff9600', '#ff4b4b', '#14b8a6'];
 
 export async function importLegacy(clubId, onProgress = () => {}, { force = false } = {}) {
   const clubSnap = await getDoc(clubRef(clubId));

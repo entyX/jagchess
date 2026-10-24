@@ -9,10 +9,11 @@
   <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/styles.css" />
   <link rel="stylesheet" href="../assets/css/clubs.css" />
   <link rel="stylesheet" href="../assets/css/tournaments.css" />
+  <link rel="stylesheet" href="/assets/css/ui.css" />
 </head>
 <body class="hub">
 
@@ -45,12 +46,12 @@
       </div>
       <div class="hub-head-actions">
         <button class="btn subtle" id="open-join">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M12 4h5.5A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5H12"/></svg>
           Join a club
         </button>
         <button class="btn primary" id="open-create">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-          Create your own
+          Start a club
         </button>
       </div>
     </div>
@@ -59,7 +60,8 @@
 
     <!-- ══ NO CLUBS YET: the hub becomes the club directory ══ -->
     <section class="discover" id="hub-discover" hidden>
-      <h1 class="discover-title">Join a Club</h1>
+      <h1 class="discover-title">Find your club</h1>
+      <p class="discover-sub">Search for your school's club, or enter the code your coach gave you.</p>
 
       <div class="discover-search">
         <input id="discover-search" type="text" placeholder="Search clubs by name…" autocomplete="off" aria-label="Search clubs" />
@@ -80,6 +82,14 @@
           <button class="btn primary" id="discover-code-join" hidden>Join</button>
         </div>
         <p class="code-hint" id="discover-code-hint">Ask a club admin for the 6-character join code.</p>
+      </div>
+
+      <div class="discover-start">
+        <div>
+          <b>Running a club?</b>
+          <span>Set one up in under a minute. It's free.</span>
+        </div>
+        <button class="btn dark" data-open-create>Start a club</button>
       </div>
     </section>
   </main>
@@ -109,90 +119,74 @@
     </div>
   </div>
 
-  <!-- ══ CREATE MODAL ══ -->
-  <div class="modal" id="create-modal" hidden>
-    <div class="modal-card create-card">
-      <button class="icon-btn modal-close" data-close-create title="Close">✕</button>
-      <h3>Create your club</h3>
-
-      <div class="create-body">
-        <div class="field-block">
-          <label for="new-name">Club name</label>
-          <input id="new-name" type="text" placeholder="North Creek Chess Club" autocomplete="off" />
-          <div class="domain-preview">
-            <span class="domain-fixed" data-host>…/clubs/</span><span class="domain-slug" id="slug-preview">your-club</span>
-            <span class="slug-state" id="slug-state"></span>
-          </div>
-        </div>
-
-        <div class="field-block">
-          <label for="new-desc">Short description <span class="opt">optional</span></label>
-          <textarea id="new-desc" rows="2" placeholder="What is this club about?"></textarea>
-        </div>
-
-        <div class="field-row-2">
-          <div class="field-block">
-            <label>Club icon</label>
-            <div class="icon-picker" id="icon-picker"></div>
-          </div>
-          <div class="field-block">
-            <label>Club colour</label>
-            <div class="color-picker" id="color-picker"></div>
-          </div>
-        </div>
-
-        <div class="field-block">
-          <label>Who can join?</label>
-          <div class="seg-choice" id="visibility-choice">
-            <button type="button" class="seg-opt on" data-vis="public">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.2 9.5h17.6M3.2 14.5h17.6M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/></svg>
-              <span><b>Public</b><small>Listed in search, anyone can join</small></span>
-            </button>
-            <button type="button" class="seg-opt" data-vis="private">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="3"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/></svg>
-              <span><b>Private</b><small>Join code required</small></span>
-            </button>
-          </div>
-        </div>
-
-        <div class="field-block">
-          <label>Join code</label>
-          <div class="code-row">
-            <div class="code-display" id="code-display">------</div>
-            <button class="btn subtle sm" id="code-regen" type="button">Regenerate</button>
-            <button class="btn subtle sm" id="code-copy" type="button">Copy</button>
-          </div>
-        </div>
-
-        <div class="field-block">
-          <label for="admin-email-input">Admins</label>
-          <div class="email-chips" id="admin-chips">
-            <input id="admin-email-input" type="text" placeholder="Add an admin by email, press Enter…" autocomplete="off" />
-          </div>
-          <p class="field-hint">You are an admin automatically. Anyone you list here becomes an admin the moment they join.</p>
-        </div>
-
-        <div class="field-block">
-          <label>Start from</label>
-          <div class="template-picker" id="template-picker">
-            <button type="button" class="template-opt on" data-template="starter">
-              <span class="template-emoji">♟</span>
-              <b>Starter chess club</b>
-              <small>Dashboard, events, puzzles, newsletters, leaderboard, store and donations — everything set up.</small>
-            </button>
-            <button type="button" class="template-opt" data-template="blank">
-              <span class="template-emoji">◻</span>
-              <b>Blank</b>
-              <small>Just a dashboard and profiles. Add the blocks you want, when you want them.</small>
-            </button>
-          </div>
-        </div>
+  <!-- ══ CREATE: three short steps ══ -->
+  <div class="modal wizard" id="create-modal" hidden>
+    <div class="modal-card wizard-card" role="dialog" aria-labelledby="wiz-title">
+      <div class="wizard-top">
+        <div class="wizard-steps" id="wiz-dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+        <span class="wizard-count" id="wiz-count">Step 1 of 3</span>
+        <button class="icon-btn modal-close" data-close-create title="Close" aria-label="Close">✕</button>
       </div>
 
-      <div class="create-foot">
-        <span class="create-error" id="create-error"></span>
-        <button class="btn subtle" data-close-create>Cancel</button>
-        <button class="btn primary" id="create-submit">Create club</button>
+      <section class="wiz-step on" data-step="1">
+        <h2 id="wiz-title">What's your club called?</h2>
+        <input id="new-name" class="wiz-input" type="text" placeholder="Northside Chess Club" autocomplete="off" maxlength="60" />
+        <div class="domain-preview">
+          <span class="domain-fixed" data-host>…/clubs/</span><span class="domain-slug" id="slug-preview">your-club</span>
+          <span class="slug-state" id="slug-state"></span>
+        </div>
+        <label class="wiz-label" for="new-desc">One line about it <span class="opt">optional</span></label>
+        <input id="new-desc" type="text" placeholder="Tuesdays at lunch in room 204" maxlength="120" autocomplete="off" />
+      </section>
+
+      <section class="wiz-step" data-step="2">
+        <h2>Pick a look</h2>
+        <div class="wiz-look">
+          <div class="wiz-preview" id="wiz-preview">
+            <span class="club-avatar" id="wiz-avatar">♞</span>
+            <b id="wiz-name">Your club</b>
+            <small>This is how it shows up for members.</small>
+          </div>
+          <div class="wiz-pickers">
+            <span class="wiz-label">Colour</span>
+            <div class="color-picker" id="color-picker"></div>
+            <span class="wiz-label">Badge</span>
+            <div class="icon-picker" id="icon-picker"></div>
+            <small class="field-hint">You can upload your own logo later in Settings.</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="wiz-step" data-step="3">
+        <h2>What do you want to start with?</h2>
+        <div class="template-picker" id="template-picker">
+          <button type="button" class="template-opt on" data-template="starter">
+            <span class="template-emoji">🏫</span>
+            <span><b>A school club</b>
+            <small>Meetings and attendance, puzzles, games, a leaderboard, news and tournaments.</small></span>
+          </button>
+          <button type="button" class="template-opt" data-template="friends">
+            <span class="template-emoji">⚔️</span>
+            <span><b>Just to play</b>
+            <small>Games, puzzles and a leaderboard. Add more whenever you like.</small></span>
+          </button>
+          <button type="button" class="template-opt" data-template="blank">
+            <span class="template-emoji">✏️</span>
+            <span><b>Start empty</b>
+            <small>A home page, and you choose every page yourself.</small></span>
+          </button>
+        </div>
+        <button type="button" class="wiz-privacy" id="visibility-choice" data-vis="public" aria-pressed="false">
+          <span><b>Anyone with the link can join</b>
+          <small id="vis-hint">Your club is listed so students can find it. Turn this off to require a join code.</small></span>
+          <i class="switch on" aria-hidden="true"></i>
+        </button>
+      </section>
+
+      <div class="wizard-foot">
+        <span class="create-error" id="create-error" role="alert"></span>
+        <button class="btn ghost" id="wiz-back" hidden>Back</button>
+        <button class="btn primary lg" id="create-submit">Continue</button>
       </div>
     </div>
   </div>

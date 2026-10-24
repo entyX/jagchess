@@ -44,13 +44,14 @@ export function readRating(source) {
   };
 }
 
-/* Everyone starts at 1000, but the number means nothing until they have
-   actually played, so it shows as "?" for a brand-new player. */
+/* Everyone starts at 1000, but the number means little until they have
+   actually played, so a brand-new player's rating carries a question mark
+   the way lichess marks a provisional one: "1000?". */
 export const isProvisional = (rating) => readRating({ rating }).games < 1;
 
 export const displayRating = (rating) => {
   const g = readRating({ rating });
-  return g.games < 1 ? '?' : String(Math.round(g.r));
+  return g.games < 1 ? Math.round(g.r) + '?' : String(Math.round(g.r));
 };
 
 const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
