@@ -18,7 +18,7 @@
   gap: 9px;
   font-family: var(--font);
   font-size: 14.5px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text);
   line-height: 1.35;
 }
@@ -33,7 +33,7 @@
   background: var(--surface-2, var(--bg-alt, #f1f4f7));
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   margin-top: 1px;
 }
@@ -76,7 +76,7 @@
 .rf-input:focus {
   outline: none;
   border-color: var(--green);
-  box-shadow: 0 0 0 4px rgba(88, 204, 2, .16);
+  box-shadow: 0 0 0 4px rgba(24,191,134, .16);
 }
 textarea.rf-input { resize: vertical; min-height: 96px; }
 
@@ -120,7 +120,7 @@ textarea.rf-input { resize: vertical; min-height: 96px; }
 .rf-choice input:checked ~ .rf-choice-dot { border-color: var(--green); }
 .rf-choice input:checked ~ .rf-choice-dot::after { transform: scale(1); }
 .rf-choice:has(input:checked) { border-color: var(--green); background: var(--green-soft); }
-.rf-choice input:focus-visible ~ .rf-choice-dot { box-shadow: 0 0 0 4px rgba(88, 204, 2, .2); }
+.rf-choice input:focus-visible ~ .rf-choice-dot { box-shadow: 0 0 0 4px rgba(24,191,134, .2); }
 
 .rf-choice-text {
   font-size: 14px;
@@ -164,7 +164,7 @@ textarea.rf-input { resize: vertical; min-height: 96px; }
   border-radius: 50%;
   background: #fff;
   border: 3px solid var(--green);
-  box-shadow: 0 2px 6px rgba(20, 38, 47, .22);
+  box-shadow: 0 2px 6px rgba(26,29,36, .22);
 }
 .rf-range::-moz-range-thumb {
   width: 16px;
@@ -172,10 +172,10 @@ textarea.rf-input { resize: vertical; min-height: 96px; }
   border-radius: 50%;
   background: #fff;
   border: 3px solid var(--green);
-  box-shadow: 0 2px 6px rgba(20, 38, 47, .22);
+  box-shadow: 0 2px 6px rgba(26,29,36, .22);
 }
 .rf-range:focus-visible { outline: none; }
-.rf-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px rgba(88, 204, 2, .22); }
+.rf-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px rgba(24,191,134, .22); }
 
 .rf-range-out {
   flex-shrink: 0;

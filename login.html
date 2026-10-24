@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400..700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/auth.css" />
 </head>
 <body>
@@ -20,38 +20,26 @@
   <!-- ══ BRAND PANEL ══ -->
   <aside class="auth-brand">
     <a href="/" class="ab-logo">
-      <img class="ab-logo-img" src="/assets/img/jagchess-wordmark.png" alt="JagChess"
-           width="444" height="132" />
+      <img class="brand-mark-img" src="/assets/img/jagchess-mark.png" alt="" width="28" height="28" /><span class="brand-word">JagChess</span>
     </a>
 
     <div class="ab-body">
-      <h1>The home your club plays from.</h1>
-      <p>Puzzles, events, lessons, newsletters and rewards — one login for everyone in the club.</p>
+      <h1>The whole club, on one board.</h1>
+      <p>One login for everyone in the club, whether you run it or just want a game.</p>
       <div class="ab-points">
-        <div class="ab-point"><i>♟</i> Daily puzzles with instant scoring</div>
-        <div class="ab-point"><i>🔥</i> Streaks that reward showing up</div>
-        <div class="ab-point"><i>🏆</i> A leaderboard everyone can see</div>
-        <div class="ab-point"><i>🎁</i> Points you can actually spend</div>
+        <div class="ab-point"><i style="--c:#ff6a4d"></i>Meetings that take attendance for you</div>
+        <div class="ab-point"><i style="--c:#6e5bff"></i>Puzzles worth points</div>
+        <div class="ab-point"><i style="--c:#2d8cff"></i>Rated games with real clocks</div>
+        <div class="ab-point"><i style="--c:#18bf86"></i>Points you can actually spend</div>
       </div>
     </div>
+
+    <div class="ab-lineup" aria-hidden="true"><canvas id="line-canvas"></canvas></div>
 
     <div class="ab-foot">
       <span>© <span id="year">2026</span> JagChess</span>
       <a href="/privacy">Privacy policy</a>
-      <a href="/">← Back to the homepage</a>
-    </div>
-
-    <div class="ab-board" aria-hidden="true">
-      <div class="ab-board-inner">
-        <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
-        <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
-        <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
-        <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
-        <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
-        <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
-        <i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i>
-        <i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i><i></i><i class="d"></i>
-      </div>
+      <a href="/">Back to the homepage</a>
     </div>
   </aside>
 
@@ -60,7 +48,7 @@
     <div class="auth-card">
 
       <a class="auth-logo" href="/" aria-label="JagChess home">
-        <img src="/assets/img/jagchess-wordmark.png" alt="JagChess" width="444" height="132" />
+        <img class="brand-mark-img" src="/assets/img/jagchess-mark.png" alt="" width="28" height="28" /><span class="brand-word">JagChess</span>
       </a>
 
       <a class="auth-back" href="/">
@@ -207,5 +195,6 @@
 <script src="assets/js/firebase-config.js"></script>
 <script type="module" src="assets/js/analytics.js"></script>
 <script type="module" src="assets/js/auth.js"></script>
+<script type="module" src="/assets/js/welcome-3d.js"></script>
 </body>
 </html>

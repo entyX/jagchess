@@ -386,7 +386,7 @@ export function clubAvatar(club, className) {
     return `<span class="${cls} has-photo"><img src="${photo}" alt="" /></span>`;
   }
   const c = club || {};
-  return `<span class="${cls}" style="background:${esc(c.color || '#1faf5a')}">${esc(c.icon || '♞')}</span>`;
+  return `<span class="${cls}" style="background:${esc(c.color || '#e9a93a')}">${esc(c.icon || '♞')}</span>`;
 }
 
 /* WebP where it is understood, PNG where it is not — and never JPEG, which
@@ -462,8 +462,8 @@ export async function clubPhotoFrom(file) {
 /* Twelve, not twenty-two: enough that two clubs at one school rarely share
    one, few enough that picking is a glance rather than a decision. */
 export const CLUB_COLORS = [
-  '#1faf5a', '#2e90fa', '#8b5cf6', '#ff8a1f', '#f2484b', '#14b8a6',
-  '#f5a700', '#ec4899', '#4f46e5', '#0f3b2d', '#b45309', '#475569'
+  '#e9a93a', '#ff6a4d', '#6e5bff', '#2d8cff', '#18bf86', '#f0508c',
+  '#1a1d24', '#ef4444', '#14b8a6', '#4f46e5', '#b45309', '#475569'
 ];
 
 export const CLUB_ICONS = [

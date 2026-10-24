@@ -225,9 +225,9 @@ const out = await page.evaluate(async () => {
 
     /* The first of each is what a new club gets and what every fallback
        reaches for, so appending must never reorder them. The colour is the
-       brand green, which the fallbacks in club-core also use. */
+       brand gold, which the fallbacks in club-core also use. */
     say('the original default is still first', C.CLUB_ICONS[0] === '♞', C.CLUB_ICONS[0]);
-    say('and the brand green leads the colours', C.CLUB_COLORS[0] === '#1faf5a', C.CLUB_COLORS[0]);
+    say('and the brand gold leads the colours', C.CLUB_COLORS[0] === '#e9a93a', C.CLUB_COLORS[0]);
   }
 
   // ── the listing carries it ────────────────────────────────────────

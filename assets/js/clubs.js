@@ -146,7 +146,7 @@ async function renderClubs() {
 
   grid.innerHTML = clubs.map((c) => `
     <div class="club-card-wrap">
-      <a class="club-card" href="/clubs/${esc(c.slug || c.id)}" style="--card-tint:${esc(c.color || '#1faf5a')}">
+      <a class="club-card" href="/clubs/${esc(c.slug || c.id)}" style="--card-tint:${esc(c.color || '#e9a93a')}">
         <div class="club-card-top">
           ${clubAvatar(c, 'club-avatar')}
           <span class="role-pill ${esc(c.role)}">${esc(ROLE_LABEL[c.role] || 'Student')}</span>
@@ -555,7 +555,7 @@ async function joinByCode(ui) {
 
 const draft = {
   icon: '♞',
-  color: '#1faf5a',
+  color: '#e9a93a',
   visibility: 'public',
   code: makeCode(),
   template: 'starter'

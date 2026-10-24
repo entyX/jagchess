@@ -22,8 +22,8 @@
   gap: 8px;
   padding: 30px 34px;
   border-radius: var(--r-xl);
-  background: linear-gradient(135deg, #58cc02 0%, #3ea800 55%, #2f8f00 100%);
-  box-shadow: 0 5px 0 #2c8100, 0 22px 40px -18px rgba(47,143,0,0.65);
+  background: linear-gradient(135deg, #5a45ff 0%, #4a5bff 45%, #2d8cff 100%);
+  box-shadow: 0 1px 2px rgba(26,29,36,.06), 0 6px 14px -10px rgba(26,29,36,.4), 0 22px 40px -18px rgba(74,55,224,.5);
   color: #fff;
   min-height: 190px;
 }
@@ -40,7 +40,7 @@
   position: relative;
   font-family: var(--font-ui);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   color: rgba(255,255,255,0.72);
 }
@@ -74,10 +74,10 @@
 .stu .stu-hero-actions .btn {
   background: #fff;
   border-color: #fff;
-  color: #2f8f00;
+  color: var(--purple-dark);
   --btn-shadow: rgba(0,0,0,0.22);
 }
-.stu .stu-hero-actions .btn:hover { background: #f4fff0; border-color: #f4fff0; }
+.stu .stu-hero-actions .btn:hover { background: #f3f1ff; border-color: #f3f1ff; }
 .stu .stu-hero-actions .btn.on-hero-ghost {
   background: rgba(255,255,255,0.14);
   border-color: rgba(255,255,255,0.42);
@@ -203,7 +203,7 @@
 .stu .stu-stk-label {
   font-family: var(--font-ui);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   color: var(--orange-dark);
   opacity: .8;
@@ -265,7 +265,7 @@
 .stu .stu-dash-act:nth-child(2) .stu-dash-act-icon { background: var(--blue-soft);   color: var(--blue-dark); }
 .stu .stu-dash-act:nth-child(3) .stu-dash-act-icon { background: var(--purple-soft); color: var(--purple-dark); }
 
-.stu .stu-dash-act-title { font-size: 15px; font-weight: 800; color: var(--text); }
+.stu .stu-dash-act-title { font-size: 15px; font-weight: 700; color: var(--text); }
 .stu .stu-dash-act-sub { font-family: var(--font-ui); font-size: 12.5px; color: var(--muted); margin-top: 1px; }
 
 /* ── DASH MAIN ──────────────────────────────────────────────────────── */
@@ -279,7 +279,7 @@
 
 .stu .stu-dash-tip-tile {
   background: linear-gradient(150deg, var(--purple-soft), var(--card) 70%);
-  border-color: rgba(160,92,247,0.28);
+  border-color: rgba(110,91,255,0.28);
 }
 .stu .stu-dash-tip-text {
   font-family: var(--font);
@@ -317,7 +317,7 @@
   font-weight: 700;
   display: grid;
   place-items: center;
-  box-shadow: 0 2px 0 var(--red-dark);
+  box-shadow: 0 1px 2px rgba(26,29,36,.06), 0 6px 14px -10px rgba(26,29,36,.4);
   pointer-events: none;
 }
 
@@ -354,7 +354,7 @@
 .stu .shop-card:hover {
   transform: translateY(-3px);
   border-color: var(--border-2);
-  box-shadow: 0 8px 0 var(--surface-2), 0 18px 30px -22px rgba(20,38,47,0.5);
+  box-shadow: 0 8px 0 var(--surface-2), 0 18px 30px -22px rgba(26,29,36,0.5);
 }
 
 .stu .shop-card-img { width: 100%; height: 172px; object-fit: cover; display: block; }
@@ -367,7 +367,7 @@
   background: var(--surface-2);
 }
 .stu .shop-card-body { padding: 15px 16px 16px; flex: 1; display: flex; flex-direction: column; }
-.stu .shop-card-name { font-family: var(--font); font-size: 15.5px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+.stu .shop-card-name { font-family: var(--font); font-size: 15.5px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
 .stu .shop-card-desc {
   font-size: 13px;
   color: var(--text-2);
@@ -392,9 +392,9 @@
 .stu .shop-add-btn, .stu .shop-incart-btn { font-size: 13px; padding: 8px 14px; }
 .stu .shop-incart-btn {
   background: var(--green-soft);
-  border-color: rgba(88,204,2,0.4);
+  border-color: rgba(24,191,134,0.4);
   color: var(--green-dark);
-  --btn-shadow: rgba(88,204,2,0.3);
+  --btn-shadow: rgba(24,191,134,0.3);
 }
 
 .stu .qty-ctrl {
@@ -418,7 +418,7 @@
   display: grid;
   place-items: center;
   padding: 0;
-  box-shadow: 0 1px 2px rgba(20,38,47,0.14);
+  box-shadow: 0 1px 2px rgba(26,29,36,0.14);
   transition: background .12s, transform .1s;
 }
 .stu .qty-btn:hover:not(:disabled) { background: var(--green); color: #fff; }
@@ -439,7 +439,7 @@
 .stu .my-order-name {
   font-family: var(--font);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -452,7 +452,7 @@
   flex-shrink: 0;
   font-family: var(--font-ui);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   padding: 4px 10px;
   border-radius: 999px;
@@ -483,7 +483,7 @@
   overflow: hidden;
 }
 .stu .cart-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.stu .cart-item-name { flex: 1; font-family: var(--font); font-size: 14.5px; font-weight: 800; }
+.stu .cart-item-name { flex: 1; font-family: var(--font); font-size: 14.5px; font-weight: 700; }
 .stu .cart-item-cost { font-family: var(--font); font-size: 14.5px; font-weight: 700; color: var(--gold-dark); }
 .stu .cart-item-remove {
   border: none;
@@ -525,7 +525,7 @@
   padding: 38px 26px;
   text-align: center;
   background: linear-gradient(165deg, var(--green-soft), var(--card) 62%);
-  border-color: rgba(88,204,2,0.3);
+  border-color: rgba(24,191,134,0.3);
 }
 
 .stu .profile-avatar-lg {
@@ -538,7 +538,7 @@
   font-size: 36px;
   font-weight: 700;
   color: #fff;
-  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.16), 0 8px 22px -8px rgba(20,38,47,0.4);
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.16), 0 8px 22px -8px rgba(26,29,36,0.4);
   transition: background .24s var(--ease);
 }
 
@@ -550,7 +550,7 @@
 .stu .profile-edit-section-label {
   font-family: var(--font-ui);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   color: var(--muted);
   margin-bottom: 12px;
@@ -605,7 +605,7 @@
 .stu .stu-att-confirm-label input[type="checkbox"] { width: 21px; height: 21px; flex-shrink: 0; }
 
 .stu .stu-att-q-wrap { margin-bottom: 16px; }
-.stu .stu-att-q-label { display: block; font-family: var(--font); font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.stu .stu-att-q-label { display: block; font-family: var(--font); font-size: 14px; font-weight: 700; margin-bottom: 6px; }
 
 .stu .stu-att-done-icon {
   width: 72px;
@@ -617,7 +617,7 @@
   font-size: 34px;
   color: #fff;
   background: var(--green);
-  box-shadow: 0 4px 0 var(--green-dark);
+  box-shadow: 0 1px 2px rgba(26,29,36,.06), 0 6px 14px -10px rgba(26,29,36,.4);
   animation: stu-pop .5s var(--ease) both;
 }
 @keyframes stu-pop {

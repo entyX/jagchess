@@ -13,7 +13,7 @@
 .tn-tab {
   border: 0; background: none; cursor: pointer;
   padding: 8px 16px; border-radius: var(--r-pill);
-  font: 800 13.5px var(--font-ui); color: var(--muted);
+  font: 700 13.5px var(--font-ui); color: var(--muted);
 }
 .tn-tab.on { background: var(--card); color: var(--text); box-shadow: var(--lift); }
 
@@ -60,7 +60,7 @@
 
 .tn-podium-mini { display: flex; flex-wrap: wrap; gap: 5px; }
 .tn-podium-chip {
-  font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: var(--r-pill);
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: var(--r-pill);
   background: var(--surface-2); color: var(--text-2);
 }
 .tn-podium-chip.p1 { background: var(--gold-soft); color: var(--gold-dark); }
@@ -70,7 +70,7 @@
 
 .tn-status {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12.5px; font-weight: 800; letter-spacing: 0;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0;
   padding: 4px 10px; border-radius: var(--r-pill);
   background: var(--surface-2); color: var(--muted);
 }
@@ -91,7 +91,7 @@
 
 .tn-pill {
   display: inline-flex; align-items: center;
-  font-size: 11.5px; font-weight: 800;
+  font-size: 11.5px; font-weight: 700;
   padding: 4px 10px; border-radius: var(--r-pill);
   background: var(--surface-2); color: var(--text-2);
 }
@@ -108,7 +108,7 @@
 
 .tn-back {
   border: 0; background: none; cursor: pointer;
-  font: 800 13.5px var(--font-ui); color: var(--muted);
+  font: 700 13.5px var(--font-ui); color: var(--muted);
   padding: 0 0 12px;
 }
 .tn-back:hover { color: var(--text); }
@@ -150,7 +150,7 @@
 [data-theme="dark"] .tn-clock.live b { color: var(--green-hi); }
 
 .tn-joined {
-  font: 800 14px var(--font-ui); color: var(--green-dark);
+  font: 700 14px var(--font-ui); color: var(--green-dark);
   background: var(--card); padding: 9px 16px; border-radius: var(--r-pill);
 }
 [data-theme="dark"] .tn-joined { color: var(--green-hi); }
@@ -158,7 +158,7 @@
 
 .tn-berserk-toggle {
   display: inline-flex; align-items: center; gap: 7px;
-  font: 800 12.5px var(--font-ui); color: var(--text-2);
+  font: 700 12.5px var(--font-ui); color: var(--text-2);
   background: var(--card); padding: 8px 13px; border-radius: var(--r-pill);
   cursor: pointer; border: 1px solid transparent;
 }
@@ -219,7 +219,7 @@
   padding: 9px 10px; border-radius: var(--r-sm);
 }
 .tn-row-head {
-  font-size: 12.5px; font-weight: 800; letter-spacing: 0; color: var(--muted);
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0; color: var(--muted);
   border-bottom: 1px solid var(--border); border-radius: 0; padding-bottom: 8px;
 }
 .tn-rows .tn-row + .tn-row { border-top: 1px solid var(--border); border-radius: 0; }
@@ -237,12 +237,12 @@
 .tn-player-id { min-width: 0; line-height: 1.3; }
 .tn-player-name {
   display: flex; align-items: center; gap: 7px;
-  font-size: 14px; font-weight: 800; color: var(--text);
+  font-size: 14px; font-weight: 700; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .tn-player-sub { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; }
 .tn-fire {
-  font-size: 12.5px; font-weight: 800; letter-spacing: 0;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0;
   background: var(--orange-soft); color: var(--orange-dark);
   padding: 2px 7px; border-radius: var(--r-pill);
 }
@@ -253,9 +253,9 @@
 
 /* ── SIDE PANELS ────────────────────────────────────────────────────── */
 
-.tn-next.ready, .tn-next.live { border-color: var(--green); box-shadow: 0 3px 0 var(--green-soft); }
+.tn-next.ready, .tn-next.live { border-color: var(--green); box-shadow: 0 1px 2px rgba(26,29,36,.06), 0 6px 14px -10px rgba(26,29,36,.4); }
 .tn-next-opp { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
-.tn-next-opp b { display: block; font-size: 14.5px; font-weight: 800; }
+.tn-next-opp b { display: block; font-size: 14.5px; font-weight: 700; }
 .tn-next-opp small { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
 
 .tn-pool-bar {
@@ -303,7 +303,7 @@
 
 .tn-create { max-width: 560px; width: min(560px, calc(100vw - 32px)); max-height: 92vh; overflow-y: auto; }
 .tn-field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
-.tn-field > label { font-size: 13px; font-weight: 800; color: var(--text-2); }
+.tn-field > label { font-size: 13px; font-weight: 700; color: var(--text-2); }
 .tn-field .opt { font-weight: 600; color: var(--muted); font-size: 12px; }
 .tn-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .tn-hint { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
@@ -316,7 +316,7 @@
   font-family: var(--font-ui); color: var(--text);
 }
 .tn-opt.on { border-color: var(--purple); background: var(--purple-soft); }
-.tn-opt b { display: block; font-size: 14px; font-weight: 800; margin-bottom: 3px; }
+.tn-opt b { display: block; font-size: 14px; font-weight: 700; margin-bottom: 3px; }
 .tn-opt small { display: block; font-size: 12px; line-height: 1.45; color: var(--text-2); }
 
 .tn-switch {
@@ -325,7 +325,7 @@
   border: 1px solid var(--border); border-radius: var(--r-md);
   background: var(--surface); cursor: pointer;
 }
-.tn-switch b { display: block; font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+.tn-switch b { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
 .tn-switch small { display: block; font-size: 12px; line-height: 1.45; color: var(--text-2); }
 
 .tn-create-foot {
@@ -350,7 +350,7 @@
   padding: 13px 15px; border-radius: var(--r-md);
   background: var(--blue-soft); margin-bottom: 12px;
 }
-.ml-who b { display: block; font-size: 13.5px; font-weight: 800; color: var(--blue-dark); margin-bottom: 3px; }
+.ml-who b { display: block; font-size: 13.5px; font-weight: 700; color: var(--blue-dark); margin-bottom: 3px; }
 .ml-who span { font-size: 12.5px; line-height: 1.5; color: var(--blue-dark); }
 [data-theme="dark"] .ml-who b, [data-theme="dark"] .ml-who span { color: var(--blue); }
 
@@ -406,7 +406,7 @@
   text-decoration: none; white-space: nowrap;
 }
 .hub-tab:hover { background: var(--surface-2); color: var(--text); }
-.hub-tab.on { background: var(--green-soft); color: var(--green-dark); font-weight: 800; }
+.hub-tab.on { background: var(--green-soft); color: var(--green-dark); font-weight: 700; }
 [data-theme="dark"] .hub-tab.on { color: var(--green-hi); }
 .hub-tab svg { width: 17px; height: 17px; flex-shrink: 0; }
 
@@ -437,13 +437,13 @@
   width: 62px; height: 62px; margin: 0 auto 16px; border-radius: 20px;
   display: grid; place-items: center; font-size: 30px; color: #fff;
   background: linear-gradient(160deg, var(--green-hi), var(--green-dark));
-  box-shadow: 0 4px 0 #2f7a06;
+  box-shadow: 0 8px 20px -10px rgba(26,29,36,.5);
 }
 .mlp-card h1 { font-family: var(--font); font-size: 25px; font-weight: 700; letter-spacing: -.03em; margin: 0 0 8px; }
 .mlp-card p { font-size: 14.5px; line-height: 1.6; color: var(--text-2); margin: 0 0 18px; }
 .mlp-terms { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 20px; }
 .mlp-from { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 18px; }
-.mlp-from b { font-size: 15px; font-weight: 800; }
+.mlp-from b { font-size: 15px; font-weight: 700; }
 .mlp-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .mlp-spinner {
   width: 34px; height: 34px; margin: 0 auto 16px;
@@ -451,7 +451,7 @@
   border-radius: 999px; animation: mlp-spin .8s linear infinite;
 }
 @keyframes mlp-spin { to { transform: rotate(360deg); } }
-.mlp-card.bad .mlp-mark { background: linear-gradient(160deg, #ff7676, var(--red-dark)); box-shadow: 0 4px 0 #a01f1f; }
+.mlp-card.bad .mlp-mark { background: linear-gradient(160deg, #ff7676, var(--red-dark)); box-shadow: 0 1px 2px rgba(26,29,36,.06), 0 6px 14px -10px rgba(26,29,36,.4); }
 
 /* ── WHAT'S NEW ─────────────────────────────────────────────────────── */
 
@@ -459,7 +459,7 @@
    the change pills are styled here as well as there. */
 .whats-new-list .cl-kind {
   flex-shrink: 0;
-  font-size: 12.5px; font-weight: 800; letter-spacing: 0;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0;
   padding: 3px 8px; border-radius: var(--r-pill);
   margin-top: 2px; min-width: 62px; text-align: center;
   background: var(--surface-2); color: var(--text-2);

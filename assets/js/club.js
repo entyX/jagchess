@@ -412,6 +412,7 @@ function navButton(id, name, iconName, opts = {}) {
   const b = document.createElement('button');
   b.className = 'tab' + (ctx.page === id ? ' active' : '');
   b.dataset.page = id;
+  b.dataset.icon = iconName;      // the stylesheet colours each kind of page by its icon
   const editing = opts.editable && ctx.isAdmin;
   b.innerHTML =
     (editing ? '<i class="tab-grip" data-grip title="Drag to reorder">⠿</i>' : '') +
@@ -506,7 +507,7 @@ function buildTabbar() {
   }
   const items = [{ id: 'dashboard', label: 'Home', icon: 'home' }, ...picks];
   bar.innerHTML = items.map((t) => `
-    <button class="tabbar-btn${ctx.page === t.id ? ' on' : ''}" data-tab="${esc(t.id)}">
+    <button class="tabbar-btn${ctx.page === t.id ? ' on' : ''}" data-tab="${esc(t.id)}" data-icon="${esc(t.icon)}">
       ${icon(t.icon)}<span>${esc(t.label)}</span>
     </button>`).join('') + `
     <button class="tabbar-btn" data-tab="__more">${icon('more')}<span>More</span></button>`;

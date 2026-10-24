@@ -42,22 +42,22 @@ import {
 
 export const BLOCK_TYPES = {
   events: {
-    name: 'Events', icon: 'calendar', tint: 'var(--blue-soft)',
+    name: 'Events', icon: 'calendar', tint: 'var(--orange-soft)',
     desc: 'A shared calendar for practices, tournaments and meetings — with attendance and streaks.',
     sub: 'Practices, tournaments and meetings'
   },
   puzzles: {
-    name: 'Puzzles', icon: 'puzzle', tint: 'var(--green-soft)',
+    name: 'Puzzles', icon: 'puzzle', tint: 'var(--purple-soft)',
     desc: 'Publish tactical positions from a board or a FEN, file them into collections, and share a collection with the whole of JagChess. Members solve them for points, and can build their own.',
     sub: 'Tactics training worth points'
   },
   newsletters: {
-    name: 'Newsletters', icon: 'mail', tint: 'var(--purple-soft)',
+    name: 'Newsletters', icon: 'mail', tint: 'var(--gold-soft)',
     desc: 'Write rich announcements for the club and keep them in one readable archive.',
     sub: 'Announcements and updates'
   },
   leaderboard: {
-    name: 'Leaderboard', icon: 'trophy', tint: 'var(--gold-soft)',
+    name: 'Leaderboard', icon: 'trophy', tint: 'var(--mint-soft)',
     desc: 'Rank every member by the points they have earned across the whole club.',
     sub: 'Who is ahead this season'
   },
@@ -67,17 +67,17 @@ export const BLOCK_TYPES = {
     sub: 'Games against clubmates and anyone on JagChess'
   },
   tournaments: {
-    name: 'Tournaments', icon: 'tournament', tint: 'var(--purple-soft)',
+    name: 'Tournaments', icon: 'tournament', tint: 'var(--rose-soft)',
     desc: 'Run timed arenas, rated or casual, or a real Lichess tournament — with live standings and a full history.',
     sub: 'Arenas, Lichess events and past winners'
   },
   store: {
-    name: 'Store', icon: 'bag', tint: 'var(--orange-soft)',
+    name: 'Store', icon: 'bag', tint: 'var(--mint-soft)',
     desc: 'Let members spend their points on merch, entry fees or privileges, with order approval.',
     sub: 'Spend points on real rewards'
   },
   donate: {
-    name: 'Donate', icon: 'heart', tint: 'var(--red-soft)',
+    name: 'Donate', icon: 'heart', tint: 'var(--rose-soft)',
     desc: 'A simple page asking supporters to help fund equipment, coaching and travel.',
     sub: 'Support the club'
   }

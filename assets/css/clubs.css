@@ -29,7 +29,7 @@ body.hub {
   height: 38px;
   border-radius: 12px;
   background: linear-gradient(160deg, var(--green-hi, #61e002), var(--green-dark));
-  box-shadow: 0 3px 0 #2f7a06, inset 0 1px 0 rgba(255,255,255,.35);
+  box-shadow: 0 8px 20px -10px rgba(26,29,36,.5);
   display: grid;
   place-items: center;
   font-size: 21px;
@@ -54,7 +54,7 @@ body.hub {
   max-width: 210px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.hub-user-name { font-family: var(--font); font-size: 14px; font-weight: 800; color: var(--text); }
+.hub-user-name { font-family: var(--font); font-size: 14px; font-weight: 700; color: var(--text); }
 .hub-user-mail { font-size: 11.5px; color: var(--muted); }
 
 /* ── HUB BODY ───────────────────────────────────────────────────────── */
@@ -120,7 +120,7 @@ body.hub {
 .role-pill {
   font-family: var(--font-ui);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   padding: 4px 10px;
   border-radius: 999px;
@@ -223,7 +223,7 @@ body.hub {
   display: block;
   font-family: var(--font-ui);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   color: var(--muted);
   margin-bottom: 4px;
@@ -235,7 +235,7 @@ body.hub {
   display: block;
   font-family: var(--font);
   font-size: 13.5px;
-  font-weight: 800;
+  font-weight: 700;
   margin-bottom: 7px;
 }
 
@@ -261,7 +261,7 @@ body.hub {
 }
 .club-card-meta { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
 .club-card-meta svg { width: 16px; height: 16px; }
-.club-card-go { font-family: var(--font); font-size: 13.5px; font-weight: 800; color: var(--green-dark); }
+.club-card-go { font-family: var(--font); font-size: 13.5px; font-weight: 700; color: var(--green-dark); }
 
 /* ── NO CLUBS YET: THE HUB AS A DIRECTORY ───────────────────────
    A member of nothing has no list to read, so the page stops pretending to
@@ -291,7 +291,7 @@ body.hub {
   font-size: 16px;
   box-shadow: var(--lift-card);
 }
-.discover-search input:focus { box-shadow: 0 0 0 4px rgba(28,176,246,0.14); }
+.discover-search input:focus { box-shadow: 0 0 0 4px rgba(45,140,255,0.14); }
 .discover-search .ds-ico {
   position: absolute;
   right: 18px;
@@ -326,7 +326,7 @@ body.hub {
 .discover-card-name {
   font-family: var(--font);
   font-size: 15.5px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
   letter-spacing: -0.01em;
   display: -webkit-box;
@@ -335,7 +335,7 @@ body.hub {
   overflow: hidden;
 }
 .discover-card-meta { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: auto; }
-.discover-card-go { font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--green-dark); }
+.discover-card-go { font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--green-dark); }
 
 /* placeholders while the directory is still on its way */
 .discover-card.skel {
@@ -355,7 +355,7 @@ body.hub {
   padding: 3px 2px;
   font-family: var(--font);
   font-size: 13.5px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-2);
   cursor: pointer;
 }
@@ -374,7 +374,7 @@ body.hub {
   letter-spacing: 0;
   text-align: center;
 }
-.discover-code-row input:focus { box-shadow: 0 0 0 4px rgba(28,176,246,0.14); }
+.discover-code-row input:focus { box-shadow: 0 0 0 4px rgba(45,140,255,0.14); }
 .discover-code-row .btn { flex-shrink: 0; }
 .discover-code .code-hint { margin-top: 11px; }
 
@@ -398,7 +398,7 @@ body.hub {
 .join-list-label {
   font-family: var(--font-ui);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   color: var(--muted);
   margin-top: 4px;
@@ -417,7 +417,7 @@ body.hub {
 }
 .join-row:hover { border-color: var(--border-2); }
 .join-row-info { flex: 1; min-width: 0; }
-.join-row-name { font-family: var(--font); font-size: 15px; font-weight: 800; color: var(--text); }
+.join-row-name { font-family: var(--font); font-size: 15px; font-weight: 700; color: var(--text); }
 .join-row-meta { font-size: 12px; color: var(--muted); }
 
 .join-divider {
@@ -453,7 +453,7 @@ body.hub {
   display: block;
   font-family: var(--font);
   font-size: 13.5px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text);
   margin-bottom: 7px;
 }
@@ -479,7 +479,7 @@ body.hub {
   margin-left: auto;
   font-family: var(--font-ui);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   color: var(--muted);
 }
@@ -529,7 +529,7 @@ body.hub {
   transition: all .16s var(--ease);
 }
 .seg-opt svg { width: 21px; height: 21px; flex-shrink: 0; color: var(--muted); }
-.seg-opt b { display: block; font-family: var(--font); font-size: 14.5px; font-weight: 800; }
+.seg-opt b { display: block; font-family: var(--font); font-size: 14.5px; font-weight: 700; }
 .seg-opt small { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
 .seg-opt:hover { border-color: var(--border-2); }
 .seg-opt.on { border-color: var(--green); background: var(--green-soft); }
@@ -563,7 +563,7 @@ body.hub {
   background: var(--card);
   cursor: text;
 }
-.email-chips:focus-within { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(28,176,246,.14); }
+.email-chips:focus-within { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(45,140,255,.14); }
 .email-chips input {
   flex: 1;
   min-width: 180px;
@@ -614,7 +614,7 @@ body.hub {
 .template-opt:hover { border-color: var(--border-2); }
 .template-opt.on { border-color: var(--green); background: var(--green-soft); }
 .template-emoji { grid-row: 1 / 3; font-size: 26px; align-self: center; text-align: center; }
-.template-opt b { font-family: var(--font); font-size: 15px; font-weight: 800; }
+.template-opt b { font-family: var(--font); font-size: 15px; font-weight: 700; }
 .template-opt small { font-size: 12.5px; color: var(--text-2); line-height: 1.45; }
 
 .create-foot {
@@ -641,7 +641,7 @@ body.hub {
 }
 .legacy-ico { font-size: 28px; flex-shrink: 0; }
 .legacy-body { flex: 1; min-width: 0; }
-.legacy-body b { display: block; font-family: var(--font); font-size: 15.5px; font-weight: 800; color: var(--text); }
+.legacy-body b { display: block; font-family: var(--font); font-size: 15.5px; font-weight: 700; color: var(--text); }
 .legacy-body small { display: block; font-size: 13px; color: var(--text-2); line-height: 1.5; margin-top: 2px; }
 
 /* ── TOASTS ─────────────────────────────────────────────────────────── */
@@ -665,7 +665,7 @@ body.hub {
   color: var(--bg);
   font-family: var(--font);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   box-shadow: var(--pop);
   animation: toast-in .28s var(--ease) both;
 }
@@ -710,9 +710,17 @@ body.hub {
    directory, and the three-step create wizard. Placed last so it wins.
    ═══════════════════════════════════════════════════════════════════════ */
 
-.hub { background: var(--bg); }
-.hub-main { max-width: 1120px; padding-top: 40px; }
-.hub-title { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; }
+.hub {
+  /* the homepage's aurora, faint, so the app opens onto the same light */
+  background:
+    radial-gradient(38% 360px at 8% -40px, rgba(255,217,154,.42), transparent 70%),
+    radial-gradient(40% 380px at 96% -20px, rgba(188,216,255,.5), transparent 70%),
+    var(--bg);
+  background-repeat: no-repeat;
+}
+[data-theme="dark"] .hub { background: var(--bg); }
+.hub-main { max-width: 1120px; padding-top: 48px; }
+.hub-title { font-size: 46px; font-weight: 650; letter-spacing: -0.05em; }
 .hub-sub { color: var(--text-2); font-size: 15.5px; }
 
 .club-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
@@ -740,8 +748,8 @@ body.hub {
   border: 3px solid var(--card);
   box-shadow: 0 6px 16px -6px rgba(0,0,0,.3);
 }
-.club-card-top .role-pill { margin-bottom: 12px; background: rgba(255,255,255,.92); color: var(--text); border: 0; }
-.club-card-name { padding: 32px 18px 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.club-card-top .role-pill { margin-bottom: 12px; background: rgba(255,255,255,.92); color: #1a1d24; border: 0; }
+.club-card-name { padding: 32px 18px 0; font-size: 20px; font-weight: 650; letter-spacing: -0.035em; }
 .club-card-desc { padding: 0 18px; font-size: 14px; color: var(--text-2); }
 .club-card-foot { padding: 14px 18px 16px; border-top: 0; margin-top: auto; }
 .club-card-go { font-family: var(--font-ui); font-weight: 650; color: var(--green-ink); }
@@ -749,7 +757,7 @@ body.hub {
 .role-pill { font-family: var(--font-ui); letter-spacing: 0; text-transform: none; font-weight: 600; font-size: 12px; }
 
 /* the directory, for someone with no clubs yet */
-.discover-title { font-size: clamp(34px, 5vw, 52px); font-weight: 700; letter-spacing: -0.035em; margin-bottom: 8px; }
+.discover-title { font-size: clamp(38px, 5.6vw, 64px); font-weight: 650; letter-spacing: -0.05em; margin-bottom: 10px; }
 .discover-sub { text-align: center; color: var(--text-2); font-size: 16.5px; margin: 0 auto 26px; max-width: 46ch; }
 .discover-search input { border-radius: 16px; padding: 15px 20px 15px 48px; font-size: 16px; border: 1px solid var(--border-2); box-shadow: var(--lift-card); }
 .discover-search .ds-ico { left: 18px; right: auto; }
@@ -758,7 +766,7 @@ body.hub {
 .discover-card-name { font-weight: 700; }
 .discover-card-go { font-family: var(--font-ui); font-weight: 650; color: var(--green-ink); }
 .discover-code h2 { font-size: 22px; font-weight: 700; }
-.discover-code input { border-radius: 16px; border: 1px solid var(--border-2); font-family: var(--font); font-weight: 700; letter-spacing: .3em; }
+.discover-code input { border-radius: 16px; border: 1px solid var(--border-2); font-family: var(--font); font-weight: 600; letter-spacing: .3em; }
 .discover-start {
   display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
   max-width: 640px; margin: 48px auto 0;
@@ -766,9 +774,9 @@ body.hub {
   background: var(--felt); color: var(--felt-text);
 }
 .discover-start > div { display: grid; gap: 2px; text-align: left; }
-.discover-start b { font-family: var(--font); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.discover-start b { font-family: var(--font); font-size: 20px; font-weight: 650; letter-spacing: -0.03em; }
 .discover-start span { opacity: .75; font-size: 14.5px; }
-.discover-start .btn.dark { background: #fff; color: var(--felt); border-color: #fff; --btn-shadow: rgba(0,0,0,.35); }
+.discover-start .btn.dark { background: #fff; color: var(--felt); border-color: #fff; }
 
 /* ── the create wizard ─────────────────────────────────────────────── */
 

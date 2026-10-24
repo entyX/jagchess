@@ -214,7 +214,7 @@ export function openClubShare(ctx) {
     sheet.querySelector('[data-hint]').textContent = current.hint;
     sheet.querySelector('#share-url').value = current.url;
     sheet.querySelector('#share-msg').value = current.message;
-    try { sheet.querySelector('[data-qr]').innerHTML = toSVG(current.url, { margin: 2, dark: '#0f3b2d', light: '#ffffff' }); }
+    try { sheet.querySelector('[data-qr]').innerHTML = toSVG(current.url, { margin: 2, dark: '#1a1d24', light: '#ffffff' }); }
     catch (e) { console.error(e); }
   };
   paint();
@@ -265,7 +265,7 @@ export function openClubShare(ctx) {
       </style>
       <h1>${esc(name)}</h1>
       <p>${current.id === 'form' ? 'Scan to sign up' : 'Scan to join us on JagChess'}</p>
-      <div class="qr">${toSVG(current.url, { margin: 2, dark: '#0f3b2d' })}</div>
+      <div class="qr">${toSVG(current.url, { margin: 2, dark: '#1a1d24' })}</div>
       ${club.code && current.id === 'invite' ? `<div class="code">or enter this code at ${esc(location.host)}/clubs<b>${esc(club.code)}</b></div>` : ''}
       <small>${esc(current.url)}</small>`);
     w.document.close();
