@@ -3,258 +3,400 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JagChess · A home for your school chess club</title>
-  <meta name="description" content="JagChess gives school chess clubs one place for daily puzzles, live games, meeting check-ins, news and a leaderboard. Set up a club in under a minute, free." />
+  <title>JagChess · The whole chess club, on one board</title>
+  <meta name="description" content="JagChess gives school chess clubs one home for meetings and attendance, puzzles, rated games, tournaments, points and news. Free, and set up in a minute." />
+  <meta name="theme-color" content="#ffffff" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" href="/assets/img/jagchess-mark.png" sizes="256x256" />
   <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400..700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
   <script>
     /* The marketing site is for people without an account. This reads the
        one-bit hint left by the app (see session-hint.js) before anything
        paints, so a signed-in visitor never sees a flash of a page they are
        about to be taken off. signed-out-only.js confirms it either way. */
     try { if (localStorage.getItem('jag.signedIn') === '1') location.replace('/clubs'); } catch (e) {}
+    document.documentElement.classList.add('js');
   </script>
-  <link rel="stylesheet" href="assets/css/landing.css" />
+  <link rel="modulepreload" href="/assets/vendor/three/three.module.min.js" />
+  <link rel="stylesheet" href="/assets/css/welcome.css" />
 </head>
-<body class="home">
+<body>
 
-<!-- ══ NAV: one floating pane of glass ═══════════════════════════════ -->
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- ══ NAV ═══════════════════════════════════════════════════════════ -->
 <header class="nav" id="nav">
-  <a href="/" class="nav-logo" aria-label="JagChess home">
-    <img src="/assets/img/jagchess-wordmark.png" alt="JagChess" width="148" height="44" />
-  </a>
-  <nav class="nav-links" aria-label="Main">
-    <a href="#setup">Setup</a>
-    <a href="#play">Play</a>
-    <a href="#features">Features</a>
+  <div class="nav-pane">
+    <a href="/" class="brand" aria-label="JagChess home">
+      <img src="/assets/img/jagchess-mark.png" alt="" width="30" height="30" />
+      <span>JagChess</span>
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#tour">Product</a>
+      <a href="#organizers">For organizers</a>
+      <a href="#students">For students</a>
+      <a href="/network">Find a club</a>
+    </nav>
+    <div class="nav-end">
+      <a class="nav-login" href="/login">Log in</a>
+      <a class="btn btn-ink btn-sm" href="/login?mode=signup">Start a club</a>
+      <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="sheet"><i></i><i></i></button>
+    </div>
+  </div>
+  <div class="sheet" id="sheet" hidden>
+    <a href="#tour">Product</a>
+    <a href="#organizers">For organizers</a>
+    <a href="#students">For students</a>
     <a href="/network">Find a club</a>
-  </nav>
-  <div class="nav-right">
-    <a class="nav-login" href="/login">Log in</a>
-    <a class="btn btn-dark btn-sm" href="/login?mode=signup">Start a club</a>
-    <button class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false">
-      <span></span><span></span>
-    </button>
+    <a href="/login">Log in</a>
+    <a class="btn btn-ink" href="/login?mode=signup">Start a club, free</a>
   </div>
 </header>
-<div class="nav-sheet" id="nav-sheet" hidden>
-  <a href="#setup">Setup</a>
-  <a href="#play">Play</a>
-  <a href="#features">Features</a>
-  <a href="/network">Find a club</a>
-  <a href="/login">Log in</a>
-  <a class="btn btn-green" href="/login?mode=signup">Start a club, free</a>
-</div>
 
-<main>
+<main id="main">
 
 <!-- ══ HERO ══════════════════════════════════════════════════════════ -->
 <section class="hero" id="hero">
-  <div class="hero-sky" aria-hidden="true"><i class="glow g1"></i><i class="glow g2"></i><i class="glow g3"></i></div>
+  <div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
 
   <div class="hero-copy">
-    <h1 class="reveal">Chess club, with everyone showing&nbsp;up.</h1>
-    <p class="hero-sub reveal">Daily puzzles, live games with real clocks, meeting check‑ins and a leaderboard students actually check. Your school's chess club, set up in under a minute.</p>
-    <div class="hero-cta reveal">
-      <a class="btn btn-green btn-lg" href="/login?mode=signup">Start a club, free</a>
+    <a class="news" href="/guide#lichess"><b>New</b><span>Run Lichess tournaments from your club</span></a>
+    <h1 class="hero-title"><span>The whole chess club,</span> <span>on one board.</span></h1>
+    <p class="hero-sub">Meetings, puzzles, rated games, tournaments and news, in one place your members actually open. Free for school clubs, and ready before your next meeting.</p>
+    <div class="cta-row">
+      <a class="btn btn-ink btn-lg" href="/login?mode=signup">Start a club, free</a>
       <a class="btn btn-glass btn-lg" href="/clubs">Join with a code</a>
     </div>
   </div>
 
-  <div class="stage" id="stage">
-    <div class="scene" id="scene">
-      <div class="board3d" id="board3d">
-        <div class="b3-top" id="pz-board" role="grid" aria-label="Chess puzzle. White to move, mate in one."></div>
-        <div class="b3-edge b3-front" aria-hidden="true"></div>
-        <div class="b3-edge b3-side" aria-hidden="true"></div>
-      </div>
-      <div class="b3-shadow" aria-hidden="true"></div>
+  <div class="hero-stage">
+    <canvas id="hero-canvas" aria-label="A chess board with brightly coloured pieces playing a few moves" role="img"></canvas>
+    <div class="tags" aria-hidden="true">
+      <div class="tag" data-anchor="a1"><div class="glass tag-in"><i class="dot coral"></i><span><b>Tuesday practice</b><small>18 checked in</small></span></div></div>
+      <div class="tag" data-anchor="c3"><div class="glass tag-in"><i class="dot sky"></i><span><b>Maya vs Dev</b><small>Rated, 5 + 3</small></span></div></div>
+      <div class="tag" data-anchor="g1"><div class="glass tag-in"><i class="dot gold"></i><span><b>Lincoln High Chess</b><small>34 members</small></span></div></div>
+      <div class="tag" data-anchor="e4"><div class="glass tag-in tag-pts"><b>+10</b><small>Puzzle solved</small></div></div>
+    </div>
+    <p class="stage-hint">Tap a piece</p>
+  </div>
+</section>
 
-      <div class="glass chip chip-goal" id="puzzle-chip">
-        <span class="chip-dot"></span>
-        <span><b id="puzzle-goal">White to move</b><small id="puzzle-msg">Find checkmate in one. Tap a piece, then a square.</small></span>
-        <button class="chip-reset" id="pz-reset" hidden>Again</button>
+<!-- ══ BEFORE / AFTER: the pile becomes one window ═══════════════════ -->
+<section class="merge" id="organizers" data-scrub>
+  <div class="merge-pin">
+    <div class="merge-copy">
+      <h2 class="merge-before">Right now your club lives in a group chat, three spreadsheets and a clipboard.</h2>
+      <h2 class="merge-after">Give it one home instead.</h2>
+    </div>
+
+    <div class="pile" aria-hidden="true">
+      <div class="scrap s-chat">
+        <div class="bubble">who's coming tuesday??</div>
+        <div class="bubble me">is it room 204 or 210</div>
+        <div class="bubble">204. no wait</div>
+        <small>Chess club 🏆 · 9 unread</small>
       </div>
-      <div class="glass chip chip-streak" aria-hidden="true">
-        <span class="chip-ico">🔥</span><span><b>6 weeks</b><small>club streak</small></span>
+      <div class="scrap s-sheet">
+        <div class="sheet-bar">attendance_FINAL_v3</div>
+        <div class="sheet-grid">
+          <span></span><span>9/3</span><span>9/10</span><span>9/17</span>
+          <span>Maya</span><span>✓</span><span>✓</span><span>✓</span>
+          <span>Dev</span><span>✓</span><span></span><span>✓</span>
+          <span>Rosa</span><span>✓</span><span>✓</span><span>?</span>
+          <span>Leo</span><span></span><span>✓</span><span>#REF!</span>
+        </div>
       </div>
-      <div class="glass chip chip-points" id="chip-points" aria-hidden="true">
-        <span class="chip-ico gold">★</span><span><b id="hero-points">240</b><small>points</small></span>
+      <div class="scrap s-clip">
+        <div class="clip-top"></div>
+        <b>Sign in please!</b>
+        <p>Maya C.<br>Dev P.<br>rosa<br>Leo M<br>Sam ??</p>
       </div>
-      <div class="glass chip chip-join" aria-hidden="true">
-        <i class="av" style="background:#2e90fa">MC</i><span><b>Maya joined</b><small>Lincoln High Chess</small></span>
+      <div class="scrap s-mail">
+        <small>Inbox</small>
+        <b>Re: Re: Fwd: regionals carpool</b>
+        <p>Sorry, replying all by accident again…</p>
+      </div>
+      <div class="scrap s-note">puzzle of the week is on the whiteboard in 204!!</div>
+      <div class="scrap s-form">
+        <b>Club sign-up form</b>
+        <div class="form-line"></div><div class="form-line short"></div>
+        <small>23 responses · 4 duplicates</small>
+      </div>
+    </div>
+
+    <div class="app" aria-hidden="true">
+      <div class="app-bar"><i></i><i></i><i></i><span>jagchess.web.app/clubs/lincoln-high-chess</span></div>
+      <div class="app-body">
+        <aside class="app-side">
+          <div class="app-club"><img src="/assets/img/jagchess-mark.png" alt="" width="22" height="22"><b>Lincoln High Chess</b></div>
+          <span class="on"><i class="dot gold"></i>Home</span>
+          <span><i class="dot coral"></i>Events</span>
+          <span><i class="dot iris"></i>Puzzles</span>
+          <span><i class="dot sky"></i>Play</span>
+          <span><i class="dot rose"></i>Tournaments</span>
+          <span><i class="dot mint"></i>Store</span>
+        </aside>
+        <div class="app-main">
+          <div class="app-hello"><b>Good afternoon, Maya</b><small>Tuesday practice starts at 3:30 in room 204</small></div>
+          <div class="app-grid">
+            <div class="w w-puzzle"><small>Puzzle of the day</small><div class="mini" data-fen="r1b2rk1/pp3ppp/2n5/3q4/3P4/2PB1N2/P4PPP/R2Q1RK1" data-marks="d3,h7"></div><em>Worth 15 points</em></div>
+            <div class="w w-count"><small>Regionals in</small><b>12</b><small>days</small></div>
+            <div class="w w-lb"><small>Leaderboard</small>
+              <span><i>1</i>Rosa<em>412</em></span><span><i>2</i>Maya<em>398</em></span><span><i>3</i>Dev<em>350</em></span><span><i>4</i>Leo<em>301</em></span>
+            </div>
+            <div class="w w-ann"><b>📣 Bring a board on Friday</b><small>We're hosting Jefferson Middle School.</small></div>
+            <div class="w w-streak"><b>🔥 6</b><small>week streak</small></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══ ACTIVITY: an edge-to-edge strip, not a box ════════════════════ -->
-<section class="strip" aria-label="What happens in a club">
-  <div class="strip-track">
-    <span><b>Maya</b> solved today's puzzle <em>+10</em></span>
-    <span><b>Dev</b> checked in to Tuesday practice <em>+5</em></span>
-    <span><b>Rosa</b> won a 5+3 blitz game <em>+12</em></span>
-    <span>Friday arena starts in <b>10 minutes</b></span>
-    <span><b>Leo</b> kept a 9‑week streak</span>
-    <span>New post: <b>Regionals carpool</b></span>
-    <span aria-hidden="true"><b>Maya</b> solved today's puzzle <em>+10</em></span>
-    <span aria-hidden="true"><b>Dev</b> checked in to Tuesday practice <em>+5</em></span>
-    <span aria-hidden="true"><b>Rosa</b> won a 5+3 blitz game <em>+12</em></span>
-    <span aria-hidden="true">Friday arena starts in <b>10 minutes</b></span>
-    <span aria-hidden="true"><b>Leo</b> kept a 9‑week streak</span>
-    <span aria-hidden="true">New post: <b>Regionals carpool</b></span>
+<!-- ══ THE PIECES ════════════════════════════════════════════════════ -->
+<section class="tour" id="tour">
+  <div class="tour-head wrap">
+    <h2>Six pieces. One club.</h2>
+    <p class="lede">Every part of JagChess is a piece you put on your club's board. Start with the two you need and add the rest as you grow.</p>
   </div>
-</section>
 
-<!-- ══ SETUP ═════════════════════════════════════════════════════════ -->
-<section class="setup" id="setup">
-  <div class="wrap setup-grid">
-    <div class="setup-copy">
-      <h2 class="reveal">Set up before the bell rings.</h2>
-      <p class="lede reveal">No forms, no installs, no IT ticket. Three steps and your students are in.</p>
-      <ol class="setup-steps">
-        <li class="reveal"><span>1</span><div><b>Name your club</b><p>Pick a colour and a badge. That's the setup.</p></div></li>
-        <li class="reveal"><span>2</span><div><b>Share the code</b><p>Project the QR code, or paste the ready-made message into your class chat.</p></div></li>
-        <li class="reveal"><span>3</span><div><b>Students jump in</b><p>One tap to join, and today's puzzle is waiting.</p></div></li>
+  <div class="tour-body wrap">
+    <div class="tour-stage">
+      <div class="tour-glow" aria-hidden="true"></div>
+      <canvas id="tour-canvas" role="img" aria-label="The chess piece for the part of JagChess being described, turning on a pedestal. Drag to spin it."></canvas>
+      <ol class="tour-rail" aria-label="Pieces">
+        <li data-go="0"><button>King</button></li>
+        <li data-go="1"><button>Rook</button></li>
+        <li data-go="2"><button>Bishop</button></li>
+        <li data-go="3"><button>Knight</button></li>
+        <li data-go="4"><button>Queen</button></li>
+        <li data-go="5"><button>Pawn</button></li>
       </ol>
     </div>
 
-    <div class="window tilt-in" aria-hidden="true">
-      <div class="window-bar"><i></i><i></i><i></i><span>jagchess.web.app/clubs/lincoln-high-chess</span></div>
-      <div class="window-body app">
-        <aside class="app-side">
-          <div class="app-club"><i style="background:#2e90fa">🏆</i><b>Lincoln High Chess</b></div>
-          <span class="on">Home</span><span>Events</span><span>Puzzles</span><span>Play</span><span>Leaderboard</span>
-        </aside>
-        <div class="app-main">
-          <div class="app-hello"><b>Good afternoon, Maya</b><small>Next up: Tuesday practice, 3:30</small></div>
-          <div class="app-row">
-            <div class="app-card app-puzzle"><small>Puzzle of the day</small><div class="mini" data-fen="r2q1rk1/ppp2ppp/2n5/3np3/2B5/2N2N2/PPP2PPP/R2Q1RK1"></div></div>
-            <div class="app-card app-count"><small>Regionals in</small><b>12</b><small>days</small></div>
-            <div class="app-card app-lb"><small>Leaderboard</small><span><i>1</i>Rosa<em>412</em></span><span><i>2</i>Maya<em>398</em></span><span><i>3</i>Dev<em>350</em></span><span><i>4</i>Leo<em>301</em></span></div>
+    <div class="tour-steps">
+      <article class="step" data-step="0" data-tone="gold">
+        <p class="step-piece"><i class="dot gold"></i>The king is your club</p>
+        <h3>A home with your name on it.</h3>
+        <p>Your club gets its own address, your colours and badge, and a dashboard you lay out by dragging cards around. Members see one page that's unmistakably yours.</p>
+        <div class="ui ui-home">
+          <div class="ui-banner"><span class="badge">♚</span><b>Lincoln High Chess</b><small>jagchess.web.app/clubs/lincoln-high-chess</small></div>
+          <div class="ui-tiles"><i class="t1"></i><i class="t2"></i><i class="t3"></i><i class="t4"></i></div>
+        </div>
+      </article>
+
+      <article class="step" data-step="1" data-tone="coral">
+        <p class="step-piece"><i class="dot coral"></i>The rook is your meetings</p>
+        <h3>Attendance that takes itself.</h3>
+        <p>Put a QR code on the projector. Students scan it and they're checked in, even before they have an account. Repeat a meeting every week in one click, and streaks count up for everyone who keeps showing up.</p>
+        <div class="ui ui-meet">
+          <div class="qr" data-qr></div>
+          <div class="meet-list">
+            <b>Tuesday practice</b><small>3:30, room 204</small>
+            <span class="in"><i style="--c:#2d8cff">MC</i>Maya checked in<em>+5</em></span>
+            <span class="in"><i style="--c:#f0508c">RM</i>Rosa checked in<em>+5</em></span>
+            <span class="in"><i style="--c:#18bf86">DP</i>Dev checked in<em>+5</em></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="step" data-step="2" data-tone="iris">
+        <p class="step-piece"><i class="dot iris"></i>The bishop is your puzzles</p>
+        <h3>Puzzles worth points.</h3>
+        <p>Set up any position, play the answer, and JagChess checks every move a student tries. Add a due date, or borrow whole collections other clubs have shared. You don't need to be a chess expert.</p>
+        <div class="ui ui-pz">
+          <div class="mini" data-fen="6k1/5ppp/8/8/8/8/5PPP/3R2K1" data-marks="d1,d8"></div>
+          <div class="pz-meta"><b>Back-rank mate</b><small>White to move</small><span class="chip-iris">15 points, due Friday</span><span class="solvers"><i style="--c:#2d8cff"></i><i style="--c:#ff6a4d"></i><i style="--c:#18bf86"></i>9 solved it</span></div>
+        </div>
+      </article>
+
+      <article class="step" data-step="3" data-tone="sky">
+        <p class="step-piece"><i class="dot sky"></i>The knight is your games</p>
+        <h3>Rated games with real clocks.</h3>
+        <p>Challenge a clubmate or anyone on JagChess. Both screens keep the same time to a tenth of a second, and every rated game moves a Glicko-2 rating for your club and for the world.</p>
+        <div class="ui ui-game">
+          <div class="pl"><i style="--c:#f0508c">RM</i><span>Rosa Martín<small>1184</small></span><b class="clock">2:41</b></div>
+          <div class="pl me"><i style="--c:#2d8cff">MC</i><span>Maya Chen<small>1210 <em>+14</em></small></span><b class="clock live" data-clock="185">3:05</b></div>
+          <div class="offer"><b>Rosa offers a draw</b><span><em>Decline</em><em class="yes">Accept</em></span></div>
+        </div>
+      </article>
+
+      <article class="step" data-step="4" data-tone="rose">
+        <p class="step-piece"><i class="dot rose"></i>The queen is your tournaments</p>
+        <h3>Tournaments on a Friday afternoon.</h3>
+        <p>Run a timed arena with live standings, rated or just for fun. Or start a real Lichess tournament without leaving your club, and every result lands back in JagChess.</p>
+        <div class="ui ui-arena">
+          <div class="arena-top"><b>Friday arena</b><span class="live-pill">Live, 14:52 left</span></div>
+          <span><i>1</i>Rosa M.<small>🔥 5 in a row</small><em>24</em></span>
+          <span><i>2</i>Maya C.<em>21</em></span>
+          <span><i>3</i>Dev P.<em>17</em></span>
+          <span><i>4</i>Sam O.<em>12</em></span>
+        </div>
+      </article>
+
+      <article class="step" data-step="5" data-tone="mint">
+        <p class="step-piece"><i class="dot mint"></i>The pawn is your points</p>
+        <h3>Small moves add up.</h3>
+        <p>Showing up, solving and winning all earn points, and points climb the leaderboard. Spend them in your club's store on rewards you choose. Every pawn can become a queen.</p>
+        <div class="ui ui-store">
+          <div class="store-bal"><small>Maya's points</small><b data-count="398">398</b></div>
+          <span><i>🍕</i>Pick Friday's snack<em>150</em></span>
+          <span><i>♟️</i>Choose the next opening we study<em>300</em></span>
+          <span><i>🧥</i>Club hoodie<em>1,200</em></span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOR ORGANIZERS ════════════════════════════════════════════════ -->
+<section class="tools">
+  <div class="wrap">
+    <div class="tools-head">
+      <h2>Built for whoever's running it.</h2>
+      <p class="lede">A teacher sponsor with ten free minutes, or a student president with big plans. Either way, the boring parts take care of themselves.</p>
+    </div>
+
+    <div class="bento">
+      <div class="cell c-arrange">
+        <div class="cell-copy"><h3>Arrange your home page</h3><p>Drag cards, resize them, and preview it as a student before anyone sees it.</p></div>
+        <div class="arrange" aria-hidden="true">
+          <i class="ar ar-a"><b>Good afternoon, Maya</b></i>
+          <i class="ar ar-b"><b>12</b><small>days to regionals</small></i>
+          <i class="ar ar-c"><b>Leaderboard</b></i>
+          <i class="ar ar-d"><b>📣 Bring a board</b></i>
+          <span class="cursor"></span>
+        </div>
+      </div>
+
+      <div class="cell c-colour">
+        <div class="cell-copy"><h3>Make it yours</h3><p>Pick a colour and a badge. That's the whole setup.</p></div>
+        <div class="brandbox" id="brandbox">
+          <div class="brand-prev"><span class="badge">♞</span><b>Lincoln High Chess</b><span class="brand-btn">Join club</span></div>
+          <div class="swatches" role="radiogroup" aria-label="Try a club colour">
+            <button role="radio" aria-checked="true" aria-label="Gold" style="--s:#e9a93a"></button>
+            <button role="radio" aria-checked="false" aria-label="Coral" style="--s:#ff6a4d"></button>
+            <button role="radio" aria-checked="false" aria-label="Iris" style="--s:#6e5bff"></button>
+            <button role="radio" aria-checked="false" aria-label="Sky" style="--s:#2d8cff"></button>
+            <button role="radio" aria-checked="false" aria-label="Mint" style="--s:#18bf86"></button>
+            <button role="radio" aria-checked="false" aria-label="Rose" style="--s:#f0508c"></button>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
 
-<!-- ══ PLAY: the one dark section, full bleed ════════════════════════ -->
-<section class="play" id="play">
-  <div class="wrap play-grid">
-    <div class="play-copy">
-      <h2 class="reveal">Real games.<br>Real clocks.</h2>
-      <p class="lede reveal">Challenge a clubmate or get paired with anyone near your rating. Both screens keep the same time to the tenth of a second, and every rated game moves your rating the way lichess does.</p>
-      <ul class="play-list reveal">
-        <li>Draw offers, takebacks and extra time</li>
-        <li>Rematch in one tap</li>
-        <li>Replay any game, or open it in lichess</li>
-        <li>Arena tournaments with live standings</li>
-      </ul>
-    </div>
-    <div class="game tilt-in" aria-hidden="true">
-      <div class="game-player"><i style="background:#8b5cf6">RM</i><span>Rosa Martín<small>1184</small></span><b class="clock">2:41</b></div>
-      <div class="mini game-board" data-fen="r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R" data-marks="d2,d3"></div>
-      <div class="game-player me"><i style="background:#2e90fa">MC</i><span>Maya Chen<small>1210</small></span><b class="clock live">3:05</b></div>
-      <div class="glass-dark chip-offer"><b>Rosa offers a draw</b><span><em>No thanks</em><em class="yes">Accept</em></span></div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ FEATURES ══════════════════════════════════════════════════════ -->
-<section class="features" id="features">
-  <div class="wrap">
-    <h2 class="center reveal">Everything a club does,<br>in one place.</h2>
-
-    <article class="row">
-      <div class="row-copy">
-        <h3 class="reveal">Puzzles they actually do.</h3>
-        <p class="reveal">Post a position from a board or paste a FEN. Students solve it for points, and a weekly streak keeps them coming back. Borrow whole collections other clubs have shared.</p>
+      <div class="cell c-signup">
+        <div class="cell-copy"><h3>Sign-ups without the paperwork</h3><p>New students and parents fill in your form. You approve them in one place.</p></div>
+        <ul class="approvals" id="approvals">
+          <li><i style="--c:#ff6a4d">SO</i><span>Sam Okafor<small>Grade 9</small></span><button>Approve</button></li>
+          <li><i style="--c:#6e5bff">AL</i><span>Ana Lopez<small>Grade 11</small></span><button>Approve</button></li>
+          <li><i style="--c:#18bf86">JK</i><span>Jae Kim<small>Grade 7</small></span><button>Approve</button></li>
+        </ul>
       </div>
-      <div class="row-visual tilt-in" aria-hidden="true">
-        <div class="pz-card">
-          <div class="mini" data-fen="6k1/5ppp/8/8/8/8/5PPP/3R2K1" data-marks="d1,d8" data-flipmark="1"></div>
-          <div class="pz-meta"><b>Back-rank mate</b><small>White to move, worth 15 points</small><span class="solved"><i style="background:#2e90fa"></i><i style="background:#ff8a1f"></i><i style="background:#8b5cf6"></i>9 solved it</span></div>
+
+      <div class="cell c-news">
+        <div class="cell-copy"><h3>News that reaches inboxes</h3><p>Write an update once. Post it in the club and send it from your own Gmail.</p></div>
+        <div class="mail" aria-hidden="true">
+          <div class="mail-head"><i>LH</i><span><b>Lincoln High Chess</b><small>to 34 members</small></span></div>
+          <b class="mail-sub">Regionals: carpool, times and what to bring</b>
+          <div class="mail-lines"><i></i><i></i><i class="s"></i></div>
         </div>
       </div>
-    </article>
 
-    <article class="row flip">
-      <div class="row-copy">
-        <h3 class="reveal">Meetings that take attendance for you.</h3>
-        <p class="reveal">Put a QR code on the screen. Students scan it, check in and earn points, even before they've made an account. Repeat a meeting every week in one click.</p>
+      <div class="cell c-insight">
+        <div class="cell-copy"><h3>See who's showing up</h3><p>Who's active, who just joined, and who you haven't seen in a while.</p></div>
+        <div class="insight" aria-hidden="true">
+          <div class="kpis"><span><b>34</b><small>members</small></span><span><b>27</b><small>active this week</small></span></div>
+          <div class="bars"><i style="--h:32%"></i><i style="--h:44%"></i><i style="--h:38%"></i><i style="--h:58%"></i><i style="--h:52%"></i><i style="--h:71%"></i><i style="--h:66%"></i><i style="--h:88%"></i></div>
+        </div>
       </div>
-      <div class="row-visual tilt-in" aria-hidden="true">
-        <div class="cal">
-          <div class="cal-head"><b>October</b><small>Tuesday practice, weekly</small></div>
-          <div class="cal-grid">
-            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span>
-            <i>6</i><i class="ev">7<em>Practice</em></i><i>8</i><i>9</i><i class="ev gold">10<em>Arena</em></i>
-            <i>13</i><i class="ev">14<em>Practice</em></i><i>15</i><i>16</i><i>17</i>
-            <i>20</i><i class="ev now">21<em>Practice</em><small>18 checked in</small></i><i>22</i><i>23</i><i class="ev blue">24<em>Regionals</em></i>
+
+      <div class="cell c-roles">
+        <div class="cell-copy"><h3>You stay in charge</h3><p>Hand out admin roles, keep the club private behind a code, and hide anything you don't use.</p></div>
+        <ul class="roles" aria-hidden="true">
+          <li><i style="--c:#e9a93a">MS</i>Ms. Shah<em class="r-owner">Owner</em></li>
+          <li><i style="--c:#2d8cff">MC</i>Maya Chen<em class="r-admin">Admin</em></li>
+          <li><i style="--c:#f0508c">RM</i>Rosa Martín<em>Member</em></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SETUP: a real sequence ════════════════════════════════════════ -->
+<section class="setup" id="setup">
+  <div class="wrap setup-grid">
+    <div class="setup-copy">
+      <h2>Set up before the bell.</h2>
+      <p class="lede">No installs, no IT ticket, no credit card.</p>
+      <ol class="steps">
+        <li><span class="n">1</span><div><b>Name your club</b><p>Pick a colour and a badge, and choose who can join.</p></div></li>
+        <li><span class="n">2</span><div><b>Share the code</b><p>Project the QR code or paste the invite link into your class chat.</p></div></li>
+        <li><span class="n">3</span><div><b>Everyone's in</b><p>Students join in one tap, and today's puzzle is already waiting.</p></div></li>
+      </ol>
+    </div>
+    <div class="invite" aria-hidden="true">
+      <div class="invite-card glass">
+        <small>Join Lincoln High Chess</small>
+        <div class="qr big" data-qr></div>
+        <div class="code"><span>K7Q</span><span>24P</span></div>
+        <small class="muted">or go to jagchess.web.app/clubs</small>
+      </div>
+      <div class="joined glass"><i style="--c:#2d8cff">MC</i><span><b>Maya joined</b><small>just now</small></span></div>
+      <div class="joined j2 glass"><i style="--c:#18bf86">DP</i><span><b>Dev joined</b><small>just now</small></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOR STUDENTS ══════════════════════════════════════════════════ -->
+<section class="students" id="students">
+  <div class="students-panel">
+    <div class="wrap students-grid">
+      <div class="students-copy">
+        <h2>Come for the games. Stay for the streak.</h2>
+        <p class="lede">Solve today's puzzle, play a rated game against the kid from chemistry, and watch your rating climb. Try one right now.</p>
+        <div class="stats">
+          <div class="stat rating">
+            <small>Your rating</small>
+            <b>1,210</b>
+            <svg viewBox="0 0 200 56" preserveAspectRatio="none"><path pathLength="1" d="M0 46 L22 42 L44 44 L66 34 L88 36 L110 26 L132 28 L154 18 L176 14 L200 6" /></svg>
           </div>
+          <div class="stat streak"><small>Puzzle streak</small><b>🔥 9 days</b></div>
+        </div>
+        <div class="cta-row">
+          <a class="btn btn-white btn-lg" href="/clubs">Join with a code</a>
+          <a class="btn btn-clear btn-lg" href="/network">Find a club near you</a>
         </div>
       </div>
-    </article>
 
-    <article class="row">
-      <div class="row-copy">
-        <h3 class="reveal">A home page you arrange.</h3>
-        <p class="reveal">Drag cards around and resize them. Add an announcement, a sponsor's poster, a countdown to regionals or a video lesson. Preview it as a student before anyone sees it.</p>
-      </div>
-      <div class="row-visual tilt-in" aria-hidden="true">
-        <div class="arrange">
-          <div class="ar ar-hello"><b>Good afternoon, Maya</b><small>Puzzle of the day is up</small></div>
-          <div class="ar ar-count"><small>Regionals in</small><b>12</b></div>
-          <div class="ar ar-ann"><b>📣 Bring a board Friday</b><small>We're playing the middle school.</small></div>
-          <div class="ar ar-drag"><small>Drag to move</small><b>Leaderboard</b></div>
+      <div class="puzzle" id="puzzle">
+        <div class="pz-board-wrap">
+          <div class="pz-board" id="pz-board" role="grid" aria-label="Chess puzzle. White to move and checkmate in one."></div>
         </div>
-      </div>
-    </article>
-
-    <article class="row flip">
-      <div class="row-copy">
-        <h3 class="reveal">See who's showing up.</h3>
-        <p class="reveal">Insights show who was active this week, who just joined, who solved the most, and who hasn't been around lately, so you know exactly who to nudge.</p>
-      </div>
-      <div class="row-visual tilt-in" aria-hidden="true">
-        <div class="ins">
-          <div class="ins-kpis"><span><small>Members</small><b>34</b></span><span><small>Active this week</small><b>27</b></span><span><small>Puzzles solved</small><b>118</b></span></div>
-          <div class="ins-bars"><i style="--h:30%"></i><i style="--h:45%"></i><i style="--h:38%"></i><i style="--h:60%"></i><i style="--h:52%"></i><i style="--h:74%"></i><i style="--h:68%"></i><i style="--h:88%"></i></div>
-          <small class="ins-cap">Puzzles solved per week</small>
+        <div class="pz-status glass" id="pz-status" aria-live="polite">
+          <span class="pz-ico" id="pz-ico">♔</span>
+          <span><b id="pz-goal">White to move</b><small id="pz-msg">Find checkmate in one. Tap a piece, then a square.</small></span>
+          <button class="pz-again" id="pz-again" hidden>Again</button>
         </div>
+        <div class="pz-points" id="pz-points" aria-hidden="true"><small>Points</small><b id="pz-pts">240</b></div>
       </div>
-    </article>
-  </div>
-</section>
-
-<!-- ══ FOR COACHES ═══════════════════════════════════════════════════ -->
-<section class="coaches">
-  <div class="wrap">
-    <h2 class="reveal">Made for a coach with ten free minutes.</h2>
-    <div class="coach-cols">
-      <div class="reveal"><b>Guided from the first click</b><p>A short tour shows you around, and a checklist says what to do next.</p></div>
-      <div class="reveal"><b>Sign-ups without accounts</b><p>Parents and new students fill in a form. You approve them in one place.</p></div>
-      <div class="reveal"><b>You stay in charge</b><p>Make students admins, hide what you don't use, keep the club private with a code.</p></div>
-      <div class="reveal"><b>News that looks good</b><p>Write an update once. Post it in the club and email it from your own Gmail.</p></div>
     </div>
   </div>
 </section>
 
 <!-- ══ FAQ ═══════════════════════════════════════════════════════════ -->
-<section class="faq-sec" id="faq">
-  <div class="wrap faq-wrap">
-    <h2 class="reveal">Questions</h2>
-    <div class="faq">
+<section class="faq" id="faq">
+  <div class="wrap faq-grid">
+    <h2>Questions people ask first.</h2>
+    <div class="faq-list">
       <details><summary>Is it really free?</summary><p>Yes. A school club can set up, invite members and use every feature without paying or entering a card.</p></details>
-      <details><summary>Do students need an email address?</summary><p>To join and play they sign in with Google or an email and password. To check in to a meeting they don't need an account at all: scanning the QR code is enough.</p></details>
-      <details><summary>Can students still use lichess or Chess.com?</summary><p>Of course. JagChess works alongside them, and you can run your club's lichess tournaments from inside JagChess.</p></details>
+      <details><summary>Do students need an email address?</summary><p>To join and play, they sign in with Google or an email and password. To check in to a meeting they don't need an account at all: scanning the QR code is enough.</p></details>
+      <details><summary>Can students still use Lichess or Chess.com?</summary><p>Of course. JagChess works alongside them, and you can run your club's Lichess tournaments from inside JagChess.</p></details>
       <details><summary>Who can see our club?</summary><p>Only members. A private club is hidden from search and needs your join code. Member details are never sold or shared.</p></details>
       <details><summary>What if I'm not a chess expert?</summary><p>You don't need to be. The puzzle builder checks every move for you, and you can borrow collections other clubs have shared.</p></details>
+      <details><summary>Does it work for clubs outside school?</summary><p>Yes. Academies, community clubs and online groups use the same tools. Turn on only the pieces you need.</p></details>
     </div>
   </div>
 </section>
@@ -264,23 +406,23 @@
      that the homepage explains what user data is requested and why. -->
 <section class="data" id="data">
   <div class="wrap">
-    <h2 class="reveal">What JagChess asks for, and why.</h2>
+    <h2>What JagChess asks for, and why.</h2>
     <p class="lede">Three permissions, each one asked for only when you choose to use the thing it is for.</p>
     <div class="data-cols">
       <div>
-        <h3>Signing in with Google</h3>
+        <h3><i class="dot sky"></i>Signing in with Google</h3>
         <p>We receive your email address and your name, and nothing else. They create your account,
           put your name on your club's leaderboard, and let your club's admins reach you. JagChess
           does not read anything else in your Google account.</p>
       </div>
       <div>
-        <h3>Gmail, for club admins only</h3>
+        <h3><i class="dot coral"></i>Gmail, for club admins only</h3>
         <p>An admin who wants to send their club's newsletter can connect their own Gmail, so the
           message arrives from their own address rather than a stranger's. The permission is
           send-only: JagChess cannot read your mail, and nothing goes out until you press send.</p>
       </div>
       <div>
-        <h3>Lichess, optional</h3>
+        <h3><i class="dot mint"></i>Lichess, optional</h3>
         <p>Linking a Lichess account lets you join your club's tournaments there without leaving the
           site. Nothing is requested until you press Join, and the access token stays in your own
           browser.</p>
@@ -293,11 +435,13 @@
 
 <!-- ══ CLOSING ═══════════════════════════════════════════════════════ -->
 <section class="closing">
-  <div class="hero-sky" aria-hidden="true"><i class="glow g1"></i><i class="glow g2"></i></div>
-  <div class="wrap closing-inner">
-    <h2 class="reveal">Your club's new home is a minute away.</h2>
-    <div class="hero-cta reveal">
-      <a class="btn btn-green btn-lg" href="/login?mode=signup">Start a club, free</a>
+  <div class="closing-card">
+    <div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+    <canvas id="line-canvas" class="line-canvas" aria-hidden="true"></canvas>
+    <h2>Your move.</h2>
+    <p class="lede">Set up your club before the next meeting. It takes about a minute.</p>
+    <div class="cta-row">
+      <a class="btn btn-ink btn-lg" href="/login?mode=signup">Start a club, free</a>
       <a class="btn btn-glass btn-lg" href="/clubs">Join with a code</a>
     </div>
   </div>
@@ -308,22 +452,27 @@
 <footer class="foot">
   <div class="wrap foot-grid">
     <div class="foot-brand">
-      <img src="/assets/img/jagchess-wordmark.png" alt="JagChess" width="128" height="38" />
-      <p>A home for school chess clubs: puzzles, games, meetings and news, together.</p>
+      <a href="/" class="brand"><img src="/assets/img/jagchess-mark.png" alt="" width="30" height="30" /><span>JagChess</span></a>
+      <p>A home for chess clubs: meetings, puzzles, games and news, together.</p>
     </div>
     <div class="foot-col">
       <h4>Product</h4>
-      <a href="#features">Features</a>
+      <a href="#tour">How it works</a>
       <a href="/network">Find a club</a>
-      <a href="/guide">Guide</a>
-      <a href="/login">Log in</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/leaderboard">Leaderboard</a>
     </div>
     <div class="foot-col">
       <h4>Help</h4>
+      <a href="/guide">Guide</a>
       <a href="#faq">Questions</a>
       <a href="mailto:northcreekchessclub@gmail.com">Contact</a>
+    </div>
+    <div class="foot-col">
+      <h4>Legal</h4>
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>
+      <a href="#data">What we ask for</a>
     </div>
   </div>
   <div class="wrap foot-bottom">
@@ -335,6 +484,7 @@
 <script src="/assets/js/firebase-config.js"></script>
 <script type="module" src="/assets/js/analytics.js"></script>
 <script type="module" src="/assets/js/signed-out-only.js"></script>
-<script src="assets/js/landing.js"></script>
+<script src="/assets/js/welcome.js"></script>
+<script type="module" src="/assets/js/welcome-3d.js"></script>
 </body>
 </html>
