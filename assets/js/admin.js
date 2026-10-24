@@ -2,6 +2,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.6.0/firebas
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, getDocs, increment, collection, query, orderBy, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js';
 import { mountNewsletterMail } from './newsletter-mail.js';
+import { fontSelectHTML, wireFontSelect } from './mail-fonts.js';
 
 const cfg = window.FIREBASE_CONFIG;
 
@@ -19,12 +20,34 @@ const ADMIN_EMAILS = ['shaurya.sahdev7@gmail.com', '2025510@apps.nsd.org', 'nort
 let puzzleBoardRef = null;
 let currentUserEmail = '';
 
+/* The Lichess panel is a module of its own with live subscriptions and a
+   sync worker, so it is mounted when the tab is first opened rather than
+   with the page — and it keeps running afterwards, which is what lets the
+   synchronization carry on while an admin works on another tab. */
+let lichessMounted = null;
+let lichessCtx = null;
+
+async function mountLichess() {
+  if (lichessMounted || !lichessCtx) return;
+  const host = document.getElementById('lichess-host');
+  if (!host) return;
+  try {
+    const { renderLichessAdmin } = await import('./lichess-admin.js');
+    host.innerHTML = '';
+    lichessMounted = renderLichessAdmin(lichessCtx, host);
+  } catch (e) {
+    console.error(e);
+    host.innerHTML = '<div class="empty-state">The Lichess panel could not be loaded.</div>';
+  }
+}
+
 const activate = (id) => {
   tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === id));
   sections.forEach(s => s.classList.toggle('active', s.id === id));
   setTimeout(() => {
     if (id === 'events' && typeof renderCalendar === 'function') renderCalendar();
     if (id === 'puzzles' && puzzleBoardRef?.resize) puzzleBoardRef.resize();
+    if (id === 'lichess') mountLichess();
   }, 0);
 };
 tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
@@ -45,6 +68,8 @@ if (!cfg) {
       await signOut(auth);
       return window.location.href = '/login';
     }
+    /* let Analytics know who this is, so returning visits register */
+    window.jagIdentify?.(user.uid);
     const email = (user?.email || '').trim().toLowerCase();
     currentUserEmail = email;
     const isAdminEmail = ADMIN_EMAILS.includes(email);
@@ -68,6 +93,19 @@ if (!cfg) {
       if (snapData.avatarColor) avaEl.style.background = snapData.avatarColor;
     }
     if (greetEl) greetEl.textContent = displayName;
+
+    /* The lichess modules take the same ctx shape the club and hub pages
+       hand around; outside a club, clubId is null and the teams are the
+       site's own. */
+    lichessCtx = {
+      clubId: null,
+      club: { name: 'JagChess', blocks: [] },
+      user,
+      member: { ...snapData, username: displayName, uid: user.uid },
+      isAdmin: true,
+      globalOnly: true,
+      page: 'lichess'
+    };
 
     activate('dashboard');
   });
@@ -891,7 +929,8 @@ if (!cfg) {
 
     // Keep editor focus for all toolbar controls except the color and size inputs
     rteToolbar.addEventListener('mousedown', e => {
-      if (!e.target.closest('input[type="color"]') && !e.target.closest('input[type="number"]') && !e.target.closest('label.rte-color-wrap')) {
+      if (!e.target.closest('input[type="color"]') && !e.target.closest('input[type="number"]')
+          && !e.target.closest('select') && !e.target.closest('label.rte-color-wrap')) {
         e.preventDefault();
       }
     });
@@ -905,6 +944,15 @@ if (!cfg) {
         newsEditor.focus();
       }
     });
+
+    /* The face the message is written in. Its markup is built here rather
+       than sitting in the page, so the list of fonts lives in one file for
+       both newsletter editors. */
+    const fontSlot = document.getElementById('rte-font-slot');
+    if (fontSlot) {
+      fontSlot.innerHTML = fontSelectHTML('rte-font');
+      wireFontSelect(document.getElementById('rte-font'), newsEditor, restoreRange);
+    }
 
     // Font size stepper
     const rteSizeInput = document.getElementById('rte-size-input');
@@ -1147,6 +1195,9 @@ if (!cfg) {
     })),
     getMe: () => currentUserEmail,
     getClubName: () => 'JagChess',
+    /* An address on the site rather than a data URL: there is no club here
+       to have a badge, and a mail client fetches a remote image happily. */
+    getClubLogo: () => location.origin + '/assets/img/jagchess-mark.png',
     addAllLabel: 'Add all JagChess club students',
   });
 

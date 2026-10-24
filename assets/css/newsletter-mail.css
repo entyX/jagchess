@@ -277,6 +277,102 @@
 .nl-suggestion-role.admin   { background: var(--blue-soft);   color: var(--blue-dark); }
 .nl-suggestion-role.founder { background: var(--purple-soft); color: var(--purple-dark); }
 
+/* ── what the @ shortcuts do ──────────────────────────────────────────
+   A hover card rather than a line of hint text under the field: three
+   groups with a sentence each is more than a hint can carry, and it is
+   only ever needed once. Hover or focus, so it is reachable from the
+   keyboard as well as the pointer.
+   ─────────────────────────────────────────────────────────────────── */
+
+.nl-label-row { display: inline-flex; align-items: center; gap: 7px; }
+
+.nl-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  color: var(--muted);
+  cursor: help;
+  transition: color .14s;
+}
+.nl-info:hover, .nl-info:focus-visible { color: var(--blue); outline: none; }
+.nl-info svg { width: 16px; height: 16px; }
+
+.nl-info-pop {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: -10px;
+  z-index: 300;
+  display: grid;
+  gap: 6px;
+  width: max-content;
+  max-width: min(330px, 78vw);
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--card);
+  box-shadow: var(--pop);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-2);
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity .14s, transform .14s, visibility .14s;
+}
+.nl-info:hover .nl-info-pop,
+.nl-info:focus-visible .nl-info-pop,
+.nl-info-pop:hover { opacity: 1; visibility: visible; transform: translateY(0); }
+
+.nl-info-pop b { color: var(--text); font-size: 13px; }
+.nl-info-pop i { color: var(--muted); font-size: 12px; font-style: normal; }
+
+/* Tag in one column, what it means in the other, so a description that
+   wraps stays under itself rather than under the tag. */
+.nl-info-pop > span {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 8px;
+  align-items: baseline;
+}
+.nl-info-pop code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--blue-soft);
+  color: var(--blue-dark);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+/* On a narrow screen the card would hang off the left edge of the field. */
+@media (max-width: 560px) {
+  .nl-info-pop { left: auto; right: -10px; }
+}
+
+/* ── a group in the dropdown ────────────────────────────────────────── */
+
+.nl-suggestion-ping { border: 1px dashed var(--border-2); }
+.nl-suggestion-ping + .nl-suggestion-ping { margin-top: 4px; }
+.nl-suggestion-avatar.nl-ping-mark {
+  background: var(--blue-soft);
+  color: var(--blue-dark);
+  font-size: 16px;
+}
+.nl-suggestion-role.ping,
+.nl-suggestion-role.pending { background: var(--orange-soft); color: var(--orange-dark); }
+.nl-suggestion-role.ping { background: var(--blue-soft); color: var(--blue-dark); }
+
+/* Somebody who is not in the club yet, on a message written for the club:
+   worth seeing at a glance, not worth shouting about. */
+.nl-chip.is-pending { background: var(--orange-soft); }
+.nl-chip.is-pending:hover { border-color: var(--orange); }
+.nl-chip.is-pending .nl-chip-avatar { background: var(--orange) !important; }
+
 /* ── send feedback ──────────────────────────────────────────────────── */
 
 .nl-status {

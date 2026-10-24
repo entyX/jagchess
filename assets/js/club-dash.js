@@ -10,6 +10,8 @@ import {
 
 import { displayRating } from './glicko2.js';
 import { loadMyRatings, setDuelIntent, duelsHash } from './club-duels.js';
+import { listTournaments, phaseOf, arenaEndsAt, FORMATS } from './tournaments-core.js';
+import { tcLabel } from './club-duels.js';
 
 const COLS = 12;
 const ROW = 84;
@@ -71,7 +73,7 @@ const TIPS = [
   'Control the centre — pieces and pawns in the centre dominate the board.',
   'Develop every piece once before moving any piece twice.',
   'Castle early to protect your king and connect your rooks.',
-  'A knight on the rim is dim. Centralise your knights.',
+  'A knight on the rim is dim. Centralize your knights.',
   'When ahead in material, trade pieces to simplify.',
   'Always ask: what is my opponent threatening?',
   'Rooks belong on open files — connect and double them.'
@@ -87,6 +89,7 @@ export const WIDGETS = {
   leaderboard:  { name: 'Leaderboard',    desc: 'Top players by points', w: 5, h: 5, minW: 3, minH: 3 },
   'news-latest':{ name: 'Latest news',    desc: 'Most recent announcements', w: 4, h: 3, minW: 3, minH: 2 },
   'puzzle-daily':{name: 'Daily puzzle',   desc: 'Shortcut into the newest puzzle', w: 4, h: 3, minW: 3, minH: 2 },
+  tournaments:  { name: 'Tournaments',    desc: 'What is running now and what is next', w: 4, h: 5, minW: 3, minH: 3 },
   tip:          { name: 'Tip of the day', desc: 'A rotating chess tip', w: 4, h: 3, minW: 3, minH: 2 },
   'store-preview':{name: 'Store preview', desc: 'A few items members can spend points on', w: 4, h: 4, minW: 3, minH: 3 }
 };
@@ -97,27 +100,48 @@ async function loadData(ctx) {
   const id = ctx.clubId;
   const safe = async (p, fallback) => { try { return await p; } catch (e) { console.warn(e); return fallback; } };
 
-  const [events, members, news, puzzles, items] = await Promise.all([
+  const [events, members, news, puzzles, items, tourns] = await Promise.all([
     safe(getDocs(query(clubCol(id, 'events'), orderBy('date', 'asc'))), { docs: [] }),
     safe(getDocs(query(clubCol(id, 'members'), orderBy('points', 'desc'), limit(20))), { docs: [] }),
     safe(getDocs(query(clubCol(id, 'announcements'), orderBy('createdAt', 'desc'), limit(4))), { docs: [] }),
     safe(getDocs(query(clubCol(id, 'puzzles'), orderBy('createdAt', 'desc'), limit(1))), { docs: [] }),
-    safe(getDocs(query(clubCol(id, 'shopItems'), limit(4))), { docs: [] })
+    safe(getDocs(query(clubCol(id, 'shopItems'), limit(4))), { docs: [] }),
+    safe(listTournaments(ctx), [])
   ]);
 
   const map = (s) => s.docs.map((d) => ({ id: d.id, ...d.data() }));
   const now = Date.now();
   const staffHidden = ctx.club.hideStaffFromLeaderboard === true;
   const isStaffRole = (r) => r === 'admin' || r === 'founder';
+  /* live first, then whatever starts soonest — the widget is small, so it
+     only ever shows what is actually worth acting on */
+  const live = (tourns || []).filter((t) => {
+    const p = phaseOf(t, now);
+    return p === 'running' || p === 'ending' || p === 'scheduled';
+  }).sort((a, b) => {
+    const rank = (t) => (phaseOf(t, now) === 'scheduled' ? 1 : 0);
+    return rank(a) - rank(b) || (a.startsAt || 0) - (b.startsAt || 0);
+  });
+
   return {
     events: map(events).filter((e) => e.date >= now - 3 * 3600e3).slice(0, 6),
     members: map(members).filter((m) => !(staffHidden && isStaffRole(m.role))).slice(0, 8),
     news: map(news),
     puzzle: map(puzzles)[0] || null,
     items: map(items),
+    tournaments: live.slice(0, 4),
     ratings: await loadMyRatings(ctx)
   };
 }
+
+/* "in 3 days", "in 2h", "in 14m" — enough to know whether to care. */
+const relative = (ms) => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s >= 86400) return `in ${Math.floor(s / 86400)}d`;
+  if (s >= 3600) return `in ${Math.floor(s / 3600)}h`;
+  if (s >= 60) return `in ${Math.floor(s / 60)}m`;
+  return 'any moment';
+};
 
 /* ── widget bodies ─────────────────────────────────────────────────── */
 
@@ -215,6 +239,26 @@ function widgetHTML(type, ctx, data) {
         ${data.puzzle ? '<button class="btn primary sm" data-go="puzzles">Solve</button>' : ''}
       </div>`;
 
+    case 'tournaments': {
+      const now = Date.now();
+      const brief = (t) => {
+        const p = phaseOf(t, now);
+        if (p === 'scheduled') return 'Starts ' + relative(t.startsAt - now);
+        if (p === 'running' && t.format === 'arena') return relative(arenaEndsAt(t) - now) + ' left';
+        return 'Live now';
+      };
+      return `<div class="w-head"><span class="dash-heading">Tournaments</span>
+          <button class="dash-link" data-go="tournaments">See all →</button></div>
+        <div class="w-scroll">${data.tournaments.length ? data.tournaments.map((t) => {
+          const p = phaseOf(t, now);
+          const live = p === 'running' || p === 'ending';
+          return `<button class="w-tourn-row${live ? ' live' : ''}" data-tourn="${esc(t.id)}">
+            <span class="w-tourn-name">${esc(t.name)}</span>
+            <span class="w-tourn-sub">${esc(brief(t))} · ${esc(FORMATS[t.format].name)} · ${tcLabel(t.tc)}</span>
+          </button>`;
+        }).join('') : '<div class="empty-state">Nothing scheduled.</div>'}</div>`;
+    }
+
     case 'tip':
       return `<div class="w-head"><span class="dash-heading">Tip of the day</span></div>
         <div class="w-tip">${esc(TIPS[new Date().getDay() % TIPS.length])}</div>`;
@@ -237,7 +281,7 @@ function widgetHTML(type, ctx, data) {
 /* ── render ────────────────────────────────────────────────────────── */
 
 export async function renderDashboard(ctx, host, api) {
-  const editing = ctx.mode === 'editor' && ctx.isAdmin;
+  const editing = ctx.isAdmin;
   let layout = (ctx.club.layout && ctx.club.layout.length ? ctx.club.layout : DEFAULT_LAYOUT)
     // points and streak moved to the header, so the tile they used to occupy
     // becomes the quick-duel panel on layouts saved before that change
@@ -301,9 +345,12 @@ export async function renderDashboard(ctx, host, api) {
 
     grid.querySelectorAll('[data-go]').forEach((b) => {
       b.onclick = () => {
-        const target = (ctx.club.blocks || []).find((x) => x.type === b.dataset.go);
-        if (target) location.hash = target.id;
-        else toast('That block hasn\'t been added to this club yet.');
+        const type = b.dataset.go;
+        const target = (ctx.club.blocks || []).find((x) => x.type === type);
+        if (target) { location.hash = target.id; return; }
+        // duels and tournaments answer on their own route with or without a block
+        if (type === 'duels' || type === 'tournaments') { location.hash = type; return; }
+        toast('That block hasn\'t been added to this club yet.');
       };
     });
 
@@ -312,6 +359,10 @@ export async function renderDashboard(ctx, host, api) {
         setDuelIntent({ scope: b.dataset.duel });
         location.hash = duelsHash(ctx);
       };
+    });
+
+    grid.querySelectorAll('[data-tourn]').forEach((b) => {
+      b.onclick = () => { location.hash = 'tournament/' + b.dataset.tourn; };
     });
 
     if (editing) {
@@ -415,23 +466,32 @@ export async function renderDashboard(ctx, host, api) {
    sidebar entry just appears the next time an admin opens the dashboard.
    ─────────────────────────────────────────────────────────────────── */
 
-let addingDuels = false;
+let addingPage = false;
+
+/* widget type → the block its buttons need to land on */
+const WIDGET_NEEDS = {
+  'quick-duel': { id: 'duels', type: 'duels', name: 'Duels' },
+  tournaments: { id: 'tournaments', type: 'tournaments', name: 'Tournaments' }
+};
 
 async function ensureDuelsPage(ctx, layout) {
-  if (addingDuels || !ctx.isAdmin) return;
-  if (!layout.some((w) => w.type === 'quick-duel')) return;
+  if (addingPage || !ctx.isAdmin) return;
   const blocks = (ctx.club.blocks || []).slice();
-  if (blocks.some((b) => b.type === 'duels')) return;
+  const wanted = Object.entries(WIDGET_NEEDS)
+    .filter(([widget]) => layout.some((w) => w.type === widget))
+    .map(([, block]) => block)
+    .filter((block) => !blocks.some((b) => b.type === block.type));
+  if (!wanted.length) return;
 
-  addingDuels = true;
+  addingPage = true;
   try {
-    blocks.push({ id: 'duels', type: 'duels', name: 'Duels' });
+    wanted.forEach((b) => blocks.push(b));
     await updateDoc(clubRef(ctx.clubId), { blocks });
     ctx.club.blocks = blocks;
   } catch (e) {
-    console.warn('Could not add the Duels page', e);
+    console.warn('Could not add a page the dashboard needs', e);
   } finally {
-    addingDuels = false;
+    addingPage = false;
   }
 }
 
@@ -477,6 +537,9 @@ async function runPendingMove(ctx) {
     const { importLegacy } = await import('./club-import.js');
     const result = await importLegacy(ctx.clubId, () => {});
     ctx.club.legacyImported = true;
+    // a copy that had already run reports nothing to do, and reloading the
+    // page over it would just be a flash for no reason
+    if (result.skipped) return;
     toast(`Finished moving ${result.total} records across`, 'ok');
     setTimeout(() => location.reload(), 800);
   } catch (e) {

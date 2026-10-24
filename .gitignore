@@ -1,0 +1,7 @@
+.vercel
+
+node_modules/
+.firebase/
+.claude/
+*.log
+node_modules.zip

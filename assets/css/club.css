@@ -99,6 +99,32 @@
 }
 .tab-tools i:hover { background: rgba(255,255,255,.2); color: #fff; }
 
+/* ── reordering pages, in editor mode ───────────────────────────────── */
+
+.tab-grip {
+  flex-shrink: 0;
+  margin-right: -2px;
+  width: 16px;
+  font-style: normal;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+  color: rgba(255, 255, 255, .35);
+  cursor: grab;
+  touch-action: none;          /* a drag on a phone must not scroll the nav */
+}
+.tab-grip:hover { color: rgba(255, 255, 255, .85); }
+.tab-grip:active { cursor: grabbing; }
+
+.tabs.reordering .tab { transition: none; }
+.tabs.reordering .tab:not(.dragging) { opacity: .6; }
+.tab.dragging {
+  background: rgba(255, 255, 255, .16);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .35);
+  cursor: grabbing;
+}
+.tab.dragging .tab-grip { color: #fff; cursor: grabbing; }
+
 .mode-switch {
   display: flex;
   gap: 4px;
@@ -430,26 +456,221 @@
 }
 .att-ico.live { background: var(--red); animation: pulse-dot 1.8s ease-in-out infinite; }
 
-.att-form { display: grid; gap: 14px; }
-.att-confirm {
+.att-banner-foot {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.att-banner-note { font-size: 13px; color: var(--text-2); }
+
+/* ── the admin's builder ─────────────────────────────────────────────
+   One column, not two: the question cards are the same cards the
+   registration editor draws, and they need the width. */
+.att-admin { display: grid; gap: 30px; }
+.att-build .reg-head { margin-bottom: 4px; }
+.att-build h4 { margin: 0 0 5px; font-size: 16px; }
+.att-build .reg-foot [id="att-save"] { margin-left: auto; }
+.att-build .reg-dirty:not([hidden]) + [id="att-save"] { margin-left: 0; }
+
+.att-pts-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+  margin: 16px 0 18px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.att-pts-row .field-hint { flex: 1 1 240px; margin: 0; }
+.att-pts-input { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.att-pts-input input { width: 110px; }
+.att-pts-input span { font-size: 13px; color: var(--muted); }
+
+.att-resp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.att-resp-list { max-height: 420px; overflow-y: auto; }
+.adm-att-resp-row.is-dup { opacity: .55; }
+.adm-att-resp-where { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+.att-tag {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.att-tag.new   { background: var(--green-soft); color: var(--green-dark); }
+.att-tag.guest { background: var(--blue-soft);  color: var(--blue); }
+.att-tag.dup   { background: var(--surface-2);  color: var(--muted); }
+
+.app-held {
+  padding: 14px 16px;
+  border: 2px solid rgba(88,204,2,.3);
+  border-radius: var(--r-md);
+  background: var(--green-soft);
+}
+.app-held b { display: block; font-family: var(--font); font-size: 14.5px; color: var(--green-dark); }
+.app-held p { margin: 5px 0 0; font-size: 12.5px; color: var(--text-2); line-height: 1.55; }
+
+.att-preview-card { width: min(560px, 100%); }
+.att-preview-switch { margin: 4px 0 0; }
+.att-preview-note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+/* ── the check-in modal ──────────────────────────────────────────────
+   The same card for a member and for somebody with no account at all —
+   only what is inside it differs. */
+.att-card { width: min(560px, 100%); gap: 16px; }
+.att-card-head { display: flex; align-items: center; gap: 14px; }
+.att-card-avatar {
+  width: 46px; height: 46px;
+  border-radius: 15px;
+  display: grid; place-items: center;
+  font-size: 22px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.att-card-club {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.att-card-head h3 { margin: 2px 0 0; }
+
+.att-card-reward {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 15px;
+  border-radius: var(--r-md);
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.att-live-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
+.att-stage { position: relative; }
+.att-qs { gap: 18px; }
+.att-nothing {
+  padding: 18px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13.5px;
+  text-align: center;
+}
+.att-foot-note { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
+
+.att-pitch {
+  display: flex;
+  gap: 13px;
   padding: 14px 16px;
   border: 2px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
-  font-size: 15px;
-  cursor: pointer;
 }
-.att-confirm:hover { border-color: var(--green); background: var(--green-soft); }
-.att-confirm input { width: 21px; height: 21px; }
-.att-q label { font-family: var(--font); font-size: 14px; font-weight: 800; }
+.att-pitch-mark { font-size: 18px; line-height: 1.3; flex-shrink: 0; }
+.att-pitch b { display: block; font-family: var(--font); font-size: 14px; }
+.att-pitch p { margin: 4px 0 0; font-size: 12.5px; color: var(--text-2); line-height: 1.55; }
 
-.att-admin { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 26px; }
-.att-qs-head { display: flex; align-items: center; justify-content: space-between; margin: 22px 0 12px; }
-.att-resp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.att-resp-list { max-height: 340px; overflow-y: auto; }
+/* ── working, then done ──────────────────────────────────────────────
+   Every check-in passes through both, including the one that asked
+   nothing at all: a modal that blinks open and shut tells you nothing
+   about whether it worked. */
+.att-busy, .att-done {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 34px 10px 22px;
+  text-align: center;
+}
+.att-busy p { margin: 0; font-size: 14px; color: var(--text-2); }
+.att-spinner {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 4px solid var(--border);
+  border-top-color: var(--green);
+  animation: att-spin .8s linear infinite;
+}
+@keyframes att-spin { to { transform: rotate(360deg); } }
+
+.att-done h4 {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 21px;
+  font-weight: 900;
+}
+.att-done-sub {
+  margin: 0;
+  max-width: 400px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.att-done-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+
+.att-tick { width: 78px; height: 78px; }
+.att-tick-ring, .att-tick-path {
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.att-tick-ring {
+  stroke-dasharray: 170;
+  stroke-dashoffset: 170;
+  animation: att-ring .5s var(--ease) forwards;
+}
+.att-tick-path {
+  stroke-width: 6;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: att-tick .34s var(--ease) .42s forwards;
+}
+@keyframes att-ring { to { stroke-dashoffset: 0; } }
+@keyframes att-tick { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .att-tick-ring, .att-tick-path { animation-duration: .01ms; animation-delay: 0ms; }
+  .att-spinner { animation-duration: 1.6s; }
+}
+
+.att-closed { text-align: center; justify-items: center; }
+.att-closed .att-card-head { text-align: left; }
+
+/* Nothing behind the modal on the signed-out path — there is no club page
+   to show somebody who is not in the club. Just the ground it stands on. */
+body.att-guest { background: var(--bg); }
+body.att-guest .sidebar,
+body.att-guest .app-main,
+body.att-guest .club-gate { display: none !important; }
 .adm-field-label {
   font-family: var(--font-ui);
   font-size: 11.5px;
@@ -532,20 +753,554 @@
   border-radius: 999px;
   padding: 3px 8px;
 }
-.pz-step {
-  width: 22px; height: 22px;
-  border-radius: 7px;
+/* ── solving one ─────────────────────────────────────────────────── */
+
+.pzs { display: grid; gap: 14px; }
+.pzs-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pzs-turn { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.pzs-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 800;
+}
+.pzs-chip::before {
+  content: '';
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--text-2);
+}
+.pzs-chip.white::before { background: #fff; }
+.pzs-chip.black::before { background: #1d2b33; border-color: #1d2b33; }
+
+.pzs-ask { font-size: 13px; font-weight: 700; color: var(--text-2); }
+
+.pzs-status {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-2);
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  min-height: 28px;
+}
+.pzs-status[data-status="success"] { background: var(--green-soft); color: var(--green-dark); }
+.pzs-status[data-status="error"]   { background: var(--red-soft);   color: var(--red-dark); }
+.pzs-status[data-status="info"]    { background: var(--blue-soft);  color: var(--blue-dark); }
+
+.pzs-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pzs-dots { display: flex; gap: 7px; }
+.pzs-tools { display: flex; align-items: center; gap: 8px; }
+.pzs-tool {
+  width: 34px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+.pzs-tool svg { width: 17px; height: 17px; }
+
+/* The footer sits at the bottom of the card, so a tooltip above the button
+   is the only direction with room for it. That is where [data-tip] puts it. */
+.pzs-tools [data-tip]::after { white-space: nowrap; }
+.pzs-dot {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  transition: background .2s, border-color .2s, transform .2s;
+}
+.pzs-dot.on { background: var(--green); border-color: var(--green); transform: scale(1.08); }
+
+.pzs-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+  padding: 9px 13px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.pz-desc { margin: -4px 0 0; font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+.pz-head-tools { display: flex; gap: 8px; flex-shrink: 0; }
+
+.pz-chip {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.pz-chip.due  { background: var(--blue-soft); color: var(--blue-dark); }
+.pz-chip.late { background: var(--orange-soft, var(--surface-2)); color: var(--orange-dark, var(--muted)); }
+
+/* ── the reward ──────────────────────────────────────────────────── */
+
+.pz-win { animation: none; opacity: 0; transition: opacity .22s var(--ease); }
+.pz-win.is-in { opacity: 1; }
+.pz-win-card {
+  max-width: 380px;
+  text-align: center;
+  justify-items: center;
+  gap: 4px;
+  animation: none;
+  transform: translateY(16px) scale(.96);
+  transition: transform .34s var(--ease);
+}
+.pz-win.is-in .pz-win-card { transform: none; }
+
+.pz-win-mark { width: 74px; height: 74px; }
+.pz-win-mark svg { width: 100%; height: 100%; }
+.pz-win-ring, .pz-win-tick {
+  fill: none;
+  stroke: var(--green);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pz-win-ring {
+  stroke-width: 5;
+  stroke-dasharray: 170;
+  stroke-dashoffset: 170;
+  animation: pz-ring .5s var(--ease) .1s forwards;
+}
+.pz-win-tick {
+  stroke-width: 6;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: pz-tick .32s var(--ease) .5s forwards;
+}
+@keyframes pz-ring { to { stroke-dashoffset: 0; } }
+@keyframes pz-tick { to { stroke-dashoffset: 0; } }
+
+.pz-win-card h3 { margin: 6px 0 0; }
+.pz-win-points {
+  font-family: var(--font);
+  font-size: 58px;
+  font-weight: 900;
+  line-height: 1.05;
+  color: var(--gold-dark);
+  font-variant-numeric: tabular-nums;
+  transition: transform .2s var(--ease);
+}
+.pz-win-points.landed { transform: scale(1.06); }
+.pz-win-label {
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pz-win-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+}
+.pz-win-stat {
+  display: grid;
+  gap: 2px;
+  padding: 12px 8px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.pz-win-stat-n { font-family: var(--font); font-size: 15px; font-weight: 800; }
+.pz-win-stat-l { font-size: 11px; color: var(--muted); font-weight: 700; }
+
+.pz-win-late {
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px 14px;
+  border-radius: var(--r-md);
+  background: var(--red-soft);
+  text-align: left;
+}
+.pz-win-late b { display: block; font-family: var(--font); font-size: 13.5px; color: var(--red-dark); }
+.pz-win-late span { display: block; margin-top: 3px; font-size: 12px; color: var(--text-2); line-height: 1.5; }
+
+.pz-win-practice { margin: 12px 0 0; font-size: 12px; color: var(--muted); }
+.pz-win-card .btn { margin-top: 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pz-win-card { transition: none; transform: none; }
+  .pz-win-ring, .pz-win-tick { animation-duration: .01ms; animation-delay: 0ms; }
+}
+
+/* ── previewing one ──────────────────────────────────────────────── */
+
+.pz-preview-card { width: min(620px, 100%); }
+.pz-preview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.pz-preview-head h3 { margin: 2px 0 0; }
+.pz-preview-eyebrow {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pz-preview-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pz-preview-meta span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-weight: 700;
+}
+
+/* ── building one ────────────────────────────────────────────────── */
+
+/* The builder is the page, not a column of it. */
+.pz-admin { display: grid; gap: 16px; }
+.pz-build { display: grid; gap: 0; }
+.pz-published { display: grid; gap: 14px; align-content: start; }
+.pz-published .list { display: grid; gap: 8px; }
+
+.pz-wiz { display: grid; gap: 18px; min-height: 620px; align-content: start; }
+.pz-wiz-body { display: grid; align-content: start; }
+.pz-wiz-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.pz-wiz-head h3 { margin: 0 0 4px; }
+.pz-wiz-sub { margin: 0; font-size: 13px; }
+
+.pz-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pz-step-pill {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  min-width: 0;
+}
+.pz-step-pill { cursor: pointer; transition: border-color .12s, background .12s; }
+.pz-step-pill:hover { border-color: var(--border-2); }
+.pz-step-pill:focus-visible { outline: none; border-color: var(--green); box-shadow: 0 0 0 4px rgba(88,204,2,.2); }
+.pz-step-pill.on { border-color: var(--green); background: var(--green-soft); }
+.pz-step-pill.locked { cursor: not-allowed; opacity: .55; }
+.pz-step-pill.locked:hover { border-color: var(--border); }
+.pz-step-pill.done .pz-step-n { background: var(--green); color: #fff; }
+.pz-step-n {
+  width: 24px; height: 24px;
+  flex-shrink: 0;
+  border-radius: 8px;
   display: grid; place-items: center;
   background: var(--surface-2);
+  color: var(--text-2);
   font-family: var(--font);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
-  color: var(--muted);
-  flex-shrink: 0;
 }
-.list-item.done .pz-step { background: var(--green); color: #fff; }
-.pz-tries { font-size: 12.5px; color: var(--muted); margin-top: 8px; font-weight: 600; }
-.pz-celebrate { font-size: 52px; line-height: 1; margin-bottom: 6px; color: var(--green); }
+.pz-step-pill.on .pz-step-n { background: var(--green); color: #fff; }
+.pz-step-t { min-width: 0; display: grid; }
+.pz-step-t b { font-family: var(--font); font-size: 13px; }
+.pz-step-t small { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pz-ask { text-align: center; padding: 18px 0 8px; }
+.pz-ask h4 { margin: 0 0 6px; font-size: 18px; }
+.pz-ask p { margin: 0 0 20px; font-size: 13.5px; color: var(--text-2); }
+
+.pz-color-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pz-color-pick {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 24px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--card);
+  box-shadow: var(--lift-card);
+  cursor: pointer;
+  transition: transform .14s var(--ease), border-color .14s;
+}
+.pz-color-pick:hover { border-color: var(--green); transform: translateY(-2px); }
+.pz-color-pick.on { border-color: var(--green); background: var(--green-soft); }
+.pz-color-pick b { font-family: var(--font); font-size: 16px; }
+.pz-color-pick small { font-size: 11.5px; color: var(--text-2); line-height: 1.45; }
+.pz-color-king { font-size: 46px; line-height: 1; }
+.pz-color-king.white { color: #f7fbf2; text-shadow: 0 0 2px #46586380, 0 2px 5px rgba(0,0,0,.25); }
+.pz-color-king.black { color: #1d2b33; }
+
+/* Setting the position is one job, so it gets the whole width: the board as
+   large as it will go, and every control in a row underneath it. */
+.pz-setup { display: grid; justify-items: center; gap: 22px; }
+.pz-setup-board { max-width: min(100%, 620px); }
+.pz-setup-foot { width: min(100%, 680px); display: grid; gap: 12px; justify-items: center; }
+.pz-setup-foot .pz-stage-note { text-align: center; max-width: 52ch; }
+.pz-setup-foot .pz-stage-tools { justify-content: center; align-items: center; }
+.pz-tools-gap { flex-basis: 12px; }
+
+/* Recording moves is two jobs at once — the board and the shape of the line
+   — so they sit side by side, and the flowchart gets the larger half. */
+.pz-stage { display: grid; grid-template-columns: minmax(300px, 420px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.pz-stage-board { display: grid; gap: 0; }
+.pz-stage-side { display: grid; gap: 12px; align-content: start; }
+.pz-stage-note { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.55; }
+.pz-stage-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.pz-stage-err {
+  margin: 0;
+  padding: 9px 13px;
+  border-radius: var(--r-md);
+  background: var(--red-soft);
+  color: var(--red-dark);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.pz-turn-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.pz-turn-note { font-size: 12.5px; color: var(--text-2); }
+.pz-move-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+.pz-line-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pz-line-head h4 { margin: 0; }
+.pz-line-stat { font-size: 12px; color: var(--muted); font-weight: 700; }
+
+/* ── the line, as the graph it is ─────────────────────────────────
+   A list can show one line. The moment a puzzle has two good moves it is a
+   tree, and after a merge it is not even that — so it is drawn: a box per
+   move, rows by depth, edges behind. */
+/* A viewport, not a scroll box: the stage inside is moved and scaled, so
+   the whole shape of a branching line can be seen at once. */
+.pz-flow-wrap {
+  position: relative;
+  height: min(56vh, 560px);
+  min-height: 300px;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  touch-action: none;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+.pz-flow-wrap.is-panning { cursor: grabbing; }
+.pz-flow-wrap:has(.pz-flow-empty) { cursor: default; height: auto; min-height: 240px; }
+
+.pz-flow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.pz-flow-zoom {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: var(--lift);
+  cursor: default;
+}
+.pz-flow-zoom button {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.pz-flow-zoom button:hover { background: var(--surface-2); color: var(--text); }
+.pz-flow-zoom [data-zoom-fit] { width: auto; padding: 0 10px; font-size: 11.5px; border-radius: 999px; }
+.pz-flow-zoom span {
+  min-width: 42px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pz-flow-edges { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.pz-flow-edges path { fill: none; stroke: var(--border-2); stroke-width: 2.5; }
+
+.pz-flow-empty {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 0 24px;
+}
+
+.pz-node {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 2px solid var(--border-2);
+  border-radius: 11px;
+  background: var(--card);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color .12s, background .12s, transform .12s;
+}
+.pz-node:hover { transform: translateY(-1px); border-color: var(--text-2); }
+.pz-node:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(88,204,2,.24); }
+.pz-node.mine { border-color: rgba(88,204,2,.55); }
+.pz-node.theirs { background: var(--surface-2); }
+.pz-node.on { border-color: var(--green); background: var(--green-soft); box-shadow: 0 0 0 3px rgba(88,204,2,.18); }
+.pz-node.shared { border-style: dashed; }
+.pz-node.is-root {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-style: dashed;
+}
+.pz-node-n { font-size: 10px; color: var(--muted); font-weight: 700; }
+.pz-node-san { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pz-node-flag { color: var(--orange-dark); font-size: 11px; }
+
+.pz-node-x {
+  position: absolute;
+  top: -8px; right: -8px;
+  width: 19px; height: 19px;
+  display: none;
+  place-items: center;
+  border: 2px solid var(--card);
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 0;
+}
+.pz-node:hover .pz-node-x,
+.pz-node:focus-within .pz-node-x { display: grid; }
+
+/* Only ever drawn between two moves that really do reach the same board. */
+.pz-merge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 26px; height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid var(--blue);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--blue);
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 0 0 4px var(--surface);
+  animation: pz-merge-pulse 2.4s ease-in-out infinite;
+}
+.pz-merge:hover { background: var(--blue); color: #fff; }
+.pz-merge:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--surface), 0 0 0 7px rgba(28,176,246,.35); }
+@keyframes pz-merge-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--surface), 0 0 0 4px rgba(28,176,246,0); }
+  50%      { box-shadow: 0 0 0 4px var(--surface), 0 0 0 8px rgba(28,176,246,.22); }
+}
+@media (prefers-reduced-motion: reduce) { .pz-merge { animation: none; } }
+
+.pz-lines-help { margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+.pz-lines-help.is-merge { color: var(--blue-dark); font-weight: 700; }
+
+.pz-details { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(230px, 1fr); gap: 22px; align-items: start; }
+.pz-details-form { display: grid; gap: 14px; }
+.pz-field { display: grid; gap: 6px; }
+.pz-field > label {
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pz-field .opt { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--faint); }
+.pz-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pz-field .field-hint { margin: 0; }
+
+.pz-late-row { display: flex; align-items: center; gap: 14px; }
+.pz-late-row input[type="range"] { flex: 1; accent-color: var(--green); }
+.pz-late-out {
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 900;
+  min-width: 56px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pz-summary {
+  padding: 16px 18px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.pz-summary h4 { margin: 0; font-size: 14.5px; }
+.pz-summary dl { margin: 0; display: grid; gap: 7px; }
+.pz-summary dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pz-summary dt { font-size: 12px; color: var(--muted); }
+.pz-summary dd { margin: 0; font-family: var(--font); font-size: 13.5px; font-weight: 800; }
+.pz-summary-note { margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
 
 /* ── PROFILE ────────────────────────────────────────────────────────── */
 
@@ -1069,7 +1824,6 @@
 
 @media (max-width: 1180px) {
   .settings-grid { grid-template-columns: 1fr; }
-  .att-admin { grid-template-columns: 1fr; }
   .pf-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -1089,3 +1843,1334 @@
   .grid-wrap.editing .widget { cursor: default; }
   .widget-resize { display: none; }
 }
+
+/* ── tournaments widget ─────────────────────────────────────────────── */
+
+.w-tourn-row {
+  display: flex; flex-direction: column; gap: 3px;
+  width: 100%; text-align: left; cursor: pointer;
+  padding: 10px 12px; margin-bottom: 7px;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--text); font-family: var(--font-ui);
+}
+.w-tourn-row:hover { border-color: var(--purple); }
+.w-tourn-row.live { background: var(--purple-soft); border-color: transparent; }
+.w-tourn-name {
+  font-size: 13.5px; font-weight: 800;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.w-tourn-sub { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.w-tourn-row.live .w-tourn-name, .w-tourn-row.live .w-tourn-sub { color: var(--purple-dark); }
+[data-theme="dark"] .w-tourn-row.live .w-tourn-name,
+[data-theme="dark"] .w-tourn-row.live .w-tourn-sub { color: #c79bff; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   REGISTRATION — the club's side of the JagChess Network.
+   The editor in settings, the pending members on the roster, and the
+   invite email that turns one into the other.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── the editor box ─────────────────────────────────────────────────── */
+
+.reg-tile { margin-top: 16px; }
+
+.reg-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.reg-head h3 { margin: 0 0 5px; }
+.reg-sub { font-size: 13.5px; line-height: 1.55; max-width: 620px; margin: 0; }
+.reg-head-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.reg-locked {
+  display: flex;
+  gap: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  border-radius: var(--r-lg);
+  background: var(--gold-soft);
+  border: 2px solid var(--gold);
+}
+.reg-locked-ico { font-size: 22px; line-height: 1; flex-shrink: 0; }
+.reg-locked b { font-family: var(--font); font-size: 14.5px; color: var(--text); }
+.reg-locked p { margin: 5px 0 0; font-size: 13px; color: var(--text-2); line-height: 1.55; }
+
+/* Private clubs keep the form — they simply have nowhere to ask it. The
+   questions stay visible and stay saved; they are just out of reach. */
+.reg-stage { position: relative; }
+.reg-stage.is-locked {
+  filter: blur(3.5px) saturate(.5);
+  opacity: .62;
+  pointer-events: none;
+  user-select: none;
+}
+
+.reg-list { display: grid; gap: 12px; }
+
+.reg-q {
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  padding: 14px 16px;
+}
+.reg-q.is-core {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--green-soft);
+  border-color: transparent;
+  padding: 12px 16px;
+}
+.reg-q-core { min-width: 0; flex: 1; }
+.reg-q-core b { display: block; font-family: var(--font); font-size: 14px; color: var(--text); }
+.reg-q-meta { font-size: 11.5px; color: var(--text-2); font-weight: 600; }
+
+.reg-built-in {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.reg-q-num {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.reg-q.is-core .reg-q-num { background: rgba(255, 255, 255, .6); color: var(--green-dark); }
+
+.reg-q-top { display: flex; align-items: center; gap: 11px; }
+
+.reg-q-label {
+  flex: 1;
+  min-width: 0;
+  border: 2px solid transparent;
+  border-radius: var(--r-sm);
+  background: var(--card);
+  padding: 9px 12px;
+  font-family: var(--font);
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--text);
+}
+.reg-q-label:focus { outline: none; border-color: var(--green); }
+.reg-q-label::placeholder { color: var(--faint); font-weight: 700; }
+
+.reg-q-tools { display: flex; gap: 5px; flex-shrink: 0; }
+.reg-tool {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--text-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all .14s;
+}
+.reg-tool svg { width: 14px; height: 14px; }
+.reg-tool:hover:not(:disabled) { border-color: var(--border-2); color: var(--text); }
+.reg-tool.danger:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
+.reg-tool:disabled { opacity: .35; cursor: not-allowed; }
+
+.reg-q-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px 16px;
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px dashed var(--border-2);
+}
+.reg-q-field { display: grid; gap: 6px; align-content: start; }
+.reg-q-field.wide { grid-column: 1 / -1; }
+.reg-q-field > label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.reg-q-field .opt { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--faint); }
+.reg-q-field input[type="text"],
+.reg-q-field input[type="number"],
+.reg-q-field select {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--card);
+  color: var(--text);
+  padding: 9px 11px;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+}
+.reg-q-field input:focus, .reg-q-field select:focus { outline: none; border-color: var(--green); }
+
+/* required toggle */
+.reg-switch { display: flex; align-items: center; gap: 9px; cursor: pointer; padding: 6px 0; }
+.reg-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.reg-switch-track {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--border-2);
+  padding: 3px;
+  flex-shrink: 0;
+  transition: background .18s;
+}
+.reg-switch-thumb {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+  transition: transform .18s var(--ease);
+}
+.reg-switch input:checked ~ .reg-switch-track { background: var(--green); }
+.reg-switch input:checked ~ .reg-switch-track .reg-switch-thumb { transform: translateX(18px); }
+.reg-switch-text { font-size: 13px; font-weight: 700; color: var(--text-2); }
+
+/* choice options */
+.reg-opts { display: grid; gap: 7px; }
+.reg-opt { display: flex; align-items: center; gap: 9px; }
+.reg-opt-dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--border-2);
+  flex-shrink: 0;
+}
+.reg-opt input { flex: 1; min-width: 0; }
+.reg-addopt { justify-self: start; margin-top: 2px; }
+
+/* slider bounds */
+.reg-range-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.reg-range-fields > div { display: grid; gap: 5px; }
+.reg-range-fields span { font-size: 11px; font-weight: 700; color: var(--muted); }
+
+.reg-none {
+  padding: 16px;
+  border-radius: var(--r-md);
+  border: 2px dashed var(--border-2);
+  font-size: 13.5px;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+
+.reg-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+.reg-dirty {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--orange-dark);
+}
+.reg-foot [data-save] { margin-left: auto; }
+.reg-dirty:not([hidden]) + [data-save] { margin-left: 0; }
+
+.reg-preview-card { width: min(600px, 100%); }
+.reg-preview { margin-top: 4px; max-height: 58vh; overflow-y: auto; padding-right: 4px; }
+
+/* ── pending members ────────────────────────────────────────────────── */
+
+.filter-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 900;
+}
+.filter-btn.active .filter-count { background: rgba(255, 255, 255, .28); }
+
+.mb-pending { margin-top: 16px; padding: 0; }
+.pending-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px;
+  border-bottom: 2px solid var(--border);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.pending-head h3 { margin: 0 0 4px; font-size: 16px; }
+.pending-head p { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.5; max-width: 560px; }
+/* ── the head's right-hand side ───────────────────────────────────────
+   Two counts and two buttons. The counts are stacked because they answer
+   two different questions — where these people came from, and how many
+   have been written to — and one long line reads as though the second
+   half contradicts the first.
+   ─────────────────────────────────────────────────────────────────── */
+
+.pending-head-side {
+  display: grid;
+  gap: 9px;
+  justify-items: end;
+  flex-shrink: 0;
+}
+.pending-count {
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: right;
+}
+.pending-tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+.role-pill.markup { background: var(--surface-2); color: var(--text-2); }
+
+/* ── the markup editor ────────────────────────────────────────────────
+   A transparent textarea over a painted copy of its own text. The two
+   layers have to agree on every metric that moves a glyph — font, size,
+   line-height, padding, wrapping, tab size — or the colours drift away
+   from the characters they belong to. Change one, change both.
+   ─────────────────────────────────────────────────────────────────── */
+
+.mk-editor { display: grid; gap: 12px; padding: 16px 22px 20px; }
+.mk-note { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.6; max-width: 76ch; }
+
+.mk-key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); }
+.mk-key span { display: inline-flex; align-items: center; gap: 6px; }
+.mk-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.mk-dot.bad  { background: var(--red); }
+.mk-dot.dup  { background: var(--blue); }
+.mk-dot.mem  { background: var(--green); }
+.mk-dot.both { background: var(--orange); }
+
+.mk-wrap {
+  position: relative;
+  max-height: 60vh;
+  overflow: auto;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--card);
+}
+.mk-wrap:focus-within { border-color: var(--green); }
+
+.mk-paint,
+.mk-input {
+  margin: 0;
+  padding: 14px 16px;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.75;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  tab-size: 8;
+}
+.mk-paint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  color: var(--text-2);
+}
+.mk-input {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+  resize: none;
+  overflow: hidden;
+}
+.mk-input:focus { outline: none; }
+.mk-input::selection { background: rgba(28, 176, 246, .28); }
+
+.mk-mail { color: var(--text); font-weight: 700; }
+.mk-mail.bad  { color: var(--red);    text-decoration: underline wavy var(--red);    text-underline-offset: 3px; }
+.mk-mail.dup  { color: var(--blue);   text-decoration: underline wavy var(--blue);   text-underline-offset: 3px; }
+.mk-mail.mem  { color: var(--green-dark); }
+.mk-mail.both { color: var(--orange-dark); text-decoration: underline wavy var(--orange); text-underline-offset: 3px; }
+.mk-name { color: var(--text-2); }
+.mk-off  { color: var(--red); background: var(--red-soft); border-radius: 3px; }
+
+.mk-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mk-foot-gap { flex: 1; }
+.mk-status { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.mk-status.is-bad { color: var(--red); }
+
+/* ── one invite going to everybody ───────────────────────────────── */
+
+.iv-to-count { font-weight: 700; color: var(--muted); }
+.iv-to-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 132px;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.iv-chip {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.iv-chip.sent { color: var(--blue-dark); border-color: rgba(28, 176, 246, .35); background: var(--blue-soft); }
+.iv-none { font-size: 12.5px; color: var(--muted); }
+.iv-skip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.iv-skip input { width: 16px; height: 16px; accent-color: var(--green); cursor: pointer; }
+
+
+/* Greyed but never dead: these are people, and every button on the row works. */
+.user-row.applicant {
+  grid-template-columns: 46px 46px minmax(0, 1fr) auto;
+  opacity: .66;
+  transition: opacity .16s, background .14s;
+}
+.user-row.applicant:hover, .user-row.applicant:focus-within { opacity: 1; }
+.applicant-avatar { background: var(--faint) !important; }
+.user-row.applicant .user-rank { color: var(--faint); }
+
+.applicant-actions { display: flex; gap: 8px; justify-self: end; flex-wrap: wrap; align-items: center; }
+.user-edit-btn.primary { border-color: var(--green); color: var(--green-dark); }
+.user-edit-btn.primary:hover { background: var(--green-soft); }
+
+.user-edit-btn.icon {
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.user-edit-btn.icon svg { width: 13px; height: 13px; }
+.user-edit-btn.icon.danger:hover { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+
+/* ── tooltips ────────────────────────────────────────────────────────
+   On the element that needs explaining, not in a title attribute: the
+   browser's own tooltip takes a second to appear and lands wherever the
+   pointer happens to be, which is no use on a destructive button. */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(3px);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--nav-bg);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .14s, transform .14s var(--ease);
+  z-index: 40;
+}
+[data-tip]::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--nav-bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .14s;
+  z-index: 40;
+}
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+[data-tip]:hover::before,
+[data-tip]:focus-visible::before { opacity: 1; }
+
+/* The roster tile clips its own overflow so the rows keep its rounded
+   corners, which cuts a centred tooltip in half on the last button in a row.
+   Hanging it off the button's right edge keeps it inside the tile. */
+.applicant-actions [data-tip]::after {
+  left: auto;
+  right: -2px;
+  transform: translateY(3px);
+}
+.applicant-actions [data-tip]:hover::after,
+.applicant-actions [data-tip]:focus-visible::after { transform: translateY(0); }
+.applicant-actions [data-tip]::before { left: auto; right: 9px; transform: none; }
+
+.role-pill.pending { background: var(--orange-soft); color: var(--orange-dark); }
+.role-pill.invited { background: var(--blue-soft);   color: var(--blue-dark); }
+
+/* ── one response ───────────────────────────────────────────────────── */
+
+.app-card { width: min(620px, 100%); }
+.app-head { display: flex; align-items: center; gap: 13px; }
+.app-head-mail { font-family: var(--font); font-size: 14.5px; font-weight: 800; word-break: break-all; }
+.app-head-meta { font-size: 12px; color: var(--muted); }
+
+.app-answers {
+  display: grid;
+  gap: 2px;
+  max-height: 46vh;
+  overflow-y: auto;
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 4px;
+}
+.app-answer {
+  display: grid;
+  gap: 3px;
+  padding: 11px 13px;
+  border-radius: var(--r-sm);
+}
+.app-answer:nth-child(odd) { background: var(--surface); }
+.app-q { font-size: 11.5px; font-weight: 800; color: var(--muted); }
+.app-a { font-size: 14px; color: var(--text); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+
+.app-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ── the invite email ───────────────────────────────────────────────── */
+
+/* The message is the whole point of this sheet, and a 14-row textarea at
+   520px wraps an invite into something nobody would proofread.
+
+   `width`, not `max-width`: .modal-card fixes every sheet at min(520px,100%),
+   so a max-width above that is inert — it can narrow a modal and never widen
+   one. Worth knowing before writing another one. */
+.invite-card { width: min(820px, 100%); }
+.invite-card .nl-field > label { font-size: 12.5px; }
+.invite-card input[readonly] { background: var(--surface-2); color: var(--text-2); }
+.invite-body {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--card);
+  color: var(--text);
+  padding: 12px 14px;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.invite-body:focus { outline: none; border-color: var(--green); }
+.invite-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.share-note {
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+/* ── responsive ─────────────────────────────────────────────────────── */
+
+@media (max-width: 1000px) {
+  .pz-stage, .pz-details { grid-template-columns: 1fr; }
+  .pz-stage-board { max-width: 520px; margin: 0 auto; width: 100%; }
+}
+
+@media (max-width: 900px) {
+  .pz-steps { grid-template-columns: 1fr 1fr; }
+  .pz-wiz { min-height: 0; }
+}
+
+@media (max-width: 720px) {
+  .reg-q-body { grid-template-columns: 1fr; }
+  .pz-color-picks { grid-template-columns: 1fr; }
+  .pz-field-row { grid-template-columns: 1fr; }
+  .att-banner-foot { flex-direction: column; align-items: stretch; }
+  .att-banner-foot .btn { width: 100%; justify-content: center; }
+  .reg-head-actions { width: 100%; }
+  .user-row.applicant { grid-template-columns: 30px 40px minmax(0, 1fr); }
+  .applicant-actions { grid-column: 1 / -1; justify-self: stretch; margin-top: 8px; }
+  .applicant-actions .user-edit-btn { flex: 1; }
+}
+
+/* ══ THE PUZZLE LIBRARY ══════════════════════════════════════════════════
+   Collections as cards on the left, what is on the one you picked as a
+   list on the right. The two halves are shaped differently on purpose: a
+   collection is a thing you choose between, so it gets a card you can take
+   in at a glance; a puzzle is a thing you scan for one of, so it gets a
+   row, and twenty of them fit where six cards did.
+
+   The same panel is drawn inside a club and out on /library, so everything
+   here is keyed off .pzlib rather than off either page.
+   ─────────────────────────────────────────────────────────────────────── */
+
+.pzlib-tile { margin-top: 16px; }
+.pzlib { display: grid; gap: 16px; }
+
+.pzlib-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pzlib-head h3 { margin: 0; }
+.pzlib-sub { margin: 4px 0 0; font-size: 13px; color: var(--text-2); max-width: 62ch; line-height: 1.55; }
+.pzlib-head-tools { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+.pzlib-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.pzlib-search svg { width: 15px; height: 15px; color: var(--muted); flex-shrink: 0; }
+.pzlib-search input {
+  border: none;
+  background: none;
+  outline: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  width: 190px;
+  min-width: 0;
+}
+
+/* Two thirds to the collections, one third to what is on the one you
+   picked. The shelves are what the page is for; the list is what you came
+   to the shelf to read, and it needs room to be read in. */
+.pzlib-body {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* ── the collections, as cards ────────────────────────────────────── */
+
+.pzlib-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+  gap: 10px;
+  align-content: start;
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.pzlib-cards .empty-state { grid-column: 1 / -1; }
+
+.pzlib-card {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  padding: 16px 12px 13px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s var(--ease);
+}
+.pzlib-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: var(--lift-card); }
+.pzlib-card.on { border-color: var(--blue); background: var(--blue-soft); }
+
+.pzlib-card-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  font-size: 22px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+.pzlib-card-name {
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--text);
+}
+.pzlib-card-count { font-size: 11.5px; color: var(--muted); }
+.pzlib-card-club {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blue-dark);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── what is on it, as a list ─────────────────────────────────────── */
+
+.pzlib-panel {
+  min-height: 280px;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.pzlib-panel-head { margin-bottom: 14px; }
+.pzlib-panel-head h4 { margin: 0; font-size: 17px; }
+.pzlib-panel-sub { margin: 4px 0 0; font-size: 13px; color: var(--text-2); line-height: 1.55; }
+.pzlib-panel-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+.pzlib-blank {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 248px;
+  text-align: center;
+  color: var(--muted);
+}
+.pzlib-blank-mark { width: 52px; height: 52px; color: var(--faint); }
+.pzlib-blank-mark svg { width: 100%; height: 100%; }
+.pzlib-blank p { margin: 0; font-size: 13.5px; max-width: 34ch; line-height: 1.6; }
+
+.pzlib-list { display: grid; gap: 8px; }
+
+.pzlib-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 13px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--card);
+  text-align: left;
+  cursor: pointer;
+  transition: all .15s var(--ease);
+}
+.pzlib-row:hover { border-color: var(--green); transform: translateX(2px); }
+.pzlib-row.on { border-color: var(--green); background: var(--green-soft); }
+.pzlib-row-info { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.pzlib-row-title {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pzlib-row-meta { display: flex; flex-wrap: wrap; gap: 3px 10px; font-size: 11.5px; color: var(--muted); }
+.pzlib-row-late { color: var(--orange-dark); font-weight: 700; }
+.pzlib-row-tools { display: flex; gap: 6px; flex-shrink: 0; }
+.pzlib-row .pz-by { white-space: normal; }
+
+/* ── how hard it is ───────────────────────────────────────────────── */
+
+/* Centred rather than baseline-aligned: two font sizes on a shared
+   baseline pushed the box taller than its own padding and let it clip
+   against whatever it sat in. */
+.pz-diff {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--font);
+  line-height: 1;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.pz-diff b { font-size: 12.5px; font-weight: 900; }
+.pz-diff i { font-size: 10px; font-weight: 700; font-style: normal; opacity: .65; }
+
+.pz-diff.is-easy     { background: var(--green-soft);  color: var(--green-dark); }
+.pz-diff.is-gentle   { background: var(--teal-soft);   color: #0e7f72; }
+.pz-diff.is-moderate { background: var(--blue-soft);   color: var(--blue-dark); }
+.pz-diff.is-hard     { background: var(--orange-soft); color: var(--orange-dark); }
+.pz-diff.is-brutal   { background: var(--red-soft);    color: var(--red-dark); }
+
+/* ── the promotion picker ─────────────────────────────────────────── */
+
+.pz-promo-card { width: min(420px, 100%); display: grid; gap: 14px; text-align: center; }
+.pz-promo-card h3 { margin: 0; }
+.pz-promo-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pz-promo-pick {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all .14s var(--ease);
+}
+.pz-promo-pick:hover, .pz-promo-pick:focus-visible {
+  border-color: var(--green);
+  background: var(--green-soft);
+  transform: translateY(-2px);
+  outline: none;
+}
+.pz-promo-pick img { width: 46px; height: 46px; }
+.pz-promo-pick span { font-size: 11px; font-weight: 700; color: var(--text-2); }
+
+/* ── whose it is ──────────────────────────────────────────────────────
+   One plain sentence — who, then where, with a dot between. The club used
+   to sit in a pill, which read as a status rather than as the rest of the
+   same sentence.
+   ─────────────────────────────────────────────────────────────────── */
+
+.pz-by {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pz-by-dot { opacity: .5; }
+.pz-byline { margin-top: -6px; font-size: 12.5px; }
+
+/* ── who can see it ───────────────────────────────────────────────── */
+
+.pz-chip.open { background: var(--teal-soft); color: #0e7f72; }
+.pz-chip.shut { background: var(--surface-2); color: var(--muted); }
+.pz-chip.custom { background: var(--purple-soft); color: var(--purple-dark); }
+.pz-chip svg { width: 12px; height: 12px; margin-right: 4px; vertical-align: -2px; }
+
+.pz-row-flags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.pz-row-tools .pz-coll-select {
+  max-width: 150px;
+  padding: 5px 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* ── the board with nothing on it ─────────────────────────────────────
+   A club with no puzzles used to show a line of text where the board goes,
+   which reads as something failing to load. This reads as a board waiting
+   for a puzzle, which is what it is.
+   ─────────────────────────────────────────────────────────────────── */
+
+.pz-idle { display: grid; gap: 12px; justify-items: center; }
+.pz-idle-board { width: 100%; opacity: .55; pointer-events: none; filter: saturate(.7); }
+.pz-idle-note { margin: 0; font-size: 13px; color: var(--muted); text-align: center; }
+
+/* ── the list beside the board ────────────────────────────────────────
+   Pinned to the board's height from JS so the two tiles line up; the list
+   inside it takes the scrollbar rather than the page.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* The tile is given the board's height from JS. Nothing inside it is
+   stretched to fill that: `align-content: start` keeps the contents at
+   their own size, at the top, and whatever is left over is simply empty.
+   The list takes a max-height from the same place, so a long one scrolls
+   inside the box instead of making the page taller. */
+.puzzle-side { overflow: hidden; align-content: start; }
+.puzzle-side .list { overflow-y: auto; min-height: 0; padding-right: 4px; }
+
+/* ── who has finished a puzzle ─────────────────────────────────────────
+   A roster with a tick against it. The list scrolls inside the card so the
+   footer with the save on it never walks off the bottom of a club with two
+   hundred members in it.
+   ─────────────────────────────────────────────────────────────────── */
+
+.pzdone-card { width: min(620px, 100%); }
+.pzdone-body { display: grid; gap: 12px; min-height: 120px; }
+.pzdone-loading { padding: 28px 4px; text-align: center; font-size: 13px; color: var(--muted); }
+
+.pzdone-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pzdone-tools .pz-search { flex: 1; min-width: 180px; }
+.pzdone-bulk { display: flex; gap: 8px; }
+
+.pzdone-list {
+  display: grid;
+  gap: 6px;
+  max-height: min(48vh, 420px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pzdone-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color .14s, background .14s;
+}
+.pzdone-row:hover { border-color: var(--border-2); }
+.pzdone-row.is-on { border-color: var(--green); background: var(--green-soft); }
+
+.pzdone-row input[type="checkbox"] {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+.pzdone-row .user-avatar-circle { width: 32px; height: 32px; font-size: 11.5px; flex-shrink: 0; }
+
+.pzdone-who { display: grid; gap: 1px; min-width: 0; flex: 1; }
+.pzdone-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 800;
+}
+.pzdone-line { font-size: 12px; color: var(--muted); }
+
+.pzdone-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pzdone-status { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.pzdone-status.is-live { color: var(--green-dark); }
+
+@media (max-width: 560px) {
+  .pzdone-tools .pz-search { min-width: 100%; }
+  .pzdone-bulk { width: 100%; }
+  .pzdone-bulk .btn { flex: 1; }
+}
+
+/* ── the collections tile ─────────────────────────────────────────── */
+
+.pz-colls { display: grid; gap: 14px; align-content: start; }
+.pz-colls-note,
+.pz-pub-note { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.6; max-width: 72ch; }
+.pz-coll-list { display: grid; gap: 8px; }
+
+.pz-coll-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.pz-coll-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  font-size: 17px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+
+/* ── searching a list, and paging it ──────────────────────────────────
+   The two lists on the admin's puzzles page are the only ones here long
+   enough to need either. Both controls are deliberately plain: they are
+   how you are looking at the list this minute, not part of the list.
+   ─────────────────────────────────────────────────────────────────── */
+
+.pz-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.pz-search:focus-within { border-color: var(--green); }
+.pz-search svg { width: 15px; height: 15px; color: var(--muted); flex-shrink: 0; }
+.pz-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 9px 0;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.pz-search input:focus { outline: none; }
+.pz-search input::-webkit-search-cancel-button { cursor: pointer; }
+
+.pg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 18px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.pg-steps, .pg-opts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pg-of { font-weight: 800; color: var(--text-2); }
+.pg-nums { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.pg-gap { padding: 0 2px; color: var(--faint); }
+
+.pg-btn, .pg-num {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color .14s, color .14s, background .14s;
+}
+.pg-btn:hover:not(:disabled), .pg-num:hover { border-color: var(--border-2); color: var(--text); }
+.pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+.pg-num.on {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.pg-jump, .pg-size { display: inline-flex; align-items: center; gap: 6px; }
+.pg-jump input, .pg-size select, .pg-custom {
+  height: 30px;
+  padding: 0 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.pg-jump input { width: 62px; }
+.pg-custom { width: 72px; }
+.pg-jump input:focus, .pg-size select:focus, .pg-custom:focus { outline: none; border-color: var(--green); }
+.pg-total { font-weight: 700; }
+
+/* ── a shelf that opens ───────────────────────────────────────────────
+   The puzzles on a shelf hang off it rather than sitting in a list of
+   their own: inset, sharing the shelf's left edge, so it reads as what is
+   inside this one and not as a second list that happens to be below it.
+   ─────────────────────────────────────────────────────────────────── */
+
+.pz-coll-item {
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+.pz-coll-item.is-open { border-color: var(--border-2); }
+.pz-coll-item .pz-coll-row { border: 0; border-radius: 0; background: none; }
+.pz-coll-item.is-loose .pz-coll-row { opacity: .8; }
+
+.pz-coll-fold {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: transform .16s var(--ease), color .14s, background .14s;
+}
+.pz-coll-fold svg { width: 14px; height: 14px; }
+.pz-coll-fold:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.pz-coll-fold:disabled { opacity: .3; cursor: default; }
+.pz-coll-item.is-open .pz-coll-fold { transform: rotate(90deg); color: var(--text); }
+
+.pz-coll-kids {
+  display: grid;
+  gap: 6px;
+  padding: 2px 13px 13px 49px;
+  background: var(--surface-2);
+  border-top: 2px solid var(--border);
+}
+.pz-coll-kid {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--card);
+}
+.pz-coll-kid.is-empty {
+  display: block;
+  border-style: dashed;
+  background: none;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.pz-coll-kid .pz-row-title { font-size: 13.5px; }
+.pz-coll-kid .pz-row-meta { font-size: 11.5px; }
+
+@media (max-width: 720px) {
+  .pz-coll-kids { padding-left: 16px; }
+  .pz-coll-kid { flex-wrap: wrap; }
+  .pg { justify-content: flex-start; }
+}
+
+.pz-coll-form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 2px dashed var(--border-2);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.pz-coll-form-tools { display: flex; gap: 8px; }
+.pz-icon-input { text-align: center; font-size: 18px; max-width: 76px; }
+
+.pz-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.pz-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform .12s var(--ease);
+}
+.pz-swatch:hover { transform: scale(1.12); }
+.pz-swatch.on { border-color: var(--text); }
+
+/* ── a two-way switch that reads as a sentence ────────────────────── */
+
+.pz-seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 3px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.pz-seg button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s var(--ease);
+}
+.pz-seg button.on { background: var(--card); color: var(--text); box-shadow: var(--lift); }
+.pz-seg.is-locked { opacity: .6; }
+.pz-seg button:disabled { cursor: not-allowed; }
+
+.pz-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.pz-check input { margin-top: 2px; flex-shrink: 0; accent-color: var(--green); }
+
+/* ── the details step's newer halves ──────────────────────────────── */
+
+.pz-diff-out {
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 900;
+  color: var(--text);
+  min-width: 62px;
+  text-align: right;
+}
+.pz-student-note,
+.pz-vis-follow {
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  background: var(--blue-soft);
+  font-size: 12.5px;
+  color: var(--blue-dark);
+  line-height: 1.6;
+}
+.pz-adopt-note {
+  display: grid;
+  gap: 4px;
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  background: var(--purple-soft);
+  border: 2px solid rgba(160,92,247,.24);
+}
+.pz-adopt-note b { font-family: var(--font); font-size: 14px; color: var(--purple-dark); }
+.pz-adopt-note span { font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+.pz-prize input { max-width: 160px; }
+
+.pz-make { margin-bottom: 2px; }
+
+/* ── the builder, lifted into a sheet ─────────────────────────────── */
+
+.pz-build-modal { align-items: flex-start; overflow-y: auto; padding: 28px 16px; }
+.pz-build-card {
+  width: min(1080px, 100%);
+  max-height: none;
+  position: relative;
+}
+.pz-build-card .pz-wiz { min-height: 0; }
+
+/* ── /library ─────────────────────────────────────────────────────── */
+
+.lib-layout { align-items: stretch; }
+.lib-aside { display: grid; gap: 12px; align-content: start; }
+.lib-aside h3 { margin: 0; }
+.lib-aside p { margin: 0; font-size: 13px; color: var(--text-2); line-height: 1.6; }
+.lib-pick { width: min(440px, 100%); display: grid; gap: 12px; }
+.lib-pick h3 { margin: 0; }
+.lib-pick .muted { margin: 0; font-size: 13px; }
+.lib-pick .list { display: grid; gap: 8px; max-height: 320px; overflow-y: auto; }
+
+.pz-award-note {
+  margin: -6px 0 0;
+  padding: 10px 13px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+.pz-award-note.is-live { background: var(--green-soft); color: var(--green-dark); font-weight: 700; }
+
+@media (max-width: 1180px) {
+  /* Stacked, the list is not beside anything, so the pinned height JS sets
+     is dropped and the box goes back to being as tall as its contents. */
+  .puzzle-side { overflow: visible; }
+  .puzzle-side .list { overflow-y: visible; }
+}
+
+@media (max-width: 1100px) {
+  .pzlib-body { grid-template-columns: 1fr; }
+  .pzlib-cards { max-height: 320px; }
+}
+
+@media (max-width: 720px) {
+  .pzlib-head-tools { width: 100%; justify-content: space-between; }
+  .pzlib-search { flex: 1; }
+  .pzlib-search input { width: 100%; }
+  .pzlib-cards { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .pz-coll-row { flex-wrap: wrap; }
+  .pz-row-tools { flex-wrap: wrap; }
+  .pz-build-modal { padding: 12px 8px; }
+}
+
+/* ── GOOGLE CALENDAR SYNC ───────────────────────────────────────────── */
+
+.cal-sync { margin-bottom: 16px; }
+.cal-sync-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 8px;
+}
+.cal-sync-head h3 { margin: 0; }
+.cal-sync p { margin: 0 0 10px; }
+
+/* A switch rather than a checkbox: it is a state the whole club is in, not
+   a field being filled in, and it is never submitted with anything. */
+.cal-switch {
+  flex-shrink: 0;
+  width: 46px; height: 26px; padding: 3px;
+  border: none; border-radius: var(--r-pill);
+  background: var(--border-2); cursor: pointer;
+  transition: background .18s ease;
+}
+.cal-switch:disabled { opacity: .45; cursor: not-allowed; }
+.cal-switch.on { background: var(--green); }
+.cal-switch-knob {
+  display: block; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.28);
+  transition: transform .18s ease;
+}
+.cal-switch.on .cal-switch-knob { transform: translateX(20px); }
+
+/* Borrowed from the connected account, so it reads as on loan: dashed, and
+   it does not take the tag colours the club's own events use. */
+.event-pill.from-google {
+  background: transparent;
+  border: 1px dashed var(--border-2);
+  color: var(--text-2);
+}
+.event-pill.from-google:hover { border-color: var(--blue); color: var(--blue-dark); }
+
+.cal-sync-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Loud enough to be read, quiet enough not to look like the page broke —
+   most of what lands here is a setting somebody has to go and change. */
+.cal-sync-problem {
+  margin: 12px 0 0; padding: 10px 12px;
+  background: var(--red-soft); border: 1px solid var(--red);
+  border-radius: var(--r-sm);
+  font-size: 13px; line-height: 1.55; color: var(--red-dark);
+}
+[data-theme="dark"] .cal-sync-problem { color: #ffb4b4; }

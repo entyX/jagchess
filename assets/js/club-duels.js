@@ -26,8 +26,8 @@ const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 /* ── paths ─────────────────────────────────────────────────────────── */
 
-const duelsCol   = () => collection(db, 'duels');
-const duelRef    = (id) => doc(db, 'duels', id);
+export const duelsCol = () => collection(db, 'duels');
+export const duelRef  = (id) => doc(db, 'duels', id);
 const seeksCol   = () => collection(db, 'duelSeeks');
 const seekRef    = (uid) => doc(db, 'duelSeeks', uid);
 const chalCol    = () => collection(db, 'duelChallenges');
@@ -72,23 +72,51 @@ export const tcCategory = (tc) => {
   return 'Classical';
 };
 
-/* ── ratings ───────────────────────────────────────────────────────── */
+/* ── ratings and records ───────────────────────────────────────────── */
 
 /* Club ratings live on the member row, global ratings on the user profile.
    Both use the identical `rating` map so one code path serves them. */
 const ratingDocRef = (scope, clubId, uid) =>
   scope === 'club' ? memberRef(clubId, uid) : userRef(uid);
 
-export async function loadMyRatings(ctx) {
-  let global = newRating();
-  try {
-    const s = await getDoc(userRef(ctx.user.uid));
-    if (s.exists()) global = readRating(s.data());
-  } catch (e) { console.warn('Could not read the global rating', e); }
-  return { club: readRating(ctx.member), global };
+/* A win / draw / loss tally, kept beside the rating on the same document and
+   scoped the same way — a club record on the member row, a global record on
+   the user profile. Only rated games touch it. */
+export function readRecord(source) {
+  const v = (source && source.record) || {};
+  const n = (x) => Math.max(0, Math.round(typeof x === 'number' && isFinite(x) ? x : 0));
+  return { w: n(v.w), d: n(v.d), l: n(v.l) };
 }
 
-/* The global side of a duel needs a name and colour that aren't in the club
+export const recordTotal = (rec) => rec.w + rec.d + rec.l;
+
+/* Absolute, never an increment: the same reasoning as the ratings below. The
+   new tally is worked out once from the snapshot the game was built with, so
+   whoever writes it writes the identical numbers and writing twice is a no-op. */
+const bumpRecord = (rec, outcome) => ({
+  w: rec.w + (outcome === 'win' ? 1 : 0),
+  d: rec.d + (outcome === 'draw' ? 1 : 0),
+  l: rec.l + (outcome === 'loss' ? 1 : 0)
+});
+
+const outcomeFor = (side, result) =>
+  result === '1/2-1/2' ? 'draw'
+    : (result === '1-0') === (side === 'white') ? 'win' : 'loss';
+
+export async function loadMyRatings(ctx) {
+  let global = newRating();
+  let profile = {};
+  try {
+    const s = await getDoc(userRef(ctx.user.uid));
+    if (s.exists()) { profile = s.data(); global = readRating(profile); }
+  } catch (e) { console.warn('Could not read the global rating', e); }
+  const out = { club: readRating(ctx.member), global };
+  // the documents themselves, so a game snapshot can freeze the record too
+  out.sources = { club: ctx.member || {}, global: profile };
+  return out;
+}
+
+/* The global side of a duel needs a name and color that aren't in the club
    member row, so the user profile carries a copy. Cheap, and it keeps the
    opponent list readable for people you share no club with. */
 export async function syncPublicProfile(ctx) {
@@ -102,17 +130,21 @@ export async function syncPublicProfile(ctx) {
   } catch (e) { console.warn('Could not sync the public profile', e); }
 }
 
-/* Ratings are computed once, when the game ends, and stored on the game doc
-   so whoever writes them writes identical numbers. Applying twice is
-   harmless because the values are absolute, never increments. */
-async function applyRatings(game) {
+/* Ratings and records are computed once, when the game ends, and stored on
+   the game doc so whoever writes them writes identical numbers. Applying
+   twice is harmless because the values are absolute, never increments. */
+export async function applySettlement(game) {
   if (!game.rated || !game.newRatings || game.ratingApplied) return;
   const sides = [['white', game.white], ['black', game.black]];
   await Promise.all(sides.map(([side, p]) => {
     const next = game.newRatings[side];
     if (!next || !p) return null;
-    return setDoc(ratingDocRef(game.scope, game.clubId, p.uid), { rating: next }, { merge: true })
-      .catch((e) => console.warn('Rating write failed for ' + side, e));
+    const patch = { rating: next };
+    // newRecords is absent on games that finished before records existed
+    const rec = game.newRecords && game.newRecords[side];
+    if (rec) patch.record = rec;
+    return setDoc(ratingDocRef(game.scope, game.clubId, p.uid), patch, { merge: true })
+      .catch((e) => console.warn('Result write failed for ' + side, e));
   }));
   await updateDoc(duelRef(game.id), { ratingApplied: true }).catch(() => {});
 }
@@ -148,7 +180,8 @@ export function watchActiveDuels(cb) {
    depending on which tab is selected. */
 export function visibleDuels(games, ctx, scope) {
   return games.filter((g) => {
-    if (scope === 'club') return g.scope === 'club' && g.clubId === ctx.clubId;
+    // out in the world beyond a club there is no club tab to satisfy
+    if (scope === 'club') return !!ctx.clubId && g.scope === 'club' && g.clubId === ctx.clubId;
     return g.scope === 'global';
   });
 }
@@ -158,7 +191,17 @@ export const gameOf = (games, uid) => games.find((g) => (g.uids || []).includes(
 /* The hash of this club's duels page — its block id when one has been added,
    the standalone route when it hasn't. */
 export const duelsHash = (ctx) =>
-  ((ctx.club.blocks || []).find((b) => b.type === 'duels') || {}).id || 'duels';
+  (((ctx.club && ctx.club.blocks) || []).find((b) => b.type === 'duels') || {}).id || 'duels';
+
+/* Outside a club there is no club scope at all. The hub's Play a match page
+   and every global tournament run this module with clubId left null, and the
+   club half of the interface folds away. */
+export const isGlobalOnly = (ctx) => !ctx.clubId;
+
+/* Where "back" goes when you leave a game. A tournament round belongs to its
+   tournament, not to the duels page, so it returns you to the standings. */
+export const exitHash = (ctx, game) =>
+  game && game.tournamentId ? 'tournament/' + game.tournamentId : duelsHash(ctx);
 
 /* ── small shared bits ─────────────────────────────────────────────── */
 
@@ -188,15 +231,23 @@ const el = (html) => {
   return t.firstElementChild;
 };
 
-const playerSnap = (uid, username, avatarColor, rating) => ({
+/* The frozen copy of a player a game is settled against. `source` is whatever
+   document the rating and record live on — a member row or a user profile. */
+export const playerSnap = (uid, username, avatarColor, rating, source) => ({
   uid,
   username: username || 'Player',
   avatarColor: avatarColor || '#1cb0f6',
-  rating: { r: rating.r, rd: rating.rd, vol: rating.vol, games: rating.games }
+  rating: { r: rating.r, rd: rating.rd, vol: rating.vol, games: rating.games },
+  record: readRecord(source)
 });
 
-function buildGame({ scope, clubId, rated, tc, white, black }) {
+/* `extra` carries whatever the caller needs stapled to the game: a tournament
+   id and match id, or a berserk map halving one side's clock. */
+export function buildGame({ scope, clubId, rated, tc, white, black }, extra = {}) {
   const now = Date.now();
+  const berserk = extra.berserk || null;
+  const clockFor = (side) =>
+    berserk && berserk[side] ? Math.round(tc.initial / 2) : tc.initial;
   return {
     scope,
     clubId: scope === 'club' ? clubId : null,
@@ -208,7 +259,12 @@ function buildGame({ scope, clubId, rated, tc, white, black }) {
     moves: [],
     fen: START_FEN,
     turn: 'w',
-    clock: { w: tc.initial, b: tc.initial },
+    // a berserked side starts on half the clock and gets no increment back
+    clock: { w: clockFor('w'), b: clockFor('b') },
+    berserk,
+    tournamentId: extra.tournamentId || null,
+    tournamentName: extra.tournamentName || null,
+    matchId: extra.matchId || null,
     startedAt: now,
     lastMoveAt: now,
     endedAt: null,
@@ -218,13 +274,19 @@ function buildGame({ scope, clubId, rated, tc, white, black }) {
     drawOfferFrom: null,
     viewerCount: 0,
     newRatings: null,
+    newRecords: null,
     ratingApplied: false
   };
 }
 
-/* Whoever ends the game computes both new ratings from the snapshot the
-   game was created with, so the numbers never depend on who was watching. */
-function endPatch(game, result, reason) {
+/* Berserk buys a shorter clock, and the increment goes with it. */
+const incrementFor = (game, color) =>
+  game.berserk && game.berserk[color] ? 0 : game.tc.increment;
+
+/* Whoever ends the game computes both new ratings and both new records from
+   the snapshot the game was created with, so the numbers never depend on who
+   was watching when it finished. */
+export function endPatch(game, result, reason) {
   const patch = {
     status: 'finished',
     result,
@@ -234,8 +296,11 @@ function endPatch(game, result, reason) {
     drawOfferFrom: null
   };
   if (game.rated) {
-    const next = rateGame(readRating(game.white), readRating(game.black), result);
-    patch.newRatings = next;
+    patch.newRatings = rateGame(readRating(game.white), readRating(game.black), result);
+    patch.newRecords = {
+      white: bumpRecord(readRecord(game.white), outcomeFor('white', result)),
+      black: bumpRecord(readRecord(game.black), outcomeFor('black', result))
+    };
   }
   return patch;
 }
@@ -259,9 +324,11 @@ const takeIntent = () => {
 
 export async function renderDuels(ctx, host, api) {
   const intent = takeIntent();
+  const globalOnly = isGlobalOnly(ctx);
+  const startScope = globalOnly ? 'global' : ((intent && intent.scope) || 'club');
   const state = {
-    scope: (intent && intent.scope) || 'club',
-    watchScope: (intent && intent.scope) || 'club',
+    scope: startScope,
+    watchScope: startScope,
     opponent: (intent && intent.opponent) || 'random',
     tcId: '5+3',
     color: 'random',
@@ -279,7 +346,7 @@ export async function renderDuels(ctx, host, api) {
           <div class="duel-rating-chip" id="duel-my-rating"></div>
         </div>
 
-        <div class="duel-field">
+        <div class="duel-field"${globalOnly ? ' hidden' : ''}>
           <label>Where</label>
           <div class="duel-seg" id="duel-scope">
             <button class="duel-seg-opt" data-v="club">In the club</button>
@@ -299,8 +366,8 @@ export async function renderDuels(ctx, host, api) {
         </div>
 
         <div class="duel-field">
-          <label>Your colour</label>
-          <div class="duel-seg colours" id="duel-color">
+          <label>Your color</label>
+          <div class="duel-seg colors" id="duel-color">
             <button class="duel-seg-opt" data-v="white" title="Play as White"><span class="duel-piece w">♔</span>White</button>
             <button class="duel-seg-opt" data-v="random" title="Random side"><span class="duel-piece r">⁇</span>Random</button>
             <button class="duel-seg-opt" data-v="black" title="Play as Black"><span class="duel-piece b">♚</span>Black</button>
@@ -317,12 +384,16 @@ export async function renderDuels(ctx, host, api) {
         </div>
 
         <button class="btn primary lg block" id="duel-play">Play</button>
+        <button class="btn subtle block duel-link-btn" id="duel-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 13.6a3.7 3.7 0 0 0 5.6.4l2.6-2.6a3.7 3.7 0 1 0-5.2-5.2l-1.5 1.5"/><path d="M13.6 10.4a3.7 3.7 0 0 0-5.6-.4l-2.6 2.6a3.7 3.7 0 1 0 5.2 5.2l1.5-1.5"/></svg>
+          Create a match link
+        </button>
       </section>
 
       <aside class="tile duel-watch">
         <div class="duel-watch-head">
           <h3>Live games</h3>
-          <div class="duel-seg tiny" id="duel-watch-scope">
+          <div class="duel-seg tiny" id="duel-watch-scope"${globalOnly ? ' hidden' : ''}>
             <button class="duel-seg-opt" data-v="club">Club</button>
             <button class="duel-seg-opt" data-v="global">Global</button>
           </div>
@@ -405,7 +476,7 @@ export async function renderDuels(ctx, host, api) {
       `<span class="duel-rating-label">${state.scope === 'club' ? 'Club' : 'Global'} rating</span>
        <b class="duel-rating-num">${displayRating(g)}</b>`;
     host.querySelector('#duel-scope-hint').textContent = state.scope === 'club'
-      ? `Paired with members of ${ctx.club.name || 'this club'}. Moves your club rating.`
+      ? `Paired with members of ${(ctx.club && ctx.club.name) || 'this club'}. Moves your club rating.`
       : 'Paired with anyone on JagChess. Moves your global rating.';
     host.querySelector('#duel-rated-hint').textContent = state.rated
       ? 'The result counts towards your rating.'
@@ -495,11 +566,17 @@ export async function renderDuels(ctx, host, api) {
 
   /* ── keep my ratings live so the header number is never stale ── */
 
-  const stopMe = onSnapshot(memberRef(ctx.clubId, ctx.user.uid), (s) => {
-    if (!s.exists()) return;
-    ratings.club = readRating(s.data());
-    paintSegs();
-  }, () => {});
+  /* Which document that is depends on where we are: a club member row inside
+     a club, the user profile out on the hub. */
+  const stopMe = onSnapshot(
+    globalOnly ? userRef(ctx.user.uid) : memberRef(ctx.clubId, ctx.user.uid),
+    (s) => {
+      if (!s.exists()) return;
+      const d = s.data();
+      if (globalOnly) { ratings.global = readRating(d); ratings.sources.global = d; }
+      else { ratings.club = readRating(d); ratings.sources.club = d; }
+      paintSegs();
+    }, () => {});
 
   /* ── play ── */
 
@@ -509,11 +586,12 @@ export async function renderDuels(ctx, host, api) {
     try {
       const tc = tcFromId(state.tcId);
       const mine = state.scope === 'club' ? ratings.club : ratings.global;
+      const source = state.scope === 'club' ? ratings.sources.club : ratings.sources.global;
       const me = playerSnap(
         ctx.user.uid,
         ctx.member.username || (ctx.user.email || '').split('@')[0],
         ctx.member.avatarColor,
-        mine
+        mine, source
       );
       if (state.opponent === 'random') {
         await openLobby(ctx, { ...state, tc, me });
@@ -529,6 +607,19 @@ export async function renderDuels(ctx, host, api) {
     } finally {
       btn.disabled = false;
     }
+  };
+
+  /* ── a link to send somebody who isn't here ── */
+
+  host.querySelector('#duel-link').onclick = async () => {
+    const { openMatchLinkSheet } = await import('./match-links.js');
+    openMatchLinkSheet(ctx, {
+      ratings,
+      scope: state.scope,
+      tcId: state.tcId,
+      color: state.color,
+      rated: state.rated
+    });
   };
 
   await paintOpponents();
@@ -635,6 +726,7 @@ async function openLobby(ctx, opts) {
     username: me.username,
     avatarColor: me.avatarColor,
     rating: me.rating,
+    record: me.record,
     scope,
     clubId: scope === 'club' ? ctx.clubId : null,
     rated: !!rated,
@@ -727,7 +819,7 @@ async function claimMatch(ctx, me, mySeek, theirSeek) {
     if (!a.exists() || !b.exists()) throw new Error('taken');
     if (a.data().gameId || b.data().gameId) throw new Error('taken');
 
-    const them = playerSnap(theirSeek.uid, theirSeek.username, theirSeek.avatarColor, readRating(theirSeek));
+    const them = playerSnap(theirSeek.uid, theirSeek.username, theirSeek.avatarColor, readRating(theirSeek), theirSeek);
     const sides = assignColors(mySeek.color, theirSeek.color, me, them);
     const ref = doc(duelsCol());
     tx.set(ref, buildGame({
@@ -816,14 +908,14 @@ export async function acceptChallenge(ctx, challengeId) {
       const c = s.data();
       if (c.status !== 'pending') throw new Error('That challenge is no longer open.');
 
-      const mine = c.scope === 'club'
-        ? readRating(ctx.member)
-        : readRating((await tx.get(userRef(ctx.user.uid))).data() || {});
+      const source = c.scope === 'club'
+        ? (ctx.member || {})
+        : ((await tx.get(userRef(ctx.user.uid))).data() || {});
       const me = playerSnap(
         ctx.user.uid,
         ctx.member.username || (ctx.user.email || '').split('@')[0],
         ctx.member.avatarColor,
-        mine
+        readRating(source), source
       );
       // the challenger picked their side, so ours is whatever is left
       const sides = assignColors(
@@ -980,7 +1072,7 @@ export function openDuelStage(ctx, gameId) {
     return c;
   };
 
-  root.querySelector('#duel-exit').onclick = () => { location.hash = duelsHash(ctx); };
+  root.querySelector('#duel-exit').onclick = () => { location.hash = exitHash(ctx, S.game); };
 
   /* ── board ── */
 
@@ -1116,7 +1208,7 @@ export function openDuelStage(ctx, gameId) {
     const move = S.chess.move({ from, to, promotion });
     if (!move) return false;
 
-    const clock = { ...g.clock, [S.myColor]: mine + g.tc.increment };
+    const clock = { ...g.clock, [S.myColor]: mine + incrementFor(g, S.myColor) };
     const patch = {
       moves: [...(g.moves || []), move.san],
       fen: S.chess.fen(),
@@ -1248,7 +1340,7 @@ export function openDuelStage(ctx, gameId) {
     }
     if (g.status !== 'active') {
       box.innerHTML = '<button class="btn primary block" id="duel-again">Back to duels</button>';
-      box.querySelector('#duel-again').onclick = () => { location.hash = duelsHash(ctx); };
+      box.querySelector('#duel-again').onclick = () => { location.hash = exitHash(ctx, g); };
       return;
     }
     const offeredToMe = g.drawOfferFrom && g.drawOfferFrom !== ctx.user.uid;
@@ -1279,10 +1371,13 @@ export function openDuelStage(ctx, gameId) {
 
   function paintTags() {
     const g = S.game;
+    const berserked = g.berserk && (g.berserk.w || g.berserk.b);
     root.querySelector('#duel-tags').innerHTML = `
       <span class="duel-pill">${tcLabel(g.tc)} ${tcCategory(g.tc)}</span>
       <span class="duel-pill ${g.rated ? 'rated' : ''}">${g.rated ? 'Rated' : 'Casual'}</span>
-      <span class="duel-pill soft">${g.scope === 'club' ? 'Club duel' : 'Global duel'}</span>`;
+      <span class="duel-pill soft">${g.scope === 'club' ? 'Club duel' : 'Global duel'}</span>
+      ${g.tournamentId ? `<span class="duel-pill tourn">${esc(g.tournamentName || 'Tournament')}</span>` : ''}
+      ${berserked ? '<span class="duel-pill berserk">Berserk</span>' : ''}`;
     root.querySelector('#duel-views').innerHTML = viewerBadge(g.viewerCount || 0);
   }
 
@@ -1324,7 +1419,7 @@ export function openDuelStage(ctx, gameId) {
     paintActions();
 
     if (g.status === 'finished' && g.rated && g.newRatings && !g.ratingApplied) {
-      applyRatings(g).catch((e) => console.warn('Could not store the new ratings', e));
+      applySettlement(g).catch((e) => console.warn('Could not store the result', e));
     }
   }, (e) => {
     console.error(e);

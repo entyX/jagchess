@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Connecting to Lichess · JagChess</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/lichess.css" />
+</head>
+<body class="hub li-callback-page">
+
+  <main class="li-callback">
+    <div class="li-callback-card" id="card">
+      <div class="club-boot-spinner"></div>
+      <h1>Connecting your Lichess account…</h1>
+      <p id="msg">Exchanging the authorization code with lichess.org.</p>
+    </div>
+  </main>
+
+  <script src="/assets/js/firebase-config.js"></script>
+  <script type="module">
+    import { finish } from '/assets/js/lichess-auth.js';
+
+    const card = document.getElementById('card');
+    const msg = document.getElementById('msg');
+
+    /* The return address is decided by lichess-auth from what it stored
+       before the redirect, so a login started on a club's tournament page
+       comes back to that page rather than to a generic one. */
+    const go = (href) => { location.replace(href || '/tournaments'); };
+
+    (async () => {
+      try {
+        const { returnTo } = await finish(location.search);
+        msg.textContent = 'Done. Taking you back…';
+        setTimeout(() => go(returnTo), 350);
+      } catch (e) {
+        card.classList.add('bad');
+        card.innerHTML = `
+          <h1>That did not work</h1>
+          <p>${String(e.message || 'The lichess login could not be completed.')
+            .replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))}</p>
+          <div class="li-callback-foot">
+            <a class="btn primary" href="${e.returnTo ? encodeURI(e.returnTo) : '/tournaments'}">Go back</a>
+          </div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

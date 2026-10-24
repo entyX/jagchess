@@ -125,6 +125,10 @@ img { max-width: 100%; }
 
 .btn3d.sm { padding: 10px 18px; font-size: 14px; border-radius: 13px; box-shadow: 0 3px 0 var(--sh); }
 .btn3d.sm:active { transform: translateY(3px); }
+/* .sm puts the drop shadow back, which leaves a ghost button sitting on a
+   colored lip it is not supposed to have. Size never overrules ghost. */
+.btn3d.ghost.sm { box-shadow: none; padding: 10px 16px; }
+.btn3d.ghost.sm:active { transform: none; }
 .btn3d.lg { padding: 17px 34px; font-size: 17px; }
 .btn3d.block { width: 100%; }
 
@@ -168,6 +172,18 @@ img { max-width: 100%; }
   transition: transform .4s var(--ease);
 }
 .lp-logo:hover .lp-logo-mark { transform: rotate(-10deg) scale(1.06); }
+
+/* The wordmark carries the name itself, so it replaces the mark and the text
+   together. Height drives it and width follows, because the artwork's ratio
+   is the only thing that should decide how wide it sits. */
+.lp-logo-img {
+  display: block;
+  height: 38px;
+  width: auto;
+  transition: transform .4s var(--ease);
+}
+.lp-logo:hover .lp-logo-img { transform: scale(1.04); }
+.lp-nav.stuck .lp-logo-img { height: 34px; }
 .lp-logo-text {
   font-family: var(--font);
   font-size: 21px;
@@ -187,6 +203,20 @@ img { max-width: 100%; }
   transition: background .16s, color .16s;
 }
 .lp-links a:hover { background: var(--bg-alt); color: var(--text); }
+
+/* the Network is a destination, not an anchor on this page — it gets a mark */
+.lp-links a.lp-link-net { color: var(--green-dark); }
+.lp-links a.lp-link-net::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  vertical-align: 1px;
+}
+.lp-links a.lp-link-net:hover { background: var(--green-soft); color: var(--green-dark); }
 
 .lp-nav-cta { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
@@ -1057,6 +1087,30 @@ section { position: relative; }
 
 /* ── FOOTER ─────────────────────────────────────────────────────────── */
 
+/* ── DATA TRANSPARENCY ──────────────────────────────────────────────
+   Google's OAuth brand verification requires the public homepage — not a
+   page behind the login — to say what user data the app asks for and what
+   it is for, and to link the privacy policy. That is what this section is;
+   it is not decoration, so it should not be removed to tidy the page up. */
+.dataxp { padding: 0 0 96px; }
+.dataxp-grid {
+  display: grid; gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+  margin-bottom: 28px;
+}
+.dataxp-card {
+  background: var(--card); border: 2px solid var(--border);
+  border-radius: var(--r-lg); padding: 22px 22px 24px; text-align: left;
+}
+.dataxp-card h3 {
+  font-family: var(--font); font-size: 17px; font-weight: 800;
+  letter-spacing: -.01em; margin: 0 0 8px; color: var(--text);
+}
+.dataxp-card p { margin: 0; font-size: 14.5px; line-height: 1.66; color: var(--text-2); }
+.dataxp-more { text-align: center; font-size: 15px; color: var(--text-2); margin: 0; }
+.dataxp-more a { color: var(--green-dark); font-weight: 700; }
+[data-theme="dark"] .dataxp-more a { color: var(--green-hi); }
+
 .lp-foot {
   background: var(--ink);
   color: rgba(255,255,255,.62);
@@ -1158,3 +1212,10 @@ section { position: relative; }
   }
   html { scroll-behavior: auto; }
 }
+
+/* ── PRICING, TEMPORARILY HIDDEN ────────────────────────────────────
+   Nothing is deleted: the plans, the billing toggle, the nav links and the
+   two plan-dependent FAQ answers are all still in index.html. Drop the
+   `pricing-hidden` class from <body> and the whole section comes back.
+   ─────────────────────────────────────────────────────────────────── */
+body.pricing-hidden [data-pricing] { display: none !important; }

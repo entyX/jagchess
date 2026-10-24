@@ -4,19 +4,41 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 import {
-  db, auth, clubRef, clubCol, clubDoc, memberRef,
+  db, auth, clubRef, clubCol, clubDoc, memberRef, applicationCol,
   doc, collection, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, where, orderBy, increment, limit,
   esc, fmtDate, fmtTime, toast, confirmDialog, promptDialog, initials,
-  CLUB_COLORS, makeCode, banRef, isStaff, canModerate, canSetRoles, ROLE_LABEL
+  CLUB_COLORS, CLUB_ICONS, makeCode, banRef, isStaff, canModerate, canSetRoles, ROLE_LABEL,
+  deleteClubDeep, syncPublicClub, unindexMemberEmail,
+  clubAvatar, clubPhoto, clubPhotoFrom
 } from './club-core.js';
 
 import { readRating, displayRating } from './glicko2.js';
+import { attachCalendarSync } from './club-calendar-sync.js';
 import {
-  renderDuels, watchActiveDuels, gameOf, loadMyRatings, setDuelIntent, duelsHash
+  renderDuels, watchActiveDuels, gameOf, loadMyRatings, setDuelIntent, duelsHash,
+  readRecord
 } from './club-duels.js';
+import { renderTournaments } from './tournaments-ui.js';
 import { openAttendanceShare, openClubShare } from './club-share.js';
 import { mountNewsletterMail } from './newsletter-mail.js';
+import { fontSelectHTML, wireFontSelect } from './mail-fonts.js';
+import { mountEmojiButton } from './emoji-picker.js';
+import {
+  mountRegistrationEditor, applicantRowHTML, openResponse, openInviteMail,
+  openBulkInvite, deleteApplication, mountMarkupEditor, markupFromApplicants,
+  saveMarkup
+} from './club-registration.js';
+import {
+  isLive, hasPassed, normalizeAttendanceForm, loadAttendanceForm, alreadyCheckedIn,
+  openMemberAttendance, guestQuestions, syncPublicAttendance, dropPublicAttendance,
+  publishOpenAttendance, reconcileAttendance
+} from './club-attendance.js';
+import { mountQuestionEditor } from './question-editor.js';
+import { renderPuzzles } from './club-puzzles.js';
+import {
+  MAX_QUESTIONS, renderQuestions, wireForm, answerText
+} from './registration-form.js';
 
 export const BLOCK_TYPES = {
   events: {
@@ -26,7 +48,7 @@ export const BLOCK_TYPES = {
   },
   puzzles: {
     name: 'Puzzles', icon: 'puzzle', tint: 'var(--green-soft)',
-    desc: 'Publish tactical positions from a board or a FEN. Members solve them for points.',
+    desc: 'Publish tactical positions from a board or a FEN, file them into collections, and share a collection with the whole of JagChess. Members solve them for points, and can build their own.',
     sub: 'Tactics training worth points'
   },
   newsletters: {
@@ -43,6 +65,11 @@ export const BLOCK_TYPES = {
     name: 'Duels', icon: 'swords', tint: 'var(--blue-soft)',
     desc: 'One-on-one chess with clocks and Glicko-2 ratings — play the club or the world, and watch live games.',
     sub: 'Play 1v1 and watch live games'
+  },
+  tournaments: {
+    name: 'Tournaments', icon: 'tournament', tint: 'var(--purple-soft)',
+    desc: 'Run timed arenas, rated or casual, or a real Lichess tournament — with live standings and a full history.',
+    sub: 'Arenas, Lichess events and past winners'
   },
   store: {
     name: 'Store', icon: 'bag', tint: 'var(--orange-soft)',
@@ -73,6 +100,7 @@ export async function renderBlock(type, ctx, host, api) {
     case 'newsletters': return renderNews(ctx, host, api);
     case 'leaderboard': return renderLeaderboard(ctx, host, api);
     case 'duels':       return renderDuels(ctx, host, api);
+    case 'tournaments': return renderTournaments(ctx, host, api);
     case 'store':       return renderStore(ctx, host, api);
     case 'donate':      return renderDonate(ctx, host, api);
     case 'profile':     return renderProfile(ctx, host, api);
@@ -127,6 +155,7 @@ async function renderEvents(ctx, host, api) {
             </div>
           </div>
         </div>` : ''}
+        <div id="cal-sync"></div>
         <div class="tile events-side">
           <div class="events-side-header"><h3>Upcoming</h3><span class="muted" id="ev-range"></span></div>
           <div class="list" id="ev-upcoming"></div>
@@ -145,6 +174,15 @@ async function renderEvents(ctx, host, api) {
   const grid = host.querySelector('#cal-grid');
   const title = host.querySelector('#cal-title');
 
+  /* The club's own events, plus the connected account's while syncing is
+     on. Only the club's are in `events`, and only those can be opened,
+     edited or deleted — a Google row is somebody else's and is drawn to be
+     looked at. Everything that paints goes through this, so turning the
+     switch off takes them off every surface at once. */
+  let sync = null;
+  const shown = () => events.concat(sync ? sync.rows() : []);
+  const isClubEvent = (id) => events.some((e) => e.id === id);
+
   const paintCalendar = () => {
     title.textContent = month.toLocaleString(undefined, { month: 'long', year: 'numeric' });
     const first = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -156,12 +194,13 @@ async function renderEvents(ctx, host, api) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       const outside = d.getMonth() !== month.getMonth();
-      const dayEvents = events.filter((e) => new Date(e.date).toDateString() === d.toDateString());
+      const dayEvents = shown().filter((e) => new Date(e.date).toDateString() === d.toDateString());
       if (i >= 35 && !dayEvents.length && outside) continue;
       html += `<div class="day-cell${outside ? ' is-outside' : ''}${d.toDateString() === today ? ' is-today' : ''}">
         <div class="day-num">${d.getDate()}</div>
         <div class="day-events">${dayEvents.map((e) =>
-          `<button class="event-pill tag-${esc(e.tag || 'classic')}" data-ev="${esc(e.id)}">${esc(e.title)}</button>`).join('')}</div>
+          `<button class="event-pill tag-${esc(e.tag || 'classic')}${e.source === 'google' ? ' from-google' : ''}" data-ev="${esc(e.id)}"
+            ${e.source === 'google' ? 'title="From the connected Google Calendar"' : ''}>${esc(e.title)}</button>`).join('')}</div>
       </div>`;
     }
     grid.innerHTML = html;
@@ -170,7 +209,8 @@ async function renderEvents(ctx, host, api) {
 
   const paintUpcoming = () => {
     const now = Date.now();
-    const up = events.filter((e) => e.date >= now - 3 * 3600e3).slice(0, 8);
+    const up = shown().filter((e) => e.date >= now - 3 * 3600e3)
+      .sort((a, b) => a.date - b.date).slice(0, 8);
     host.querySelector('#ev-empty').hidden = up.length > 0;
     host.querySelector('#ev-range').textContent = up.length ? `${up.length} scheduled` : '';
     host.querySelector('#ev-upcoming').innerHTML = up.map((e) => `
@@ -199,8 +239,12 @@ async function renderEvents(ctx, host, api) {
   };
 
   function openEvent(id) {
-    const e = events.find((x) => x.id === id);
+    const e = shown().find((x) => x.id === id);
     if (!e) return;
+    /* A Google row can be read and nothing else: editing it would mean
+       writing into somebody's personal calendar from a club page, and
+       deleting it would be worse. */
+    const own = isClubEvent(id);
     const live = isLive(e);
     const modal = el(`<div class="modal">
       <div class="modal-card">
@@ -210,7 +254,10 @@ async function renderEvents(ctx, host, api) {
         <div class="modal-meta">${fmtDate(e.date, { weekday: 'long', month: 'long', day: 'numeric' })} · ${fmtTime(e.date)} · ${e.durationMin || 30} min</div>
         <p>${esc(e.desc || 'No description.')}</p>
         ${live ? '<div class="live-chip">● Happening now</div>' : ''}
-        ${isAdmin ? `<div class="modal-actions">
+        ${e.source === 'google' ? `<p class="field-hint">From the connected Google Calendar.
+          ${e.htmlLink ? `<a href="${esc(e.htmlLink)}" target="_blank" rel="noopener noreferrer">Open it there</a> to change it.`
+            : 'Change it in Google Calendar.'}</p>` : ''}
+        ${isAdmin && own ? `<div class="modal-actions">
           <button class="btn subtle" data-edit>Edit</button>
           <button class="btn danger" data-del>Delete</button></div>` : ''}
       </div></div>`);
@@ -224,7 +271,11 @@ async function renderEvents(ctx, host, api) {
     if (delBtn) delBtn.onclick = async () => {
       close();
       if (!await confirmDialog({ title: 'Delete event?', body: `"${e.title}" will be removed for everyone.`, confirmText: 'Delete', danger: true })) return;
+      if (sync) await sync.removeOne(e);
       await deleteDoc(clubDoc(ctx.clubId, 'events', e.id));
+      // the public copy of its check-in is a root document, so it does not go
+      // with the event and has to be withdrawn by name
+      await dropPublicAttendance(ctx.clubId, e.id);
       toast('Event deleted');
     };
   }
@@ -273,10 +324,17 @@ async function renderEvents(ctx, host, api) {
         updatedAt: Date.now()
       };
       try {
+        let id = editingId;
         if (editingId) await updateDoc(clubDoc(ctx.clubId, 'events', editingId), payload);
-        else await addDoc(clubCol(ctx.clubId, 'events'), { ...payload, createdAt: Date.now() });
+        else id = (await addDoc(clubCol(ctx.clubId, 'events'), { ...payload, createdAt: Date.now() })).id;
         clearForm();
         toast(editingId ? 'Event updated' : 'Event added', 'ok');
+        /* Firestore first, Google second, and a failed copy never fails the
+           save: the club's calendar is the one that has to be right. */
+        if (sync) {
+          const known = events.find((x) => x.id === id) || {};
+          sync.pushOne({ ...known, ...payload, id }).catch((err) => console.warn('calendar push', err));
+        }
       } catch (e) { console.error(e); toast('Could not save the event', 'error'); }
     };
     host.querySelector('#ev-cancel').onclick = clearForm;
@@ -286,42 +344,52 @@ async function renderEvents(ctx, host, api) {
   host.querySelector('#cal-prev').onclick = () => { month.setMonth(month.getMonth() - 1); paintCalendar(); };
   host.querySelector('#cal-next').onclick = () => { month.setMonth(month.getMonth() + 1); paintCalendar(); };
 
+  /* Attached before the events listener so the first snapshot already has
+     somewhere to put the Google rows, rather than painting twice. */
+  sync = attachCalendarSync(ctx, host, {
+    events: () => events,
+    onChange: () => { paintCalendar(); paintUpcoming(); }
+  });
+
   const stop = onSnapshot(query(clubCol(ctx.clubId, 'events'), orderBy('date', 'asc')), (snap) => {
     events = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     paintCalendar();
     paintUpcoming();
     paintAttSelect();
     if (!isAdmin) paintLiveAttendance(ctx, host, events);
+    else {
+      /* Two repairs an admin performs simply by having this page open: the
+         public copy of every check-in that is open or about to be, and the
+         points owed to everybody who checked in without an account. Neither
+         is something anybody should have to remember to press. */
+      publishOpenAttendance(ctx, events).catch(() => {});
+      reconcileAttendance(ctx).catch(() => {});
+    }
   }, (err) => {
     console.error(err);
     grid.innerHTML = '<div class="empty-state">Could not load events.</div>';
   });
 
-  return stop;
+  return () => { stop(); if (sync) sync.stop(); };
 }
 
-const isLive = (e) => {
-  const start = e.date;
-  const end = start + (e.durationMin || 30) * 60000;
-  const now = Date.now();
-  return now >= start - 5 * 60000 && now <= end;
-};
+/* ── the member's own check-in ─────────────────────────────────────── */
 
-/* ── student-facing attendance ─────────────────────────────────────── */
-
+/* The banner is a door, not a form. Whoever opens it — a member here, or
+   somebody with no account at all on the same event's QR link — gets the
+   same modal, drawn by the same code, so the two can never drift apart. */
 async function paintLiveAttendance(ctx, host, events) {
   const slot = host.querySelector('#att-live');
   if (!slot) return;
   const live = events.find(isLive);
   if (!live) { slot.innerHTML = ''; return; }
 
-  const [formSnap, mine] = await Promise.all([
-    getDoc(clubDoc(ctx.clubId, 'attendanceForms', live.id)),
-    getDocs(query(clubCol(ctx.clubId, 'attendanceResponses'),
-      where('eventId', '==', live.id), where('userId', '==', ctx.user.uid)))
+  const [form, done] = await Promise.all([
+    loadAttendanceForm(ctx, live.id),
+    alreadyCheckedIn(ctx, live.id)
   ]);
 
-  if (!mine.empty) {
+  if (done) {
     slot.innerHTML = `<div class="att-banner done">
       <span class="att-ico">✓</span>
       <div><b>You're checked in for ${esc(live.title)}</b><small>Points have been added to your total.</small></div>
@@ -329,57 +397,65 @@ async function paintLiveAttendance(ctx, host, events) {
     return;
   }
 
-  const form = formSnap.exists() ? formSnap.data() : { points: 10, questions: [] };
+  const extra = form.questions.length;
   slot.innerHTML = `<div class="att-banner">
     <div class="att-banner-head">
       <span class="att-ico live">●</span>
-      <div><b>${esc(live.title)} is happening now</b><small>Check in to earn ${form.points || 10} points.</small></div>
+      <div><b>${esc(live.title)} is happening now</b><small>Check in to earn ${form.points} points.</small></div>
     </div>
-    <div class="att-form">
-      <label class="att-confirm"><input type="checkbox" id="att-check" /> <span>I confirm I attended this event</span></label>
-      ${(form.questions || []).map((q, i) => `
-        <div class="att-q"><label>${esc(q.text)}</label>
-          <input data-q="${esc(q.id || String(i))}" placeholder="Your answer" /></div>`).join('')}
-      <button class="btn primary" id="att-submit" disabled>Submit attendance</button>
+    <div class="att-banner-foot">
+      <span class="att-banner-note">${extra
+        ? `${extra} quick question${extra === 1 ? '' : 's'} to answer.`
+        : 'Nothing to fill in — one tap and you are done.'}</span>
+      <button class="btn primary" id="att-open">Check in</button>
     </div>
   </div>`;
 
-  const check = slot.querySelector('#att-check');
-  const submit = slot.querySelector('#att-submit');
-  check.onchange = () => (submit.disabled = !check.checked);
-  submit.onclick = async () => {
-    submit.disabled = true; submit.textContent = 'Submitting…';
-    try {
-      const answers = Array.from(slot.querySelectorAll('[data-q]'))
-        .map((i) => ({ questionId: i.dataset.q, text: i.value.trim() }));
-      await addDoc(clubCol(ctx.clubId, 'attendanceResponses'), {
-        eventId: live.id,
-        userId: ctx.user.uid,
-        userEmail: ctx.user.email || '',
-        username: ctx.member.username || '',
-        answers,
-        submittedAt: Date.now()
-      });
-      const pts = form.points || 10;
-      await updateDoc(memberRef(ctx.clubId, ctx.user.uid), { points: increment(pts) });
-      ctx.member.points = (ctx.member.points || 0) + pts;
-      toast(`Checked in — +${pts} points`, 'ok');
-      paintLiveAttendance(ctx, host, events);
-    } catch (e) {
-      console.error(e);
-      toast('Could not submit attendance', 'error');
-      submit.disabled = false; submit.textContent = 'Submit attendance';
-    }
-  };
+  slot.querySelector('#att-open').onclick = () => openMemberAttendance(ctx, live, {
+    form,
+    onDone: () => paintLiveAttendance(ctx, host, events)
+  });
 }
 
 /* ── admin attendance panel ────────────────────────────────────────── */
+
+/* The three that are forced, and the one thing worth saying about them: a
+   member is never asked, because the club already knows all three. */
+const ATT_CORE_ROWS = [
+  ['What is your first name?', 'Short answer'],
+  ['What is your last name?', 'Short answer'],
+  ['What is your email address?', 'Email address']
+];
+
+const attCoreHTML = ATT_CORE_ROWS.map(([label, type], i) => `
+  <div class="reg-q is-core">
+    <span class="reg-q-num">${i + 1}</span>
+    <div class="reg-q-core">
+      <b>${esc(label)}</b>
+      <span class="reg-q-meta">${esc(type)} · Required · Only asked when signed out</span>
+    </div>
+    <span class="reg-built-in">Built in</span>
+  </div>`).join('');
+
+const respTag = (r) => {
+  if (!r.guest) return '';
+  if (r.duplicate) return '<span class="att-tag dup">Duplicate</span>';
+  if (r.newUser) return '<span class="att-tag new">New user</span>';
+  return '<span class="att-tag guest">Signed out</span>';
+};
+
+const respWhere = (r) => {
+  if (!r.guest) return 'Member · points added';
+  if (r.duplicate) return 'Already counted for this event';
+  if (!r.awarded) return 'Points are queued — they land next time an admin opens the club';
+  if (r.awardedTo === 'member') return 'Matched to a member · points added';
+  return 'Held on their pending registration until they join';
+};
 
 function wireAttendanceAdmin(ctx, host, getEvents) {
   const sel = host.querySelector('#att-event');
   const panel = host.querySelector('#att-panel');
   if (!sel || !panel) return;
-  let questions = [];
 
   sel.addEventListener('change', async () => {
     const id = sel.value;
@@ -387,497 +463,213 @@ function wireAttendanceAdmin(ctx, host, getEvents) {
     if (!id) return;
     panel.innerHTML = '<div class="empty-state">Loading…</div>';
 
+    /* Anything a signed-out visitor checked into is settled before the list
+       is drawn, so the numbers an admin is looking at are the real ones. */
+    await reconcileAttendance(ctx).catch(() => {});
+
     const [formSnap, resSnap] = await Promise.all([
       getDoc(clubDoc(ctx.clubId, 'attendanceForms', id)),
       getDocs(query(clubCol(ctx.clubId, 'attendanceResponses'), where('eventId', '==', id)))
     ]);
-    const form = formSnap.exists() ? formSnap.data() : { points: 10, questions: [] };
-    questions = (form.questions || []).slice();
-    const responses = resSnap.docs.map((d) => d.data()).sort((a, b) => b.submittedAt - a.submittedAt);
+    const form = normalizeAttendanceForm(formSnap.exists() ? formSnap.data() : null);
+    const responses = resSnap.docs.map((d) => d.data())
+      .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+    const counted = responses.filter((r) => !r.duplicate).length;
 
     panel.innerHTML = `
       <div class="att-admin">
-        <div>
-          <span class="adm-field-label">Points reward</span>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
-            <input id="att-pts" type="number" min="0" value="${form.points ?? 10}" style="width:110px" />
-            <span style="font-size:13px;color:var(--muted)">per check-in</span>
+        <section class="att-build">
+          <div class="reg-head">
+            <div>
+              <h4>The check-in form</h4>
+              <p class="muted reg-sub">Built exactly like your registration form. The three below are
+                asked of anybody who is not signed in — a member never sees them, because the club
+                already has their name and address.</p>
+            </div>
+            <div class="reg-head-actions">
+              <button class="btn subtle sm" id="att-preview" type="button">Preview</button>
+            </div>
           </div>
-          <div class="att-qs-head"><span class="adm-field-label">Extra questions</span>
-            <button class="btn subtle sm" id="att-add-q">+ Add</button></div>
-          <div id="att-qs"></div>
-          <button class="btn primary block" id="att-save" style="margin-top:16px">Save form</button>
-          <button class="btn subtle block" id="att-share" style="margin-top:8px">Share link & QR code</button>
-          <p class="field-hint" style="margin-top:8px">Members who scan it land on the check-in. Anyone else is asked to sign in or join first.</p>
-        </div>
-        <div>
+
+          <div class="att-pts-row">
+            <div>
+              <span class="adm-field-label">Points reward</span>
+              <div class="att-pts-input">
+                <input id="att-pts" type="number" min="0" value="${form.points}" />
+                <span>per check-in</span>
+              </div>
+            </div>
+            <p class="field-hint">Everyone who checks in gets this — members straight away, everybody
+              else onto whichever account we can match them to.</p>
+          </div>
+
+          <div class="reg-stage">
+            <div class="reg-list" id="att-qs"></div>
+            <div class="reg-foot">
+              <button class="btn subtle" id="att-add-q" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                Add a question
+              </button>
+              <span class="reg-dirty" id="att-dirty" hidden>Unsaved changes</span>
+              <button class="btn primary" id="att-save" type="button">Save form</button>
+            </div>
+          </div>
+
+          <button class="btn subtle block" id="att-share" style="margin-top:12px">Share link &amp; QR code</button>
+          <p class="field-hint" style="margin-top:8px">Anybody can scan it — no account, no login.
+            Members go straight to their check-in; everybody else fills in the three built-in
+            questions and we match them to an account by email.</p>
+        </section>
+
+        <section class="att-resp">
           <div class="att-resp-head">
             <span class="adm-field-label">Check-ins</span>
-            <span class="adm-att-badge">${responses.length}</span>
+            <span class="adm-att-badge">${counted}</span>
           </div>
           <div class="att-resp-list">${responses.length ? responses.map((r) => `
-            <div class="adm-att-resp-row">
+            <div class="adm-att-resp-row${r.duplicate ? ' is-dup' : ''}">
               <div class="adm-att-resp-user">
-                <span class="adm-att-resp-name">${esc(r.username || r.userEmail || 'Member')}</span>
-                <span class="adm-att-resp-time">${fmtTime(r.submittedAt)}</span>
+                <span class="adm-att-resp-name">${esc(
+                  r.username || [r.firstName, r.lastName].filter(Boolean).join(' ') || r.email || r.userEmail || 'Member')}
+                  ${respTag(r)}</span>
+                <span class="adm-att-resp-time">${fmtTime(r.submittedAt || Date.now())}</span>
               </div>
-              ${(r.answers || []).filter((a) => a.text).map((a) => {
-                const q = questions.find((x) => x.id === a.questionId);
-                return `<div class="adm-att-answer"><span class="adm-att-q-label">${esc(q ? q.text : 'Answer')}</span><span class="adm-att-a-text">${esc(a.text)}</span></div>`;
+              <div class="adm-att-resp-where">${esc(r.email || r.userEmail || '')}${
+                (r.email || r.userEmail) ? ' · ' : ''}${esc(respWhere(r))}</div>
+              ${(r.questions || []).map((q) => {
+                const a = (r.answers || {})[q.id];
+                if (a == null || a === '') return '';
+                return `<div class="adm-att-answer"><span class="adm-att-q-label">${esc(q.label || 'Answer')}</span><span class="adm-att-a-text">${esc(answerText(q, a))}</span></div>`;
               }).join('')}
             </div>`).join('') : '<div class="empty-state">No check-ins yet.</div>'}</div>
-        </div>
+        </section>
       </div>`;
 
-    const paintQs = () => {
-      panel.querySelector('#att-qs').innerHTML = questions.map((q, i) => `
-        <div class="adm-att-q-row">
-          <input class="adm-att-q-input" data-qi="${i}" value="${esc(q.text)}" placeholder="Question" />
-          <button class="adm-att-q-del" data-qd="${i}">×</button>
-        </div>`).join('');
-      panel.querySelectorAll('[data-qi]').forEach((i) => (i.oninput = () => (questions[+i.dataset.qi].text = i.value)));
-      panel.querySelectorAll('[data-qd]').forEach((b) => (b.onclick = () => { questions.splice(+b.dataset.qd, 1); paintQs(); }));
-    };
-    paintQs();
+    const dirtyFlag = panel.querySelector('#att-dirty');
+    const addBtn = panel.querySelector('#att-add-q');
+    const markDirty = (on = true) => { dirtyFlag.hidden = !on; };
 
-    panel.querySelector('#att-add-q').onclick = () => {
-      questions.push({ id: 'q' + Date.now().toString(36), text: '' });
-      paintQs();
-    };
+    const editor = mountQuestionEditor(panel.querySelector('#att-qs'), {
+      questions: form.questions,
+      coreHTML: attCoreHTML,
+      coreCount: ATT_CORE_ROWS.length,
+      max: MAX_QUESTIONS,
+      emptyHTML: `<div class="reg-none">No extra questions, which is the fastest a check-in can be:
+        a member taps once and it is done. Add your own below if you want to ask something.</div>`,
+      onDirty: () => markDirty(),
+      onCount: (n) => { addBtn.disabled = n >= MAX_QUESTIONS; }
+    });
 
-    panel.querySelector('#att-share').onclick = () => {
+    addBtn.onclick = () => editor.add();
+
+    const currentForm = () => normalizeAttendanceForm({
+      points: parseFloat(panel.querySelector('#att-pts').value) || 0,
+      questions: editor.read()
+    });
+
+    panel.querySelector('#att-pts').oninput = () => markDirty();
+
+    panel.querySelector('#att-preview').onclick = () => openAttendancePreview(ctx,
+      getEvents().find((e) => e.id === id) || { id, title: 'This event' }, currentForm());
+
+    panel.querySelector('#att-share').onclick = async () => {
       const event = getEvents().find((e) => e.id === id);
       if (!event) { toast('That event is no longer available.', 'error'); return; }
-      openAttendanceShare(ctx, event, parseFloat(panel.querySelector('#att-pts').value) || 10);
+      /* The QR is only worth handing out if the public copy is there to meet
+         it, so publishing happens here rather than on a button of its own. */
+      const next = currentForm();
+      await syncPublicAttendance({ id: ctx.clubId, ...ctx.club }, event, next);
+      openAttendanceShare(ctx, event, next.points);
     };
+
     panel.querySelector('#att-save').onclick = async () => {
       const btn = panel.querySelector('#att-save');
+      const next = currentForm();
+
+      const blank = next.questions.find((q) => !q.label.trim());
+      if (blank) { toast('Every question needs something to ask', 'error'); editor.paint(); return; }
+
       btn.disabled = true; btn.textContent = 'Saving…';
-      await setDoc(clubDoc(ctx.clubId, 'attendanceForms', id), {
-        eventId: id,
-        points: parseFloat(panel.querySelector('#att-pts').value) || 10,
-        questions: questions.filter((q) => q.text.trim()),
-        updatedAt: Date.now()
-      });
-      btn.disabled = false; btn.textContent = 'Save form';
-      toast('Attendance form saved', 'ok');
-    };
-  });
-}
-
-/* ═══════════════════════════════════════════════════════════════════ */
-/*  PUZZLES                                                            */
-/* ═══════════════════════════════════════════════════════════════════ */
-
-const PIECE_THEME = (p) => `/assets/vendor/chessboard/img/chesspieces/wikipedia/${p}.png`;
-
-async function renderPuzzles(ctx, host, api) {
-  return ctx.isAdmin && ctx.mode !== 'member'
-    ? puzzlesAdmin(ctx, host)
-    : puzzlesMember(ctx, host);
-}
-
-function normalizeFen(fen, color) {
-  if (!fen) return 'start';
-  const parts = fen.trim().split(/\s+/);
-  if (parts.length >= 4) return fen;
-  return `${parts[0]} ${color || 'w'} - - 0 1`;
-}
-
-async function puzzlesMember(ctx, host) {
-  host.innerHTML = `
-    <div class="puzzle-layout">
-      <div class="tile puzzle-board">
-        <div class="puzzle-header"><h3 id="pz-title">Daily puzzle</h3>
-          <div class="puzzle-status" id="pz-status">Pick a puzzle to start.</div></div>
-        <div id="pz-board" class="chessboard"></div>
-        <div class="puzzle-controls"><button class="btn subtle" id="pz-reset">Reset board</button></div>
-        <div class="puzzle-sequence"><h4>Progress</h4><div class="list" id="pz-progress"></div></div>
-      </div>
-      <div class="tile puzzle-side">
-        <div class="puzzle-side-header"><h3>All puzzles</h3><span class="muted" id="pz-meta"></span></div>
-        <div class="list" id="pz-list"></div>
-        <div class="empty-state" id="pz-empty" hidden>No puzzles published yet.</div>
-      </div>
-    </div>`;
-
-  let puzzles = [];
-  let attempts = new Map();
-  let current = null, game = null, board = null;
-  let index = 0, tries = 0, locked = false;
-
-  const status = (msg, kind) => {
-    const s = host.querySelector('#pz-status');
-    s.textContent = msg;
-    if (kind) s.dataset.status = kind; else delete s.dataset.status;
-  };
-
-  const paintProgress = () => {
-    const list = host.querySelector('#pz-progress');
-    if (!current) { list.innerHTML = '<div class="empty-state">No puzzle selected.</div>'; return; }
-    const sol = current.solution || [];
-    list.innerHTML = sol.map((mv, i) =>
-      `<div class="list-item${i < index ? ' done' : ''}">
-        <span class="pz-step">${i + 1}</span>
-        <span>${i < index ? esc(mv) : '•••'}</span>
-      </div>`).join('') +
-      `<div class="pz-tries">${tries} / ${current.maxMoves || sol.length} attempts used</div>`;
-  };
-
-  const paintList = () => {
-    host.querySelector('#pz-empty').hidden = puzzles.length > 0;
-    host.querySelector('#pz-meta').textContent = puzzles.length ? `${puzzles.length} published` : '';
-    host.querySelector('#pz-list').innerHTML = puzzles.map((p, i) => {
-      const a = attempts.get(p.id);
-      return `<button class="pz-row${current && current.id === p.id ? ' on' : ''}" data-p="${esc(p.id)}">
-        <span class="pz-row-info">
-          <span class="pz-row-title">${esc(p.title || 'Puzzle ' + (i + 1))}</span>
-          <span class="pz-row-meta">${p.points || 10} pts · ${(p.solution || []).length} moves</span>
-        </span>
-        ${a ? `<span class="pz-done">+${a.scoreAwarded || 0}</span>` : (i === 0 ? '<span class="pz-new">New</span>' : '')}
-      </button>`;
-    }).join('');
-    host.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => select(puzzles.find((x) => x.id === b.dataset.p), b.dataset.p !== puzzles[0]?.id)));
-  };
-
-  const build = (fen, orientation) => {
-    if (board && board.destroy) board.destroy();
-    board = window.Chessboard(host.querySelector('#pz-board'), {
-      draggable: true,
-      position: fen,
-      orientation,
-      pieceTheme: PIECE_THEME,
-      onDrop: (from, to) => {
-        if (!game || !current || locked) return 'snapback';
-        const color = current.playerColor || 'w';
-        const max = Number(current.maxMoves || (current.solution || []).length || 0);
-        const piece = game.get(from);
-        if (piece && piece.color !== color) { status(`You're playing ${color === 'w' ? 'White' : 'Black'}.`, 'error'); return 'snapback'; }
-        if (game.turn() !== color) {
-          const t = game.fen().split(' ');
-          t[1] = color;
-          game = new window.Chess(t.join(' '));
-        }
-        const move = game.move({ from, to, promotion: 'q' });
-        if (!move) return 'snapback';
-        tries++;
-        if (move.san !== (current.solution || [])[index]) {
-          game.undo();
-          tries--;
-          if (tries >= max) { locked = true; status('Out of attempts.', 'error'); }
-          else status('Not the move. Try again.', 'error');
-          paintProgress();
-          return 'snapback';
-        }
-        index++;
-        if (index < current.solution.length) {
-          const reply = game.move(current.solution[index], { sloppy: true });
-          if (reply) index++;
-        }
-        if (index >= current.solution.length) {
-          locked = true;
-          status('Solved!', 'success');
-          paintProgress();
-          award();
-          return undefined;
-        }
-        status('Correct.', 'success');
-        paintProgress();
-        return undefined;
-      },
-      onSnapEnd: () => board.position(game.fen())
-    });
-  };
-
-  const select = (p, late) => {
-    current = p; index = 0; tries = 0; locked = false;
-    if (!p) { status('Pick a puzzle to start.'); paintProgress(); return; }
-    if (attempts.has(p.id)) locked = true;
-    const color = p.playerColor || 'w';
-    const fen = normalizeFen(p.fen, color);
-    game = new window.Chess(fen);
-    build(fen, color === 'b' ? 'black' : 'white');
-    host.querySelector('#pz-title').textContent = p.title || 'Puzzle';
-    status(locked ? 'Already solved — replay for practice.' : `Playing as ${color === 'b' ? 'Black' : 'White'}.`, 'info');
-    paintProgress();
-    paintList();
-  };
-
-  const award = async () => {
-    if (attempts.has(current.id)) return;
-    const pts = Number(current.points || 10);
-    try {
-      await setDoc(clubDoc(ctx.clubId, 'puzzleAttempts', `${ctx.user.uid}_${current.id}`), {
-        puzzleId: current.id, userId: ctx.user.uid, completedAt: Date.now(),
-        movesUsed: tries, scoreAwarded: pts
-      }, { merge: true });
-      await updateDoc(memberRef(ctx.clubId, ctx.user.uid), { points: increment(pts) });
-      ctx.member.points = (ctx.member.points || 0) + pts;
-      attempts.set(current.id, { scoreAwarded: pts });
-      paintList();
-      celebrate(pts);
-    } catch (e) { console.error(e); toast('Could not save your score', 'error'); }
-  };
-
-  host.querySelector('#pz-reset').onclick = () => current && select(current, false);
-
-  const stopP = onSnapshot(query(clubCol(ctx.clubId, 'puzzles'), orderBy('createdAt', 'desc')), (s) => {
-    puzzles = s.docs.map((d) => ({ id: d.id, ...d.data() }));
-    paintList();
-    if (!current && puzzles.length) select(puzzles[0], false);
-    if (!puzzles.length) paintProgress();
-  });
-
-  const stopA = onSnapshot(query(clubCol(ctx.clubId, 'puzzleAttempts'), where('userId', '==', ctx.user.uid)), (s) => {
-    attempts = new Map(s.docs.map((d) => [d.data().puzzleId, d.data()]));
-    paintList();
-  });
-
-  return () => { stopP(); stopA(); if (board && board.destroy) board.destroy(); };
-}
-
-function celebrate(points) {
-  const m = el(`<div class="modal"><div class="modal-card" style="max-width:380px;text-align:center">
-    <div class="pz-celebrate">♟</div>
-    <h3>Puzzle solved!</h3>
-    <div class="modal-meta">Points earned</div>
-    <div class="puzzle-points-count">+${points}</div>
-    <button class="btn primary block" data-x>Nice!</button>
-  </div></div>`);
-  document.body.appendChild(m);
-  m.querySelector('[data-x]').onclick = () => m.remove();
-  m.onclick = (e) => { if (e.target === m) m.remove(); };
-}
-
-async function puzzlesAdmin(ctx, host) {
-  host.innerHTML = `
-    <div class="puzzle-layout">
-      <div class="tile puzzle-board">
-        <div class="puzzle-header"><h3>Create puzzle</h3>
-          <div class="puzzle-status" id="pz-status">Set the starting position.</div></div>
-        <div id="pz-board" class="chessboard"></div>
-        <div class="puzzle-controls">
-          <button class="btn primary" id="pz-add">Record move</button>
-          <button class="btn subtle" id="pz-start">Set as start</button>
-          <button class="btn subtle" id="pz-reset">Reset to start</button>
-          <button class="btn subtle" id="pz-undo">Undo</button>
-          <button class="btn subtle" id="pz-clear">Clear board</button>
-          <button class="btn subtle" id="pz-fen">FEN…</button>
-        </div>
-        <div class="puzzle-sequence"><h4>Solution line</h4><div class="list" id="pz-seq"></div></div>
-      </div>
-      <div class="tile puzzle-side">
-        <h3 id="pz-form-title">Puzzle details</h3>
-        <div class="form-inline">
-          <input id="pz-title" placeholder="Title" />
-          <textarea id="pz-desc" rows="2" placeholder="Short description"></textarea>
-          <div class="row">
-            <input id="pz-max" type="number" min="1" placeholder="Max attempts" value="3" />
-            <input id="pz-pts" type="number" min="1" placeholder="Points" value="10" />
-          </div>
-          <select id="pz-color"><option value="w">Play as White</option><option value="b">Play as Black</option></select>
-          <div class="row">
-            <button class="btn primary" id="pz-publish">Publish puzzle</button>
-            <button class="btn subtle" id="pz-cancel" hidden>Cancel</button>
-          </div>
-        </div>
-        <h4 style="margin-top:22px">Published</h4>
-        <div class="list" id="pz-list"></div>
-        <div class="empty-state" id="pz-empty" hidden>Nothing published yet.</div>
-      </div>
-    </div>`;
-
-  let board = null, game = null;
-  let startFen = 'start';
-  let solution = [];
-  let editingId = null;
-  let puzzles = [];
-
-  const status = (m, k) => {
-    const s = host.querySelector('#pz-status');
-    s.textContent = m;
-    if (k) s.dataset.status = k; else delete s.dataset.status;
-  };
-
-  const paintSeq = () => {
-    host.querySelector('#pz-seq').innerHTML = solution.length
-      ? solution.map((m, i) => `<div class="list-item"><span class="pz-step">${i + 1}</span><span>${esc(m)}</span></div>`).join('')
-      : '<div class="empty-state">Play the winning line on the board, recording each move.</div>';
-  };
-
-  const build = (opts) => {
-    if (board && board.destroy) board.destroy();
-    board = window.Chessboard(host.querySelector('#pz-board'), {
-      draggable: true,
-      dropOffBoard: 'trash',
-      sparePieces: !!opts.spare,
-      position: opts.position,
-      orientation: opts.orientation || 'white',
-      pieceTheme: PIECE_THEME,
-      onDrop: opts.spare ? undefined : (from, to) => {
-        if (!game) return 'snapback';
-        const mv = game.move({ from, to, promotion: 'q' });
-        if (!mv) return 'snapback';
-        pendingMove = mv.san;
-        status(`${mv.san} played — press “Record move” to add it.`, 'info');
-        return undefined;
-      },
-      onSnapEnd: () => { if (game) board.position(game.fen()); }
-    });
-  };
-
-  let pendingMove = null;
-
-  build({ spare: true, position: 'start' });
-  paintSeq();
-
-  host.querySelector('#pz-start').onclick = () => {
-    startFen = board.fen();
-    const color = host.querySelector('#pz-color').value;
-    const full = `${startFen} ${color} - - 0 1`;
-    try { game = new window.Chess(full); }
-    catch { toast('That position isn\'t legal', 'error'); return; }
-    solution = [];
-    pendingMove = null;
-    build({ spare: false, position: game.fen(), orientation: color === 'b' ? 'black' : 'white' });
-    paintSeq();
-    status('Start position locked. Now play the solution.', 'success');
-  };
-
-  host.querySelector('#pz-add').onclick = () => {
-    if (!pendingMove) { toast('Play a move on the board first'); return; }
-    solution.push(pendingMove);
-    pendingMove = null;
-    paintSeq();
-    status(`${solution.length} move${solution.length === 1 ? '' : 's'} recorded.`, 'success');
-  };
-
-  host.querySelector('#pz-undo').onclick = () => {
-    if (!game) return;
-    game.undo();
-    solution.pop();
-    pendingMove = null;
-    board.position(game.fen());
-    paintSeq();
-  };
-
-  host.querySelector('#pz-reset').onclick = () => {
-    if (!startFen || startFen === 'start') { build({ spare: true, position: 'start' }); return; }
-    const color = host.querySelector('#pz-color').value;
-    game = new window.Chess(`${startFen} ${color} - - 0 1`);
-    solution = [];
-    pendingMove = null;
-    build({ spare: false, position: game.fen(), orientation: color === 'b' ? 'black' : 'white' });
-    paintSeq();
-  };
-
-  host.querySelector('#pz-clear').onclick = () => {
-    game = null; solution = []; startFen = 'start'; pendingMove = null;
-    build({ spare: true, position: 'empty' });
-    paintSeq();
-    status('Board cleared. Drag pieces in, then set the start.');
-  };
-
-  host.querySelector('#pz-fen').onclick = async () => {
-    const fen = await promptDialog({
-      title: 'Load from FEN', label: 'FEN string', placeholder: 'r1bqkb1r/pppp1ppp/… w KQkq - 0 1', confirmText: 'Load'
-    });
-    if (!fen) return;
-    try {
-      const test = new window.Chess(fen);
-      startFen = fen.split(' ')[0];
-      game = test;
-      solution = [];
-      build({ spare: false, position: test.fen(), orientation: test.turn() === 'b' ? 'black' : 'white' });
-      host.querySelector('#pz-color').value = test.turn();
-      host.querySelector('#pz-color').dispatchEvent(new Event('change', { bubbles: true }));
-      paintSeq();
-      status('Position loaded from FEN.', 'success');
-    } catch { toast('That FEN isn\'t valid', 'error'); }
-  };
-
-  host.querySelector('#pz-publish').onclick = async () => {
-    const title = host.querySelector('#pz-title').value.trim();
-    if (!title) { toast('Give the puzzle a title', 'error'); return; }
-    if (!solution.length) { toast('Record at least one move', 'error'); return; }
-    const payload = {
-      title,
-      description: host.querySelector('#pz-desc').value.trim(),
-      fen: startFen,
-      solution,
-      maxMoves: parseInt(host.querySelector('#pz-max').value, 10) || solution.length,
-      points: parseInt(host.querySelector('#pz-pts').value, 10) || 10,
-      playerColor: host.querySelector('#pz-color').value,
-      updatedAt: Date.now()
-    };
-    try {
-      if (editingId) await updateDoc(clubDoc(ctx.clubId, 'puzzles', editingId), payload);
-      else await addDoc(clubCol(ctx.clubId, 'puzzles'), { ...payload, createdAt: Date.now() });
-      toast(editingId ? 'Puzzle updated' : 'Puzzle published', 'ok');
-      resetForm();
-    } catch (e) { console.error(e); toast('Could not publish', 'error'); }
-  };
-
-  function resetForm() {
-    editingId = null;
-    host.querySelector('#pz-title').value = '';
-    host.querySelector('#pz-desc').value = '';
-    host.querySelector('#pz-form-title').textContent = 'Puzzle details';
-    host.querySelector('#pz-publish').textContent = 'Publish puzzle';
-    host.querySelector('#pz-cancel').hidden = true;
-    solution = []; startFen = 'start'; game = null; pendingMove = null;
-    build({ spare: true, position: 'start' });
-    paintSeq();
-  }
-  host.querySelector('#pz-cancel').onclick = resetForm;
-
-  const stop = onSnapshot(query(clubCol(ctx.clubId, 'puzzles'), orderBy('createdAt', 'desc')), (s) => {
-    puzzles = s.docs.map((d) => ({ id: d.id, ...d.data() }));
-    host.querySelector('#pz-empty').hidden = puzzles.length > 0;
-    host.querySelector('#pz-list').innerHTML = puzzles.map((p) => `
-      <div class="pz-row static">
-        <span class="pz-row-info">
-          <span class="pz-row-title">${esc(p.title || 'Puzzle')}</span>
-          <span class="pz-row-meta">${p.points || 10} pts · ${(p.solution || []).length} moves</span>
-        </span>
-        <span class="pz-row-tools">
-          <button class="btn subtle sm" data-edit="${esc(p.id)}">Edit</button>
-          <button class="btn danger sm" data-del="${esc(p.id)}">✕</button>
-        </span>
-      </div>`).join('');
-
-    host.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => {
-      const p = puzzles.find((x) => x.id === b.dataset.edit);
-      editingId = p.id;
-      host.querySelector('#pz-title').value = p.title || '';
-      host.querySelector('#pz-desc').value = p.description || '';
-      host.querySelector('#pz-max').value = p.maxMoves || 3;
-      host.querySelector('#pz-pts').value = p.points || 10;
-      const cs = host.querySelector('#pz-color');
-      cs.value = p.playerColor || 'w';
-      cs.dispatchEvent(new Event('change', { bubbles: true }));
-      startFen = p.fen;
-      solution = (p.solution || []).slice();
       try {
-        game = new window.Chess(normalizeFen(p.fen, p.playerColor || 'w'));
-        build({ spare: false, position: game.fen(), orientation: (p.playerColor || 'w') === 'b' ? 'black' : 'white' });
-      } catch { build({ spare: true, position: 'start' }); }
-      paintSeq();
-      host.querySelector('#pz-form-title').textContent = 'Edit puzzle';
-      host.querySelector('#pz-publish').textContent = 'Save changes';
-      host.querySelector('#pz-cancel').hidden = false;
-      status('Editing an existing puzzle.', 'info');
-    }));
-
-    host.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
-      if (!await confirmDialog({ title: 'Delete puzzle?', body: 'Members will no longer see it.', confirmText: 'Delete', danger: true })) return;
-      await deleteDoc(clubDoc(ctx.clubId, 'puzzles', b.dataset.del));
-      toast('Puzzle deleted');
-    }));
+        await setDoc(clubDoc(ctx.clubId, 'attendanceForms', id), {
+          eventId: id,
+          points: next.points,
+          questions: next.questions,
+          updatedAt: Date.now()
+        });
+        const event = getEvents().find((e) => e.id === id);
+        if (event && !hasPassed(event)) {
+          await syncPublicAttendance({ id: ctx.clubId, ...ctx.club }, event, next);
+        }
+        markDirty(false);
+        toast('Attendance form saved', 'ok');
+      } catch (e) {
+        console.error(e);
+        toast('Could not save the form', 'error');
+      }
+      btn.disabled = false; btn.textContent = 'Save form';
+    };
   });
-
-  return () => { stop(); if (board && board.destroy) board.destroy(); };
 }
+
+/* The preview is the check-in, not a diagram of it: one form, drawn the way
+   the real modal draws it — by looking at who is opening it and asking for
+   what is missing. An admin is signed in, so that is what opens.
+
+   The switch is there because the other answer is the one an admin cannot
+   get to any other way: they cannot sign out to check their own form, and
+   the three built-in questions only ever appear on that side. */
+function openAttendancePreview(ctx, event, form) {
+  let asGuest = !(ctx && ctx.user);
+
+  const modal = el(`<div class="modal"><div class="modal-card reg-preview-card att-preview-card">
+    <button class="icon-btn modal-close" data-x>✕</button>
+    <h3>What people see</h3>
+    <p class="modal-meta" style="margin:0">The check-in for ${esc(event.title || 'this event')},
+      worth ${esc(String(form.points))} point${form.points === 1 ? '' : 's'}. Nothing typed here is sent anywhere.</p>
+    <div class="lb-tabs att-preview-switch">
+      <button class="lb-tab" type="button" data-as="member">Signed in</button>
+      <button class="lb-tab" type="button" data-as="guest">Signed out</button>
+    </div>
+    <p class="att-preview-note" data-note></p>
+    <div class="reg-preview rf-form" data-form></div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn primary" data-x>Close preview</button></div>
+  </div></div>`);
+
+  document.body.appendChild(modal);
+
+  const box = modal.querySelector('[data-form]');
+  const note = modal.querySelector('[data-note]');
+
+  const paint = () => {
+    const questions = asGuest ? guestQuestions(form) : form.questions;
+    modal.querySelectorAll('[data-as]').forEach((b) =>
+      b.classList.toggle('on', (b.dataset.as === 'guest') === asGuest));
+
+    note.textContent = asGuest
+      ? 'First name, last name and email are asked first and cannot be removed. Their points go to whichever account that address belongs to.'
+      : form.questions.length
+        ? 'A member is asked your questions and nothing else — the club already has their name and address.'
+        : 'A member is asked nothing at all, so the check-in completes on its own.';
+
+    box.innerHTML = questions.length
+      ? renderQuestions(questions)
+      : '<div class="att-nothing">Nothing to fill in — the check-in completes on its own.</div>';
+    wireForm(box);
+  };
+
+  modal.querySelectorAll('[data-as]').forEach((b) => (b.onclick = () => {
+    asGuest = b.dataset.as === 'guest';
+    paint();
+  }));
+  paint();
+
+  const close = () => modal.remove();
+  modal.querySelectorAll('[data-x]').forEach((b) => (b.onclick = close));
+  modal.onclick = (e) => { if (e.target === modal) close(); };
+}
+
+
 
 /* ═══════════════════════════════════════════════════════════════════ */
 /*  NEWSLETTERS                                                        */
@@ -893,6 +685,8 @@ async function renderNews(ctx, host) {
         <input id="nw-title" placeholder="Subject" />
         <div class="rte-wrap">
           <div class="rte-toolbar">
+            ${fontSelectHTML('nw-font')}
+            <div class="rte-sep"></div>
             <button class="rte-btn" data-cmd="bold" title="Bold"><strong>B</strong></button>
             <button class="rte-btn" data-cmd="italic" title="Italic"><em>I</em></button>
             <button class="rte-btn" data-cmd="underline" title="Underline"><u>U</u></button>
@@ -901,6 +695,7 @@ async function renderNews(ctx, host) {
             <button class="rte-btn" data-cmd="insertOrderedList" title="Numbers">1—</button>
             <div class="rte-sep"></div>
             <button class="rte-btn" data-link title="Link">🔗</button>
+            <button class="rte-btn" data-emoji-btn title="Emoji" aria-label="Insert an emoji">🙂</button>
             <button class="rte-btn" data-cmd="removeFormat" title="Clear formatting">✕</button>
           </div>
           <div class="rte-editor" id="nw-body" contenteditable="true" data-placeholder="Write your announcement…"></div>
@@ -918,6 +713,9 @@ async function renderNews(ctx, host) {
   let editingId = null;
   let mailField = null;
   let stopMembers = null;
+  let stopApplicants = null;
+  let stopEmoji = null;
+  let stopFont = null;
 
   if (isAdmin) {
     host.querySelectorAll('[data-cmd]').forEach((b) => (b.onclick = (e) => {
@@ -925,13 +723,29 @@ async function renderNews(ctx, host) {
       document.execCommand(b.dataset.cmd, false, null);
       host.querySelector('#nw-body').focus();
     }));
+    /* It listens for the selection moving, on the document, so leaving the
+       page has to take the listener with it. */
+    stopFont = wireFontSelect(host.querySelector('#nw-font'), host.querySelector('#nw-body'));
+
     host.querySelector('[data-link]').onclick = async (e) => {
       e.preventDefault();
       const url = await promptDialog({ title: 'Insert link', label: 'URL', placeholder: 'https://', confirmText: 'Insert' });
       if (url) document.execCommand('createLink', false, url);
     };
-    /* the optional "email this out" field — roster comes from club members */
+
+    /* insertText rather than innerHTML, so the emoji lands at the caret and
+       one undo takes it back out again */
+    stopEmoji = mountEmojiButton(host.querySelector('[data-emoji-btn]'), (emoji) => {
+      const editor = host.querySelector('#nw-body');
+      editor.focus();
+      if (!document.execCommand('insertText', false, emoji)) editor.append(emoji);
+    });
+    /* The optional "email this out" field. Two rosters feed it: the club's
+       members, and the people waiting on an invite — who are not members
+       and have no account, but are exactly who an announcement about the
+       club is often for. @pending is how you reach them. */
     let members = [];
+    let applicants = [];
     mailField = mountNewsletterMail(host.querySelector('#nw-mail'), {
       getPeople: () => members.map((m) => ({
         email: m.email,
@@ -939,8 +753,18 @@ async function renderNews(ctx, host) {
         role: m.role || 'student',
         avatarColor: m.avatarColor,
       })),
+      getPending: () => applicants.map((a) => ({
+        email: a.email,
+        name: [a.firstName, a.lastName].filter(Boolean).join(' ').trim(),
+      })),
       getMe: () => ctx.user.email || '',
       getClubName: () => ctx.club?.name || '',
+      /* clubPhoto, not club.photo: the stored string is writable by staff
+         and mirrored where the whole internet reads it, so it is checked
+         for the shape of an image before it is put in front of anybody. */
+      getClubLogo: () => clubPhoto(ctx.club) || '',
+      getClubIcon: () => ctx.club?.icon || '',
+      getClubColor: () => ctx.club?.color || '',
       addAllLabel: `Add all ${ctx.club?.name || 'club'} students`,
     });
 
@@ -948,6 +772,13 @@ async function renderNews(ctx, host) {
       members = s.docs.map((d) => ({ id: d.id, ...d.data() }));
       mailField.refresh();
     });
+
+    /* Anybody here who has since joined is filtered out by the field
+       itself, so both halves can be handed over raw. */
+    stopApplicants = onSnapshot(applicationCol(ctx.clubId), (s) => {
+      applicants = s.docs.map((d) => ({ id: d.id, ...d.data() }));
+      mailField.refresh();
+    }, (e) => console.warn('newsletter applications listener', e));
 
     const resetForm = () => {
       editingId = null;
@@ -1043,7 +874,10 @@ async function renderNews(ctx, host) {
   return () => {
     stop();
     if (stopMembers) stopMembers();
+    if (stopApplicants) stopApplicants();
     if (mailField) mailField.destroy();
+    if (stopEmoji) stopEmoji();
+    if (stopFont) stopFont();
   };
 }
 
@@ -1059,11 +893,15 @@ async function renderLeaderboard(ctx, host) {
   let tab = 'points';
   let members = [];
   let games = [];
+  /* uid → the user profile, which is where a global rating and a global
+     record live. Loaded lazily, because the points tab never needs them. */
+  let profiles = null;
 
   host.innerHTML = `
     <div class="lb-tabs">
       <button class="lb-tab on" data-t="points">Points</button>
-      <button class="lb-tab" data-t="rated">Rated</button>
+      <button class="lb-tab" data-t="club">Club rating</button>
+      <button class="lb-tab" data-t="global">Global rating</button>
     </div>
     ${ctx.isAdmin ? `
     <div class="tile lb-setting">
@@ -1081,6 +919,7 @@ async function renderLeaderboard(ctx, host) {
         <span class="lb-col-rank">Rank</span>
         <span class="lb-col-player">Player</span>
         <span class="lb-col-pts" id="lb-metric">Points</span>
+        <span class="lb-col-wdl">W / D / L</span>
         <span></span>
       </div>
       <div id="lb-list"></div>
@@ -1101,14 +940,32 @@ async function renderLeaderboard(ctx, host) {
     }
   };
 
-  host.querySelector('.lb-tabs').onclick = (e) => {
+  host.querySelector('.lb-tabs').onclick = async (e) => {
     const b = e.target.closest('[data-t]');
     if (!b) return;
     tab = b.dataset.t;
     host.querySelectorAll('.lb-tab').forEach((t) => t.classList.toggle('on', t.dataset.t === tab));
     host.querySelector('#lb-metric').textContent = tab === 'points' ? 'Points' : 'Rating';
+    if (tab === 'global') await loadProfiles();
     paint();
   };
+
+  /* Global numbers are not on the member row, so they come from the user
+     profiles — one read for the whole club, and only when asked for. */
+  async function loadProfiles() {
+    if (profiles) return;
+    profiles = {};
+    try {
+      const snap = await getDocs(query(collection(db, 'users'), limit(300)));
+      snap.docs.forEach((d) => { profiles[d.id] = d.data(); });
+    } catch (e) {
+      console.warn('Could not load global ratings', e);
+    }
+  }
+
+  /* Which document a row's rating and record should be read from. */
+  const sourceOf = (m) =>
+    tab === 'global' ? ((profiles && profiles[m.uid]) || {}) : m;
 
   function ordered() {
     const rows = members
@@ -1117,8 +974,8 @@ async function renderLeaderboard(ctx, host) {
     if (tab === 'points') return rows.sort((a, b) => (b.points || 0) - (a.points || 0));
     // an unplayed 1000 says nothing, so provisional players sit below the ranked ones
     return rows.sort((a, b) => {
-      const ra = readRating(a);
-      const rb = readRating(b);
+      const ra = readRating(sourceOf(a));
+      const rb = readRating(sourceOf(b));
       if ((ra.games < 1) !== (rb.games < 1)) return ra.games < 1 ? 1 : -1;
       return rb.r - ra.r;
     });
@@ -1130,10 +987,12 @@ async function renderLeaderboard(ctx, host) {
     host.querySelector('#lb-list').innerHTML = rows.map((m, i) => {
       const me = m.uid === ctx.user.uid;
       const medal = i === 0 ? 'lb-rank-gold' : i === 1 ? 'lb-rank-silver' : i === 2 ? 'lb-rank-bronze' : '';
-      const rating = readRating(m);
+      const src = sourceOf(m);
+      const rating = readRating(src);
+      const rec = readRecord(src);
       const metric = tab === 'points'
         ? `${m.points || 0}`
-        : `<span class="${rating.games < 1 ? 'lb-provisional' : ''}">${displayRating(m.rating)}</span>
+        : `<span class="${rating.games < 1 ? 'lb-provisional' : ''}">${displayRating(src.rating)}</span>
            <span class="lb-rating-games">${rating.games} game${rating.games === 1 ? '' : 's'}</span>`;
 
       // both buttons are conditional: watch needs a game in progress, duel
@@ -1154,6 +1013,7 @@ async function renderLeaderboard(ctx, host) {
           </span>
         </span>
         <span class="lb-col-pts">${metric}</span>
+        <span class="lb-col-wdl">${rec.w} / ${rec.d} / ${rec.l}</span>
         <span class="lb-row-actions">${actions}</span>
       </div>`;
     }).join('');
@@ -1610,7 +1470,7 @@ async function renderProfile(ctx, host) {
       <section class="tile pf-edit">
         <h3>Appearance</h3>
         <div class="pf-field">
-          <label>Avatar colour</label>
+          <label>Avatar color</label>
           <div class="pf-palette" id="pf-palette"></div>
         </div>
         <div class="pf-field">
@@ -1694,12 +1554,32 @@ async function renderMembers(ctx, host) {
         <button class="filter-btn active" data-f="all">All</button>
         <button class="filter-btn" data-f="student">Students</button>
         <button class="filter-btn" data-f="staff">Staff</button>
+        <button class="filter-btn" data-f="pending">Pending <span class="filter-count" id="mb-pending-badge" hidden>0</span></button>
       </div>
     </div>
-    <div class="tile users-tile">
+    <div class="tile users-tile" id="mb-real">
       <div class="users-table-head"><span>#</span><span></span><span>Member</span><span style="text-align:right">Points</span><span></span></div>
       <div id="mb-list"></div>
     </div>
+
+    <section class="tile users-tile mb-pending" id="mb-pending" hidden>
+      <div class="pending-head">
+        <div>
+          <h3>Pending members</h3>
+          <p>People who signed up through the JagChess Network, and anyone you have typed in
+            yourself. They have no account yet, so they are not in the club — send an invite and
+            they can let themselves in.</p>
+        </div>
+        <div class="pending-head-side">
+          <span class="pending-count" id="mb-pending-count"></span>
+          <div class="pending-tools">
+            <button class="btn subtle sm" id="mb-send-all" type="button">Send all</button>
+            <button class="btn subtle sm" id="mb-markup" type="button">Edit markup</button>
+          </div>
+        </div>
+      </div>
+      <div id="mb-pending-list"></div>
+    </section>
     <section class="tile mb-bans" id="mb-bans" hidden style="margin-top:16px">
       <div class="mb-bans-head">
         <h3>Removed members &amp; appeals</h3>
@@ -1709,16 +1589,108 @@ async function renderMembers(ctx, host) {
     </section>`;
 
   let members = [];
+  let applicants = [];
+  let banRows = [];
   let filter = 'all';
+  let markupMode = false;
+  let markupEditor = null;
+
+  /* Somebody who applied and has since made an account and joined is simply a
+     member — the row they left behind is history, not a person waiting. */
+  const pending = () => {
+    const emails = new Set(members.map((m) => String(m.email || '').toLowerCase()));
+    return applicants.filter((a) => !emails.has(String(a.email || '').toLowerCase()));
+  };
+
+  const paintPending = () => {
+    const rows = pending();
+    const wrap = host.querySelector('#mb-pending');
+    const badge = host.querySelector('#mb-pending-badge');
+
+    badge.hidden = rows.length === 0;
+    badge.textContent = rows.length;
+
+    /* The section is the whole page under the Pending filter, and it stays
+       under All even with nobody in it: an admin who has never had a sign-up
+       needs to be told that, not shown a gap where the box used to be. The
+       role filters are about members, so it steps out of their way. */
+    wrap.hidden = !(filter === 'all' || filter === 'pending');
+
+    /* Two different things, counted separately. Who came in through the
+       Network is not who an admin typed into the markup, and "3 signed up"
+       next to "0 not invited yet" reads as a contradiction unless the line
+       also says how many have been invited. */
+    const markups = rows.filter((a) => a.source === 'markup').length;
+    const regs = rows.length - markups;
+    const invited = rows.filter((a) => a.status === 'invited').length;
+    const waiting = rows.length - invited;
+    const n = (c, one, many) => `${c} ${c === 1 ? one : many}`;
+
+    host.querySelector('#mb-pending-count').innerHTML = rows.length
+      ? `<span>${n(regs, 'registration', 'registrations')} · ${n(markups, 'markup entry', 'markup entries')}</span>
+         <span>${invited} invited · ${waiting} not invited yet</span>`
+      : '<span>Nobody waiting</span>';
+
+    const sendAll = host.querySelector('#mb-send-all');
+    const markupBtn = host.querySelector('#mb-markup');
+    sendAll.disabled = markupMode || !rows.length;
+    sendAll.onclick = () => openBulkInvite(ctx, pending());
+    markupBtn.textContent = markupMode ? 'Cancel' : 'Edit markup';
+    markupBtn.onclick = () => {
+      markupMode = !markupMode;
+      markupEditor = null;
+      paintPending();
+    };
+
+    const list = host.querySelector('#mb-pending-list');
+
+    /* Once the editor is up it owns that space. A repaint fired by somebody
+       else's sign-up landing must not take the caret out of it, so the
+       counts above refresh and the text below is left alone. */
+    if (markupMode) {
+      if (!markupEditor) {
+        const opened = rows;
+        markupEditor = mountMarkupEditor(list, {
+          text: markupFromApplicants(opened),
+          memberEmails: members.map((m) => m.email),
+          onCancel: () => { markupMode = false; markupEditor = null; paintPending(); },
+          onSave: async (people) => {
+            const ok = await saveMarkup(ctx, people, opened);
+            if (ok) { markupMode = false; markupEditor = null; paintPending(); }
+            return ok;
+          }
+        });
+      }
+      return;
+    }
+    markupEditor = null;
+
+    list.innerHTML = rows.length
+      ? rows.map(applicantRowHTML).join('')
+      : `<div class="empty-state">Nobody is waiting to join. People who sign up through the
+           JagChess Network land here — your club's registration form and its QR code live in
+           Club settings — and you can type addresses in yourself with <b>Edit markup</b>.</div>`;
+
+    const find = (id) => rows.find((a) => a.id === id);
+    host.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => openResponse(ctx, find(b.dataset.view))));
+    host.querySelectorAll('[data-invite]').forEach((b) => (b.onclick = () => openInviteMail(ctx, find(b.dataset.invite))));
+    host.querySelectorAll('[data-drop]').forEach((b) => (b.onclick = () => deleteApplication(ctx, find(b.dataset.drop))));
+  };
 
   const paint = () => {
-    const rows = members.filter((m) => {
+    const rows = filter === 'pending' ? [] : members.filter((m) => {
       const r = m.role || 'student';
       return filter === 'all' || (filter === 'staff' ? isStaff(r) : r === 'student');
     });
     const staffCount = members.filter((m) => isStaff(m.role)).length;
+    const waiting = pending().length;
     host.querySelector('#mb-meta').textContent =
-      `${members.length} member${members.length === 1 ? '' : 's'} · ${staffCount} staff`;
+      `${members.length} member${members.length === 1 ? '' : 's'} · ${staffCount} staff` +
+      (waiting ? ` · ${waiting} pending` : '');
+
+    host.querySelector('#mb-real').hidden = filter === 'pending';
+    paintPending();
+    paintBans(banRows);
 
     host.querySelector('#mb-list').innerHTML = rows.map((m, i) => {
       const role = m.role || 'student';
@@ -1862,6 +1834,7 @@ async function renderMembers(ctx, host) {
           byName: ctx.member.username || ''
         });
         await deleteDoc(memberRef(ctx.clubId, m.id));
+        await unindexMemberEmail(ctx.clubId, m.email);
         await setDoc(doc(db, 'users', m.id), {
           clubs: { [ctx.clubId]: null },
           ...(isBan ? { bannedFrom: { [ctx.clubId]: true } } : {})
@@ -1878,9 +1851,10 @@ async function renderMembers(ctx, host) {
   }
 
   /* ── bans + appeals ── */
-  const paintBans = (rows) => {
+  function paintBans(rows) {
     const wrap = host.querySelector('#mb-bans');
-    wrap.hidden = rows.length === 0;
+    // under the Pending filter this section is somebody else's business
+    wrap.hidden = rows.length === 0 || filter === 'pending';
     const appeals = rows.filter((r) => r.appeal && r.appeal.status === 'open').length;
     const badge = host.querySelector('#mb-appeals');
     badge.hidden = appeals === 0;
@@ -1923,7 +1897,7 @@ async function renderMembers(ctx, host) {
         toast('Record dismissed');
       } catch (e) { console.error(e); toast('Could not dismiss', 'error'); }
     }));
-  };
+  }
 
   const stop = onSnapshot(query(clubCol(ctx.clubId, 'members'), orderBy('points', 'desc')), (s) => {
     members = s.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -1931,10 +1905,17 @@ async function renderMembers(ctx, host) {
   });
 
   const stopBans = onSnapshot(clubCol(ctx.clubId, 'bans'), (s) => {
-    paintBans(s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (b.at || 0) - (a.at || 0)));
+    banRows = s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (b.at || 0) - (a.at || 0));
+    paintBans(banRows);
   }, (e) => console.warn('bans listener', e));
 
-  return () => { stop(); stopBans(); };
+  const stopApps = onSnapshot(applicationCol(ctx.clubId), (s) => {
+    applicants = s.docs.map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+    paint();
+  }, (e) => console.warn('applications listener', e));
+
+  return () => { stop(); stopBans(); stopApps(); };
 }
 
 /* ── transfer ownership (founder only) ─────────────────────────────── */
@@ -2017,6 +1998,130 @@ async function openTransfer(ctx) {
 /*  SETTINGS (admin)                                                   */
 /* ═══════════════════════════════════════════════════════════════════ */
 
+/* ── the club's picture ─────────────────────────────────────────
+   The founder's, and only the founder's: it is the club's face everywhere
+   on the site, including to people who are not in it, and an admin who can
+   be replaced tomorrow should not be able to change what the club looks
+   like on the Network.
+
+   Shrinking happens here, in the browser, before anything is written — see
+   clubPhotoFrom. What lands on the club document is a small square, and the
+   listing is refreshed straight afterwards so the Network agrees.
+   ──────────────────────────────────────────────────────────── */
+
+/**
+ * The coloured badge, which the picture sits on top of rather than replaces.
+ *
+ * It was only choosable while a club was being created, which meant a
+ * founder who picked the green knight by accident was stuck with it
+ * forever. Both lists live in club-core and are only ever appended to, so
+ * what a club already stores keeps meaning what it meant.
+ *
+ * Saved with the rest of the details rather than on click: it sits in the
+ * same form, and a badge that saved itself while the name beside it had
+ * not would be a confusing thing to explain.
+ */
+function wireClubBadge(ctx, host) {
+  const icons = host.querySelector('[data-icons]');
+  const colors = host.querySelector('[data-colors]');
+  if (!icons || !colors) return { value: () => ({}) };
+
+  const c = ctx.club;
+  let icon = c.icon || CLUB_ICONS[0];
+  let color = c.color || CLUB_COLORS[0];
+
+  /* A club whose badge predates a list is still shown its own choice, so
+     saving the form cannot quietly change it to something it never was. */
+  const iconList = CLUB_ICONS.indexOf(icon) === -1 ? [icon].concat(CLUB_ICONS) : CLUB_ICONS;
+  const colorList = CLUB_COLORS.indexOf(color) === -1 ? [color].concat(CLUB_COLORS) : CLUB_COLORS;
+
+  const preview = host.querySelector('[data-preview]');
+  const repaint = () => {
+    if (preview) preview.innerHTML = clubAvatar({ ...c, icon, color }, 'club-avatar lg');
+  };
+
+  icons.innerHTML = iconList.map((i) =>
+    `<button type="button" class="icon-opt${i === icon ? ' on' : ''}" data-icon="${esc(i)}"
+       aria-label="${esc(i)}">${esc(i)}</button>`).join('');
+  icons.onclick = (e) => {
+    const b = e.target.closest('[data-icon]');
+    if (!b) return;
+    icon = b.dataset.icon;
+    icons.querySelectorAll('.icon-opt').forEach((o) => o.classList.toggle('on', o === b));
+    repaint();
+  };
+
+  colors.innerHTML = colorList.map((v) =>
+    `<button type="button" class="color-opt${v === color ? ' on' : ''}"
+       style="background:${esc(v)}" data-color="${esc(v)}" aria-label="${esc(v)}"></button>`).join('');
+  colors.onclick = (e) => {
+    const b = e.target.closest('[data-color]');
+    if (!b) return;
+    color = b.dataset.color;
+    colors.querySelectorAll('.color-opt').forEach((o) => o.classList.toggle('on', o === b));
+    repaint();
+  };
+
+  return { value: () => ({ icon, color }) };
+}
+
+function wireClubPhoto(ctx, host) {
+  const pick = host.querySelector('[data-pick]');
+  if (!pick) return;                          // not the founder
+
+  const file = host.querySelector('[data-file]');
+  const drop = host.querySelector('[data-drop]');
+  const note = host.querySelector('[data-photo-note]');
+
+  const save = async (photo) => {
+    pick.disabled = true;
+    if (drop) drop.disabled = true;
+    const said = note.textContent;
+    note.textContent = photo ? 'Saving the picture…' : 'Removing the picture…';
+    try {
+      await updateDoc(clubRef(ctx.clubId), { photo: photo || '' });
+      ctx.club.photo = photo || '';
+      /* The Network reads a copy, not the club, so it has to be told. */
+      await syncPublicClub(ctx.club);
+      toast(photo ? 'Club picture saved' : 'Club picture removed', 'ok');
+      renderSettings(ctx, host);
+    } catch (e) {
+      console.error(e);
+      toast('Could not save the picture', 'error');
+      note.textContent = said;
+      pick.disabled = false;
+      if (drop) drop.disabled = false;
+    }
+  };
+
+  pick.onclick = () => file.click();
+
+  file.onchange = async () => {
+    const chosen = file.files && file.files[0];
+    file.value = '';                          // so the same file can be picked twice
+    if (!chosen) return;
+    try {
+      note.textContent = 'Preparing the picture…';
+      await save(await clubPhotoFrom(chosen));
+    } catch (e) {
+      toast(e.message || 'That picture could not be used', 'error');
+      note.textContent = 'Square works best — anything else is cropped from the middle.';
+    }
+  };
+
+  if (drop) {
+    drop.onclick = async () => {
+      const ok = await confirmDialog({
+        title: 'Remove the club picture?',
+        body: 'The club goes back to its coloured badge everywhere it appears.',
+        confirmText: 'Remove',
+        danger: true
+      });
+      if (ok) save('');
+    };
+  }
+}
+
 async function renderSettings(ctx, host) {
   const c = ctx.club;
   host.innerHTML = `
@@ -2024,6 +2129,34 @@ async function renderSettings(ctx, host) {
       <div class="tile">
         <h3>Club details</h3>
         <div class="form-inline">
+          ${ctx.member.role === 'founder' ? `
+          <div>
+            <label>Club picture</label>
+            <div class="se-photo">
+              <span class="se-photo-now" data-preview>${clubAvatar(c, 'club-avatar lg')}</span>
+              <div class="se-photo-tools">
+                <button class="btn subtle sm" type="button" data-pick>
+                  ${clubPhoto(c) ? 'Change picture' : 'Upload a picture'}</button>
+                ${clubPhoto(c)
+                  ? '<button class="btn subtle sm" type="button" data-drop>Remove</button>'
+                  : ''}
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden data-file />
+                <p class="field-hint" data-photo-note>Any shape works — the whole picture is
+                  kept, and whatever is left of the square stays clear.</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label>Badge</label>
+            <p class="field-hint" style="margin:-2px 0 10px">
+              ${clubPhoto(c)
+                ? 'What the club shows if the picture is ever removed.'
+                : 'What the club shows everywhere, until you give it a picture.'}
+            </p>
+            <div class="icon-picker" data-icons></div>
+            <div class="color-picker" style="margin-top:10px" data-colors></div>
+          </div>` : ''}
           <div><label>Name</label><input id="se-name" value="${esc(c.name || '')}" /></div>
           <div><label>Description</label><textarea id="se-desc" rows="3">${esc(c.description || '')}</textarea></div>
           <div><label>Web address</label>
@@ -2066,10 +2199,19 @@ async function renderSettings(ctx, host) {
         <p class="muted" style="font-size:13.5px;margin:-6px 0 14px">Deleting a club removes it for every member. This can't be undone.</p>
         <button class="btn danger" id="se-delete">Delete this club</button>
       </div>
-    </div>`;
+    </div>
+
+    <div id="se-registration"></div>`;
+
+  /* The registration form is its own box under the two above: it is the one
+     part of club settings aimed at people who are not members yet. */
+  mountRegistrationEditor(ctx, host.querySelector('#se-registration'));
 
   const transferBtn = host.querySelector('#se-transfer');
   if (transferBtn) transferBtn.onclick = () => openTransfer(ctx);
+
+  wireClubPhoto(ctx, host);
+  const badge = wireClubBadge(ctx, host);
 
   let visibility = c.visibility || 'public';
   host.querySelector('#se-vis').onclick = (e) => {
@@ -2081,14 +2223,30 @@ async function renderSettings(ctx, host) {
 
   host.querySelector('#se-save').onclick = async () => {
     const btn = host.querySelector('#se-save');
+    const wasPrivate = (ctx.club.visibility || 'public') === 'private';
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
-      await updateDoc(clubRef(ctx.clubId), {
+      const patch = {
         name: host.querySelector('#se-name').value.trim() || c.name,
         description: host.querySelector('#se-desc').value.trim(),
-        visibility
-      });
+        visibility,
+        ...badge.value()
+      };
+      await updateDoc(clubRef(ctx.clubId), patch);
+      Object.assign(ctx.club, patch);
+
+      /* Going public puts the club on the JagChess Network; going private
+         takes it straight back off, registration form and all. */
+      await syncPublicClub(ctx.club);
+
       toast('Club updated', 'ok');
+
+      // the registration box is editable in one of those states and not the
+      // other, so the page has to be redrawn when that flips
+      if (wasPrivate !== (visibility === 'private')) {
+        renderSettings(ctx, host);
+        return;
+      }
     } catch (e) { console.error(e); toast('Could not save', 'error'); }
     btn.disabled = false; btn.textContent = 'Save changes';
   };
@@ -2118,12 +2276,23 @@ async function renderSettings(ctx, host) {
   host.querySelector('#se-delete').onclick = async () => {
     const ok = await confirmDialog({
       title: 'Delete this club?',
-      body: 'Every member loses access. Content stays in the database but the club disappears.',
+      body: 'Every member loses access, and the events, puzzles, newsletters, orders and '
+        + 'tournaments belonging to this club are removed with it. This cannot be undone.',
       confirmText: 'Delete club', danger: true
     });
     if (!ok) return;
-    await deleteDoc(clubRef(ctx.clubId));
-    location.href = '/clubs';
+    const btn = host.querySelector('#se-delete');
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+    try {
+      await deleteClubDeep(ctx.user, { id: ctx.clubId, code: ctx.club.code });
+      location.href = '/clubs';
+    } catch (e) {
+      console.error(e);
+      toast('Could not delete the club', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Delete this club';
+    }
   };
 
   return noop;

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leaderboard · JagChess</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/assets/img/jagchess-mark.png" sizes="256x256" />
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/vendor/chessboard/chessboard-1.0.0.min.css" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/clubs.css" />
+  <link rel="stylesheet" href="/assets/css/club.css" />
+  <link rel="stylesheet" href="/assets/css/duels.css" />
+  <link rel="stylesheet" href="/assets/css/tournaments.css" />
+</head>
+<body class="hub">
+
+  <header class="hub-nav">
+    <a href="/clubs" class="hub-logo">
+      <img class="hub-logo-img" src="/assets/img/jagchess-wordmark.png" alt="JagChess"
+           width="444" height="132" />
+    </a>
+    <span id="hub-tabs-host"></span>
+    <div class="hub-nav-right">
+      <button class="chip duel-resume" id="hub-resume" hidden title="You have a game in progress">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5Z"/></svg>
+        Back to your game
+      </button>
+      <button id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.5A8.5 8.5 0 0 1 9.5 3a.75.75 0 0 0-.78-.98A10 10 0 1 0 22 15.28a.75.75 0 0 0-1-.78z"/></svg>
+      </button>
+      <div class="hub-user">
+        <div class="user-avatar-circle" id="hub-avatar">—</div>
+        <div class="hub-user-info">
+          <div class="hub-user-name" id="hub-name">—</div>
+          <div class="hub-user-mail" id="hub-email">—</div>
+        </div>
+      </div>
+      <button class="btn subtle" id="logout">Log out</button>
+    </div>
+  </header>
+
+  <div class="club-boot" id="hub-boot">
+    <div class="club-boot-inner">
+      <div class="club-boot-spinner"></div>
+      <p>Loading the leaderboard…</p>
+    </div>
+  </div>
+
+  <main class="hub-page" id="hub-body" hidden>
+    <div class="hub-page-head" id="hub-head">
+      <h1>Global leaderboard</h1>
+      <p>Every player on JagChess by global rating, with their win / draw / loss record. Club ratings live inside their own club.</p>
+    </div>
+    <div id="hub-main"></div>
+  </main>
+
+  <script src="/assets/vendor/jquery/jquery.min.js"></script>
+  <script src="/assets/vendor/chess/chess.min.js"></script>
+  <script src="/assets/vendor/chessboard/chessboard-1.0.0.min.js"></script>
+  <script src="/assets/js/firebase-config.js"></script>
+  <script type="module" src="/assets/js/analytics.js"></script>
+  <script type="module" src="/assets/js/theme.js"></script>
+  <script type="module" src="/assets/js/global-leaderboard.js"></script>
+</body>
+</html>

@@ -5,7 +5,14 @@
   "main": "index.js",
   "scripts": {
     "start": "npx serve . --listen 3000",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/puzzle-model.test.mjs && node tests/pending-markup.test.mjs && node tests/mail.test.mjs",
+    "test:browser": "node tests/puzzles.browser.test.mjs && node tests/library.browser.test.mjs && node tests/pending.browser.test.mjs && node tests/club-photo.test.mjs && node tests/lichess.browser.test.mjs && node tests/calendar.browser.test.mjs",
+    "test:pending": "node tests/pending-markup.test.mjs && node tests/pending.browser.test.mjs",
+    "test:lichess": "node tests/lichess.browser.test.mjs",
+    "test:all": "npm test && npm run test:browser",
+    "test:library": "node tests/library.browser.test.mjs",
+    "test:photo": "node tests/club-photo.test.mjs",
+    "test:calendar": "node tests/calendar.browser.test.mjs"
   },
   "keywords": [],
   "author": "",

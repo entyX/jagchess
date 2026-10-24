@@ -18,8 +18,14 @@
         mailbox was connected; without them the connect step fails.
         Until the app passes Google verification it shows an "unverified
         app" warning and allows at most 100 connected accounts.
+
+        The club calendar uses this SAME client, so add one more there:
+          https://www.googleapis.com/auth/calendar.events     (sensitive)
+        Without it the Google Calendar switch on the events page connects
+        and then fails on the first read, because consent was never asked
+        for the scope the calls need.
      3. → Credentials → Create credentials → OAuth client ID → Web
-        Authorised JavaScript origins:
+        Authorized JavaScript origins:
           https://jagchess.web.app
           https://nchs-chess-club.web.app
           http://localhost:3000

@@ -2,62 +2,23 @@
   "hosting": [
     {
       "site": "nchs-chess-club",
-      "public": ".",
+      "public": "redirect",
       "ignore": [
         "firebase.json",
         ".firebaserc",
-        ".gitignore",
-        "node_modules/**",
-        ".vercel/**",
-        ".claude/**",
-        "package.json",
-        "package-lock.json",
-        "example.png",
-        "assets/js/firebase-config.example.js",
-        "**/client_secret*.json",
-        "**/*adminsdk*.json",
-        "**/*service-account*.json",
-        "**/serviceAccountKey*.json",
-        "firestore.rules"
+        "**/.*",
+        "**/node_modules/**"
       ],
-      "cleanUrls": true,
-      "trailingSlash": false,
-      "rewrites": [
+      "redirects": [
         {
-          "source": "/admin",
-          "destination": "/admin/dashboard.html"
+          "source": "/",
+          "destination": "https://jagchess.web.app/",
+          "type": 301
         },
         {
-          "source": "/student",
-          "destination": "/student/dashboard.html"
-        },
-        {
-          "source": "/signup",
-          "destination": "/login.html"
-        },
-        {
-          "source": "/clubs/**",
-          "destination": "/club.html"
-        }
-      ],
-      "headers": [
-        {
-          "source": "**/*.@(css|js)",
-          "headers": [
-            {
-              "key": "Cache-Control",
-              "value": "public, max-age=0, must-revalidate"
-            }
-          ]
-        },
-        {
-          "source": "**/*.@(png|jpg|jpeg|svg|webp|woff2)",
-          "headers": [
-            {
-              "key": "Cache-Control",
-              "value": "public, max-age=604800"
-            }
-          ]
+          "source": "/:path*",
+          "destination": "https://jagchess.web.app/:path*",
+          "type": 301
         }
       ]
     },
@@ -69,6 +30,7 @@
         ".firebaserc",
         ".gitignore",
         "node_modules/**",
+        "redirect/**",
         ".vercel/**",
         ".claude/**",
         "package.json",
@@ -79,11 +41,16 @@
         "**/*adminsdk*.json",
         "**/*service-account*.json",
         "**/serviceAccountKey*.json",
-        "firestore.rules"
+        "firestore.rules",
+        "tests/**"
       ],
       "cleanUrls": true,
       "trailingSlash": false,
       "rewrites": [
+        {
+          "source": "/m/**",
+          "destination": "/match.html"
+        },
         {
           "source": "/admin",
           "destination": "/admin/dashboard.html"
@@ -99,9 +66,26 @@
         {
           "source": "/clubs/**",
           "destination": "/club.html"
+        },
+        {
+          "source": "/tournaments/**",
+          "destination": "/tournaments.html"
+        },
+        {
+          "source": "/players/**",
+          "destination": "/tournaments.html"
         }
       ],
       "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, must-revalidate"
+            }
+          ]
+        },
         {
           "source": "**/*.@(css|js)",
           "headers": [
@@ -112,7 +96,7 @@
           ]
         },
         {
-          "source": "**/*.@(png|jpg|jpeg|svg|webp|woff2)",
+          "source": "**/*.@(png|jpg|jpeg|svg|webp|woff2|ico)",
           "headers": [
             {
               "key": "Cache-Control",

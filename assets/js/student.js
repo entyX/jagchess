@@ -148,6 +148,8 @@ if (!cfg) {
       await signOut(auth);
       return window.location.href = '/login';
     }
+    /* let Analytics know who this is, so returning visits register */
+    window.jagIdentify?.(user.uid);
     const role = data.role || 'student';
     if (role !== 'student') return window.location.href = '/admin/dashboard.html';
     const pts = data.points || 0;

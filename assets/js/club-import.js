@@ -28,9 +28,18 @@ const CONTENT = [
 
 const AVATARS = ['#58cc02', '#1cb0f6', '#a05cf7', '#ff9600', '#ff4b4b', '#14b8a6'];
 
-export async function importLegacy(clubId, onProgress = () => {}) {
+export async function importLegacy(clubId, onProgress = () => {}, { force = false } = {}) {
   const clubSnap = await getDoc(clubRef(clubId));
-  const cutoff = (clubSnap.exists() && clubSnap.data().createdAt) || Date.now();
+  if (!clubSnap.exists()) return { total: 0, counts: {}, problems: ['club missing'] };
+
+  /* A copy that has already run must not run again. This is a one-way street:
+     the source collections still hold everything, so re-running it rewrites
+     every document the club has since deleted straight back into place. */
+  if (!force && clubSnap.data().legacyImported) {
+    return { total: 0, counts: clubSnap.data().legacyCounts || {}, problems: [], skipped: true };
+  }
+
+  const cutoff = clubSnap.data().createdAt || Date.now();
 
   let total = 0;
   const counts = {};
@@ -100,11 +109,21 @@ export async function importLegacy(clubId, onProgress = () => {}) {
   counts.members = members;
   total += members;
 
+  /* Marked done whether or not every single document made it.
+   *
+   * This used to be `legacyImported: problems.length === 0`, so one unreadable
+   * row left the flag false and the copy re-ran on every visit — quietly
+   * rewriting content the club had deleted in between, which reads to an
+   * admin as deleted things coming back by themselves. A migration that
+   * cannot say "I ran" is worse than one that ran imperfectly, so the
+   * failures are recorded beside the flag instead of resetting it. */
   const clean = problems.length === 0;
   await updateDoc(clubRef(clubId), {
-    legacyImported: clean,
+    legacyImported: true,
+    legacyImportClean: clean,
     legacyImportedAt: Date.now(),
-    legacyCounts: counts
+    legacyCounts: counts,
+    legacyProblems: problems.slice(0, 25)
   });
 
   if (problems.length) console.warn('Import finished with problems:', problems);

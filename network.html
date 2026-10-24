@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JagChess Network — find a chess club near you</title>
+  <meta name="description" content="Browse every public chess club on JagChess. Create an account to join any of them instantly, or sign up for one and let its admins invite you." />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/assets/img/jagchess-mark.png" sizes="256x256" />
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    /* The marketing site and the Network are for people without an account.
+       This reads the one-bit hint left by the app (see session-hint.js) before
+       anything paints, so a signed-in visitor never sees a flash of a page
+       they are about to be taken off. The authoritative check follows in
+       signed-out-only.js and corrects this either way. */
+    try { if (localStorage.getItem('jag.signedIn') === '1') location.replace('/clubs'); } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="/assets/css/landing.css" />
+  <link rel="stylesheet" href="/assets/css/registration.css" />
+  <link rel="stylesheet" href="/assets/css/network.css" />
+</head>
+<body class="pricing-hidden net-page">
+
+<!-- ══ NAV ═══════════════════════════════════════════════════════════ -->
+<header class="lp-nav stuck" id="lp-nav">
+  <div class="lp-nav-inner">
+    <a href="/" class="lp-logo">
+      <img class="lp-logo-img" src="/assets/img/jagchess-wordmark.png" alt="JagChess"
+           width="444" height="132" />
+    </a>
+    <nav class="lp-links">
+      <a href="/#modules">Modules</a>
+      <a href="/#builder">Customize</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/guide">Guide</a>
+      <a href="/network" class="lp-link-net">JagChess Network</a>
+    </nav>
+    <div class="lp-nav-cta">
+      <a class="btn3d ghost" href="/login">Log in</a>
+      <a class="btn3d" href="/login?mode=signup">Start free</a>
+      <button class="lp-burger" id="lp-burger" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="lp-mobile" id="lp-mobile">
+  <a href="/#modules">Modules</a>
+  <a href="/#builder">Customize</a>
+  <a href="/#faq">FAQ</a>
+  <a href="/guide">Guide</a>
+  <a href="/network">JagChess Network</a>
+  <a href="/login">Log in</a>
+  <a class="btn3d block" href="/login?mode=signup">Start free</a>
+</div>
+
+<!-- ══ HERO + SEARCH ═════════════════════════════════════════════════ -->
+<section class="net-hero">
+  <div class="shell">
+    <span class="kicker">JagChess Network</span>
+    <h1>Find a chess club. <span class="hl">Join it today.</span></h1>
+    <p class="lead">
+      Every public club on JagChess, open for new members — school teams, academies,
+      and community clubs running their puzzles, events and ratings right here.
+    </p>
+
+    <div class="net-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+      <input id="net-q" type="search" placeholder="Search clubs by name, place or description…" autocomplete="off" spellcheck="false" aria-label="Search public clubs" />
+      <button class="net-search-x" id="net-q-clear" hidden aria-label="Clear search">✕</button>
+    </div>
+
+    <div class="net-stats" id="net-stats" hidden>
+      <span><b id="stat-clubs">0</b> public clubs</span>
+      <span><b id="stat-members">0</b> members</span>
+      <span><b id="stat-modules">0</b> modules running</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ THE CLUBS ═════════════════════════════════════════════════════ -->
+<section class="net-body">
+  <div class="shell">
+    <div class="net-list-head">
+      <h2 id="net-list-title">Public clubs</h2>
+      <div class="net-sort" id="net-sort" role="group" aria-label="Sort clubs">
+        <button class="net-sort-opt on" data-sort="members">Biggest</button>
+        <button class="net-sort-opt" data-sort="new">Newest</button>
+        <button class="net-sort-opt" data-sort="name">A–Z</button>
+      </div>
+    </div>
+
+    <div class="net-grid" id="net-grid" aria-live="polite"></div>
+
+    <div class="net-empty" id="net-empty" hidden>
+      <div class="net-empty-art" aria-hidden="true">♟</div>
+      <h3 id="net-empty-title">No clubs match that search</h3>
+      <p id="net-empty-sub">Try a shorter word, or clear the search to see everything on the Network.</p>
+    </div>
+
+    <!-- the account pitch, once you have seen what an account is for -->
+    <aside class="net-pitch" id="net-pitch">
+      <span class="pitch-mark" aria-hidden="true">⚡</span>
+      <p class="pitch-line">
+        <b>An account skips the form.</b>
+        Signed in, any club here opens with one click. Signed out, you fill in a club's
+        registration form and wait for its admins to invite you.
+      </p>
+      <span class="pitch-buttons">
+        <a class="btn3d sm" href="/login?mode=signup">Create a free account</a>
+        <a class="btn3d ghost sm" href="/login">Log in</a>
+      </span>
+    </aside>
+  </div>
+</section>
+
+<!-- ══ FOOTER ════════════════════════════════════════════════════════ -->
+<footer class="lp-foot">
+  <div class="shell">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand">
+          <span class="lp-logo-mark" aria-hidden="true">♞</span>
+          <span class="lp-logo-text">JagChess</span>
+        </div>
+        <p class="foot-blurb">The operating system for chess clubs — puzzles, events, learning, newsletters and rewards, in one customizable platform.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Product</h4>
+        <a href="/#modules">Modules</a>
+        <a href="/#builder">Customization</a>
+        <a href="/network">JagChess Network</a>
+        <a href="/guide">Guide</a>
+        <a href="/login">Log in</a>
+      </div>
+      <div class="foot-col">
+        <h4>Join a club</h4>
+        <a href="/network">Browse public clubs</a>
+        <a href="/login?mode=signup">Create an account</a>
+        <a href="/clubs">Join with a code</a>
+        <a href="/login?mode=signup">Start your own club</a>
+      </div>
+      <div class="foot-col">
+        <h4>Company</h4>
+        <a href="mailto:northcreekchessclub@gmail.com">Contact</a>
+        <a href="/#faq">FAQ</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="year">2026</span> JagChess. All rights reserved.</span>
+      <span>Made for clubs that take the game seriously.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ══ CLUB MODAL ════════════════════════════════════════════════════ -->
+<div class="net-modal" id="club-modal" hidden>
+  <div class="net-modal-card" role="dialog" aria-modal="true" aria-labelledby="cm-name">
+    <button class="net-modal-close" id="cm-close" aria-label="Close">✕</button>
+    <div class="net-modal-grid" id="cm-grid"></div>
+  </div>
+</div>
+
+<script src="/assets/js/firebase-config.js"></script>
+<script type="module" src="/assets/js/analytics.js"></script>
+<script type="module" src="/assets/js/network.js"></script>
+</body>
+</html>

@@ -4,20 +4,24 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>My clubs · JagChess</title>
-  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/assets/img/jagchess-mark.png" sizes="256x256" />
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/styles.css" />
   <link rel="stylesheet" href="../assets/css/clubs.css" />
+  <link rel="stylesheet" href="../assets/css/tournaments.css" />
 </head>
 <body class="hub">
 
   <header class="hub-nav">
-    <a href="/" class="hub-logo">
-      <span class="hub-logo-mark" aria-hidden="true">♞</span>
-      <span class="hub-logo-text">JagChess</span>
+    <a href="/clubs" class="hub-logo">
+      <img class="hub-logo-img" src="/assets/img/jagchess-wordmark.png" alt="JagChess"
+           width="444" height="132" />
     </a>
+    <span id="hub-tabs-host"></span>
     <div class="hub-nav-right">
       <button id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.5A8.5 8.5 0 0 1 9.5 3a.75.75 0 0 0-.78-.98A10 10 0 1 0 22 15.28a.75.75 0 0 0-1-.78z"/></svg>
@@ -34,8 +38,8 @@
   </header>
 
   <main class="hub-main">
-    <div class="hub-head">
-      <div>
+    <div class="hub-head" id="hub-head">
+      <div id="hub-head-text">
         <h1 class="hub-title">My clubs</h1>
         <p class="hub-sub" id="hub-count">Loading your clubs…</p>
       </div>
@@ -53,15 +57,31 @@
 
     <div class="club-grid" id="club-grid"></div>
 
-    <div class="hub-empty" id="hub-empty" hidden>
-      <div class="hub-empty-art" aria-hidden="true">♟</div>
-      <h2>You're not in a club yet</h2>
-      <p>Join your school's club with a code, browse public clubs, or start your own platform in a couple of minutes.</p>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <button class="btn primary lg" data-open-create>Create a club</button>
-        <button class="btn subtle lg" data-open-join>Join a club</button>
+    <!-- ══ NO CLUBS YET: the hub becomes the club directory ══ -->
+    <section class="discover" id="hub-discover" hidden>
+      <h1 class="discover-title">Join a Club</h1>
+
+      <div class="discover-search">
+        <input id="discover-search" type="text" placeholder="Search clubs by name…" autocomplete="off" aria-label="Search clubs" />
+        <svg class="ds-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
       </div>
-    </div>
+
+      <div class="discover-grid" id="discover-grid"></div>
+      <div class="empty-state" id="discover-empty" hidden></div>
+
+      <div class="discover-more-row">
+        <button class="discover-more" id="discover-more" hidden>see more…</button>
+      </div>
+
+      <div class="discover-code">
+        <h2>or enter a code…</h2>
+        <div class="discover-code-row">
+          <input id="discover-code" type="text" placeholder="ABC123" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Club join code" />
+          <button class="btn primary" id="discover-code-join" hidden>Join</button>
+        </div>
+        <p class="code-hint" id="discover-code-hint">Ask a club admin for the 6-character join code.</p>
+      </div>
+    </section>
   </main>
 
   <!-- ══ JOIN MODAL ══ -->
@@ -178,6 +198,7 @@
   </div>
 
   <script src="../assets/js/firebase-config.js"></script>
+  <script type="module" src="../assets/js/analytics.js"></script>
   <script type="module" src="../assets/js/theme.js"></script>
   <script type="module" src="../assets/js/clubs.js"></script>
 </body>

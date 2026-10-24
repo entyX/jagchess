@@ -4,27 +4,39 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>JagChess — the operating system for chess clubs</title>
-  <meta name="description" content="JagChess gives chess clubs, academies and federations a fully customisable home for puzzles, lessons, events, newsletters, shops and leaderboards — built block by block, no code required." />
-  <link rel="icon" type="image/png" href="/logo.png" />
+  <meta name="description" content="JagChess gives chess clubs, academies and federations a fully customizable home for puzzles, lessons, events, newsletters, shops and leaderboards — built block by block, no code required." />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/assets/img/jagchess-mark.png" sizes="256x256" />
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    /* The marketing site and the Network are for people without an account.
+       This reads the one-bit hint left by the app (see session-hint.js) before
+       anything paints, so a signed-in visitor never sees a flash of a page
+       they are about to be taken off. The authoritative check follows in
+       signed-out-only.js and corrects this either way. */
+    try { if (localStorage.getItem('jag.signedIn') === '1') location.replace('/clubs'); } catch (e) {}
+  </script>
   <link rel="stylesheet" href="assets/css/landing.css" />
 </head>
-<body>
+<body class="pricing-hidden">
 
 <!-- ══ NAV ═══════════════════════════════════════════════════════════ -->
 <header class="lp-nav" id="lp-nav">
   <div class="lp-nav-inner">
     <a href="/" class="lp-logo">
-      <span class="lp-logo-mark" aria-hidden="true">♞</span>
-      <span class="lp-logo-text">JagChess</span>
+      <img class="lp-logo-img" src="/assets/img/jagchess-wordmark.png" alt="JagChess"
+           width="444" height="132" />
     </a>
     <nav class="lp-links">
       <a href="#modules">Modules</a>
-      <a href="#builder">Customise</a>
-      <a href="#pricing">Pricing</a>
+      <a href="#builder">Customize</a>
+      <a href="#pricing" data-pricing>Pricing</a>
       <a href="#faq">FAQ</a>
+      <a href="/guide">Guide</a>
+      <a href="/network" class="lp-link-net">JagChess Network</a>
     </nav>
     <div class="lp-nav-cta">
       <a class="btn3d ghost" href="/login">Log in</a>
@@ -38,9 +50,11 @@
 
 <div class="lp-mobile" id="lp-mobile">
   <a href="#modules">Modules</a>
-  <a href="#builder">Customise</a>
-  <a href="#pricing">Pricing</a>
+  <a href="#builder">Customize</a>
+  <a href="#pricing" data-pricing>Pricing</a>
   <a href="#faq">FAQ</a>
+  <a href="/guide">Guide</a>
+  <a href="/network">JagChess Network</a>
   <a href="/login">Log in</a>
   <a class="btn3d block" href="/login?mode=signup">Start free</a>
 </div>
@@ -218,7 +232,7 @@
 <section class="band alt" id="builder">
   <div class="shell">
     <div class="sec-head" data-reveal>
-      <span class="kicker blue">Notion-style customisation</span>
+      <span class="kicker blue">Notion-style customization</span>
       <h2>Build the club site block by block.</h2>
       <p>Drag a block onto the page and it's live. Rename it, recolour it, reorder it, hide it from students — your platform ends up shaped like your club, not like our template.</p>
     </div>
@@ -272,7 +286,7 @@
   <div class="shell">
     <div class="sec-head" data-reveal>
       <span class="kicker purple">Who it's for</span>
-      <h2>One platform, every kind of chess organisation.</h2>
+      <h2>One platform, every kind of chess organization.</h2>
       <p>From a twelve-person lunchtime club to a national federation running hundreds of events a year.</p>
     </div>
     <div class="segments">
@@ -319,7 +333,7 @@
 </section>
 
 <!-- ══ PRICING ═══════════════════════════════════════════════════════ -->
-<section class="band" id="pricing">
+<section class="band" id="pricing" data-pricing>
   <div class="shell">
     <div class="sec-head" data-reveal>
       <span class="kicker">Pricing</span>
@@ -367,7 +381,7 @@
 
       <div class="plan" data-reveal>
         <h3>Federation</h3>
-        <p class="plan-desc">For organisations running many clubs at once.</p>
+        <p class="plan-desc">For organizations running many clubs at once.</p>
         <div class="plan-price"><b>Custom</b></div>
         <div class="plan-note">Multi-club, SSO, data export</div>
         <ul>
@@ -402,11 +416,11 @@
         <button class="qa-q">Who can see our club's data? <i>+</i></button>
         <div class="qa-a"><p>Only the people you invite. Admins control which modules are visible to students, and member records stay inside your club — never sold or shared.</p></div>
       </div>
-      <div class="qa">
+      <div class="qa" data-pricing>
         <button class="qa-q">What happens to points if we change plans? <i>+</i></button>
         <div class="qa-a"><p>Nothing. Points, puzzle history, attendance and orders belong to your club and stay intact whether you upgrade, downgrade or export.</p></div>
       </div>
-      <div class="qa">
+      <div class="qa" data-pricing>
         <button class="qa-q">Can we use our own domain? <i>+</i></button>
         <div class="qa-a"><p>On Pro and Federation, yes — point your domain at JagChess and the whole platform runs under your club's name and crest.</p></div>
       </div>
@@ -428,6 +442,41 @@
   </div>
 </section>
 
+
+<!-- ══ WHAT WE ASK FOR ═══════════════════════════════════════════════
+     Publicly visible on purpose: Google's OAuth brand verification checks
+     that the homepage explains what user data is requested and why. -->
+<section class="dataxp" id="data">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="kicker">Your data</span>
+      <h2>What JagChess asks for, and why.</h2>
+      <p>Three permissions, each one asked for only when you choose to use the thing it is for.</p>
+    </div>
+    <div class="dataxp-grid">
+      <div class="dataxp-card">
+        <h3>Signing in with Google</h3>
+        <p>We receive your email address and your name, and nothing else. They create your account,
+          put your name on your club's leaderboard, and let your club's admins reach you. JagChess
+          does not read anything else in your Google account.</p>
+      </div>
+      <div class="dataxp-card">
+        <h3>Gmail — club admins only</h3>
+        <p>An admin who wants to send their club's newsletter can connect their own Gmail, so the
+          message arrives from their own address rather than a stranger's. The permission is
+          send-only: JagChess cannot read your mail, and nothing goes out until you press send.</p>
+      </div>
+      <div class="dataxp-card">
+        <h3>Lichess — optional</h3>
+        <p>Linking a Lichess account lets you join your club's tournaments there without leaving the
+          site. Nothing is requested until you press Join, and the access token stays in your own
+          browser.</p>
+      </div>
+    </div>
+    <p class="dataxp-more">Everything we store, who can see it, and how to have it deleted is in the
+      <a href="/privacy">privacy policy</a>.</p>
+  </div>
+</section>
 <!-- ══ FOOTER ════════════════════════════════════════════════════════ -->
 <footer class="lp-foot">
   <div class="shell">
@@ -437,17 +486,19 @@
           <span class="lp-logo-mark" aria-hidden="true">♞</span>
           <span class="lp-logo-text">JagChess</span>
         </div>
-        <p class="foot-blurb">The operating system for chess clubs — puzzles, events, learning, newsletters and rewards, in one customisable platform.</p>
+        <p class="foot-blurb">The operating system for chess clubs — puzzles, events, learning, newsletters and rewards, in one customizable platform.</p>
       </div>
       <div class="foot-col">
         <h4>Product</h4>
         <a href="#modules">Modules</a>
-        <a href="#builder">Customisation</a>
-        <a href="#pricing">Pricing</a>
+        <a href="#builder">Customization</a>
+        <a href="#pricing" data-pricing>Pricing</a>
+        <a href="/network">JagChess Network</a>
+        <a href="/guide">Guide</a>
         <a href="/login">Log in</a>
       </div>
       <div class="foot-col">
-        <h4>Organisations</h4>
+        <h4>Organizations</h4>
         <a href="#">Scholastic clubs</a>
         <a href="#">Academies</a>
         <a href="#">Federations</a>
@@ -457,8 +508,8 @@
         <h4>Company</h4>
         <a href="mailto:northcreekchessclub@gmail.com">Contact</a>
         <a href="#faq">FAQ</a>
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
       </div>
     </div>
     <div class="foot-bottom">
@@ -468,6 +519,9 @@
   </div>
 </footer>
 
+<script src="/assets/js/firebase-config.js"></script>
+<script type="module" src="/assets/js/analytics.js"></script>
+<script type="module" src="/assets/js/signed-out-only.js"></script>
 <script src="assets/js/landing.js"></script>
 </body>
 </html>

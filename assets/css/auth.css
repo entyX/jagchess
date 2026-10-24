@@ -96,6 +96,18 @@ a { color: var(--blue); text-decoration: none; }
 }
 .ab-name { font-family: var(--font); font-size: 22px; font-weight: 900; letter-spacing: -0.03em; }
 
+/* The wordmark carries the lion and the name together, so it stands in for
+   the mark and the text at once. The dark panel swallows the black half of
+   the artwork; the same one-pixel halo the dark navbars use puts an edge
+   back on those letters without smearing the gold. */
+.ab-logo-img {
+  display: block;
+  height: 46px;
+  width: auto;
+  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, .95)) drop-shadow(0 0 3px rgba(255, 255, 255, .22));
+}
+
+
 .ab-body { margin: auto 0; padding: 40px 0; }
 .ab-body h1 {
   font-size: clamp(30px, 3vw, 44px);
@@ -178,6 +190,12 @@ a { color: var(--blue); text-decoration: none; }
 }
 
 .auth-card { width: 100%; max-width: 412px; }
+
+/* The brand panel already shows the wordmark on a wide screen, so this one
+   waits for the width where that panel is dropped and the form is all that
+   is left — the page should never carry two of them at once. */
+.auth-logo { display: none; margin-bottom: 22px; }
+.auth-logo img { display: block; height: 40px; width: auto; }
 
 .auth-back {
   display: inline-flex;
@@ -482,6 +500,7 @@ input.bad { border-color: var(--red); box-shadow: 0 0 0 4px rgba(255,75,75,.13);
   .auth-brand { display: none; }
   .auth-panel { padding: 40px 24px; align-items: flex-start; }
   .auth-card { padding-top: 20px; }
+  .auth-logo { display: block; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sign in · JagChess</title>
   <meta name="description" content="Sign in to your club's JagChess platform, or create a new account." />
-  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/assets/img/jagchess-mark.png" sizes="256x256" />
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,8 +20,8 @@
   <!-- ══ BRAND PANEL ══ -->
   <aside class="auth-brand">
     <a href="/" class="ab-logo">
-      <span class="ab-mark" aria-hidden="true">♞</span>
-      <span class="ab-name">JagChess</span>
+      <img class="ab-logo-img" src="/assets/img/jagchess-wordmark.png" alt="JagChess"
+           width="444" height="132" />
     </a>
 
     <div class="ab-body">
@@ -35,7 +37,8 @@
 
     <div class="ab-foot">
       <span>© <span id="year">2026</span> JagChess</span>
-      <a href="/">← Back to jagchess.com</a>
+      <a href="/privacy">Privacy policy</a>
+      <a href="/">← Back to the homepage</a>
     </div>
 
     <div class="ab-board" aria-hidden="true">
@@ -55,6 +58,10 @@
   <!-- ══ FORM PANEL ══ -->
   <main class="auth-panel">
     <div class="auth-card">
+
+      <a class="auth-logo" href="/" aria-label="JagChess home">
+        <img src="/assets/img/jagchess-wordmark.png" alt="JagChess" width="444" height="132" />
+      </a>
 
       <a class="auth-back" href="/">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
@@ -165,7 +172,8 @@
           Continue with Google
         </button>
 
-        <p class="legal">By creating an account you agree to the JagChess terms and privacy policy.</p>
+        <p class="legal">By creating an account you agree to the JagChess
+          <a href="/terms">terms</a> and <a href="/privacy">privacy policy</a>.</p>
 
         <div class="auth-swap">
           Already have an account? <button type="button" id="go-login">Sign in</button>
@@ -197,6 +205,7 @@
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="assets/js/firebase-config.js"></script>
+<script type="module" src="assets/js/analytics.js"></script>
 <script type="module" src="assets/js/auth.js"></script>
 </body>
 </html>

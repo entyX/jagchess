@@ -1,0 +1,224 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   registration.css — a club's registration form, wherever it is drawn.
+
+   Loaded by two pages with two different design systems: the marketing-side
+   Network page (landing.css) and the club app (styles.css). Every color
+   here is a token both of them define, with a literal fallback for the one
+   or two that only exist on one side, so the same markup reads correctly in
+   either — including the club app's dark theme.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.rf-form { display: grid; gap: 18px; }
+
+.rf-field { display: grid; gap: 8px; }
+
+.rf-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-family: var(--font);
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.rf-num {
+  flex-shrink: 0;
+  width: 21px;
+  height: 21px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2, var(--bg-alt, #f1f4f7));
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+
+.rf-field.is-core .rf-num { background: var(--green-soft); color: var(--green-dark); }
+
+.rf-label-text { min-width: 0; }
+
+.rf-req {
+  color: var(--red);
+  font-style: normal;
+  margin-left: 3px;
+  font-weight: 900;
+}
+
+.rf-help {
+  margin: -2px 0 0 30px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+/* ── text inputs ─────────────────────────────────────────────────────── */
+
+.rf-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  line-height: 1.5;
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.rf-input::placeholder { color: var(--muted); }
+.rf-input:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 4px rgba(88, 204, 2, .16);
+}
+textarea.rf-input { resize: vertical; min-height: 96px; }
+
+/* ── multiple choice ─────────────────────────────────────────────────── */
+
+.rf-choices { display: grid; gap: 8px; }
+
+.rf-choice {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 14px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.rf-choice:hover { border-color: var(--border-2); }
+.rf-choice input { position: absolute; opacity: 0; pointer-events: none; }
+
+.rf-choice-dot {
+  flex-shrink: 0;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 2px solid var(--border-2);
+  background: var(--card);
+  position: relative;
+  transition: border-color .15s;
+}
+.rf-choice-dot::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--green);
+  transform: scale(0);
+  transition: transform .16s var(--ease, cubic-bezier(.22,.68,0,1));
+}
+.rf-choice input:checked ~ .rf-choice-dot { border-color: var(--green); }
+.rf-choice input:checked ~ .rf-choice-dot::after { transform: scale(1); }
+.rf-choice:has(input:checked) { border-color: var(--green); background: var(--green-soft); }
+.rf-choice input:focus-visible ~ .rf-choice-dot { box-shadow: 0 0 0 4px rgba(88, 204, 2, .2); }
+
+.rf-choice-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* ── slider ──────────────────────────────────────────────────────────── */
+
+.rf-slider { --rf-fill: 0%; display: grid; gap: 6px; }
+.rf-slider-top { display: flex; align-items: center; gap: 14px; }
+
+.rf-range {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.rf-range::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(to right,
+    var(--green) 0 var(--rf-fill), var(--surface-2, var(--bg-alt, #eef2f5)) var(--rf-fill) 100%);
+}
+.rf-range::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2, var(--bg-alt, #eef2f5));
+}
+.rf-range::-moz-range-progress { height: 8px; border-radius: 999px; background: var(--green); }
+.rf-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--green);
+  box-shadow: 0 2px 6px rgba(20, 38, 47, .22);
+}
+.rf-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--green);
+  box-shadow: 0 2px 6px rgba(20, 38, 47, .22);
+}
+.rf-range:focus-visible { outline: none; }
+.rf-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px rgba(88, 204, 2, .22); }
+
+.rf-range-out {
+  flex-shrink: 0;
+  min-width: 52px;
+  text-align: center;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.rf-range-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  padding-right: 66px;
+}
+
+/* ── errors ──────────────────────────────────────────────────────────── */
+
+.rf-error {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--red);
+}
+
+.rf-field.bad .rf-input,
+.rf-field.bad .rf-choice { border-color: var(--red); }
+
+.rf-form-error {
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: var(--red-soft);
+  color: var(--red-dark, #d93a3a);
+  font-size: 13.5px;
+  font-weight: 700;
+}

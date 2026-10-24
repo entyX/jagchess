@@ -1,0 +1,115 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   legal.css — the privacy policy and the terms.
+
+   One column of prose and nothing else, which is why these pages do not
+   pull in guide.css: the sidebar and search it exists for would only be in
+   the way. Shared by both pages so the two cannot drift apart — they are
+   linked from the same footers and read as a pair.
+   ══════════════════════════════════════════════════════════════════════ */
+
+body.legal-doc { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.lg-top {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 30px;
+  background: var(--topbar-bg);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.lg-top .doc-logo { display: flex; align-items: center; }
+.lg-logo-img { display: block; height: 34px; width: auto; }
+.lg-tag {
+  font: 800 11px var(--font-ui); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--green-dark); background: var(--green-soft);
+  padding: 4px 9px; border-radius: var(--r-pill);
+}
+.lg-spacer { flex: 1; }
+
+.lg-wrap { width: min(760px, 100% - 48px); margin: 0 auto; padding: 44px 0 90px; }
+
+.lg-head { margin-bottom: 34px; }
+.lg-head h1 {
+  font-family: var(--font); font-size: 40px; font-weight: 900;
+  letter-spacing: -.035em; margin: 0 0 10px; line-height: 1.1;
+}
+.lg-sub { margin: 0; color: var(--text-2); font-size: 16px; line-height: 1.65; }
+.lg-dates {
+  margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px;
+  font: 700 12px var(--font-ui);
+}
+.lg-dates span {
+  background: var(--surface-2); color: var(--text-2);
+  padding: 5px 11px; border-radius: var(--r-pill);
+}
+
+.lg-toc {
+  background: var(--card); border: 2px solid var(--border);
+  border-radius: var(--r-lg); padding: 20px 22px; margin-bottom: 40px;
+}
+.lg-toc h2 {
+  font-family: var(--font); font-size: 13px; font-weight: 800;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+  margin: 0 0 12px;
+}
+.lg-toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 28px; }
+.lg-toc li { margin-bottom: 7px; break-inside: avoid; font-size: 14px; }
+.lg-toc a { color: var(--text-2); text-decoration: none; }
+.lg-toc a:hover { color: var(--green-dark); text-decoration: underline; }
+
+/* Numbered by counter, not by hand: the sections get renumbered every
+   time one is inserted, and a policy whose contents list disagrees with
+   its headings is worse than one with no numbers at all. */
+.lg-wrap { counter-reset: sec; }
+.lg-wrap h2.lg-h {
+  font-family: var(--font); font-size: 24px; font-weight: 900;
+  letter-spacing: -.02em; margin: 40px 0 12px; scroll-margin-top: 80px;
+  counter-increment: sec;
+}
+.lg-wrap h2.lg-h::before { content: counter(sec) ". "; }
+.lg-wrap h3 {
+  font-family: var(--font); font-size: 16px; font-weight: 800;
+  margin: 24px 0 8px; color: var(--text);
+}
+.lg-wrap p, .lg-wrap li { font-size: 15px; line-height: 1.75; color: var(--text-2); }
+.lg-wrap p { margin: 0 0 14px; }
+.lg-wrap ul { margin: 0 0 16px; padding-left: 22px; }
+.lg-wrap li { margin-bottom: 8px; }
+.lg-wrap strong { color: var(--text); font-weight: 700; }
+.lg-wrap code {
+  font: 600 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--surface-2); color: var(--text);
+  padding: 2px 6px; border-radius: 6px;
+}
+.lg-wrap a { color: var(--green-dark); }
+[data-theme="dark"] .lg-wrap a { color: var(--green-hi); }
+
+.lg-note {
+  background: var(--blue-soft); border: 2px solid var(--blue);
+  border-radius: var(--r-md); padding: 16px 18px; margin: 0 0 18px;
+}
+.lg-note p { margin: 0; color: var(--text); }
+
+.lg-table { width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: 14.5px; }
+.lg-table th, .lg-table td {
+  text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--border);
+  vertical-align: top; line-height: 1.6;
+}
+.lg-table th { font: 800 12.5px var(--font-ui); color: var(--text); background: var(--surface-2); }
+.lg-table td { color: var(--text-2); }
+.lg-table tr:last-child td { border-bottom: none; }
+
+.lg-foot {
+  margin-top: 50px; padding-top: 24px; border-top: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+  font-size: 13.5px; color: var(--muted);
+}
+.lg-foot a { color: var(--text-2); }
+
+@media (max-width: 720px) {
+  .lg-top { padding: 12px 16px; }
+  .lg-wrap { width: min(760px, 100% - 32px); padding: 30px 0 60px; }
+  .lg-head h1 { font-size: 30px; }
+  .lg-toc ol { columns: 1; }
+}

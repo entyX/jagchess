@@ -21,6 +21,13 @@ export function clubInviteURL(ctx) {
   return `${origin()}/clubs/${encodeURIComponent(slug)}${code}`;
 }
 
+/* Where somebody with no account signs up for this club: the club's card on
+   the public Network, opened straight onto its registration form. */
+export function registrationURL(ctx) {
+  const slug = ctx.club.slug || ctx.clubId;
+  return `${origin()}/network?club=${encodeURIComponent(slug)}`;
+}
+
 export function attendanceURL(ctx, eventId) {
   const slug = ctx.club.slug || ctx.clubId;
   return `${origin()}/clubs/${encodeURIComponent(slug)}?att=${encodeURIComponent(eventId)}`;
@@ -154,6 +161,24 @@ export function openClubShare(ctx) {
     extraHTML: ctx.club.code
       ? `<div class="share-code"><span>Join code</span><b>${esc(ctx.club.code)}</b></div>`
       : ''
+  });
+}
+
+/* The registration form is a public thing by definition, so this sheet is
+   offered whenever the club is public — and only then. A private club has no
+   listing on the Network for the link to land on. */
+export function openRegistrationShare(ctx) {
+  if (ctx.club.visibility === 'private') {
+    toast('Make the club public to share its registration form', 'error');
+    return;
+  }
+  openShareSheet({
+    title: 'Registration for ' + (ctx.club.name || 'this club'),
+    subtitle: 'Anyone who scans this — account or not — lands on your registration form.',
+    url: registrationURL(ctx),
+    filename: 'jagchess-registration-' + (ctx.club.slug || ctx.clubId),
+    extraHTML: '<div class="share-note">People who already have a JagChess account can skip '
+      + 'the form entirely and join from the same page.</div>'
   });
 }
 

@@ -1,0 +1,511 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   tournaments.css — the Tournaments page, the create form,
+   and the hub chrome the global pages share.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── LIST ───────────────────────────────────────────────────────────── */
+
+.tn-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap; margin-bottom: 18px;
+}
+.tn-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: var(--r-pill); }
+.tn-tab {
+  border: 0; background: none; cursor: pointer;
+  padding: 8px 16px; border-radius: var(--r-pill);
+  font: 800 13.5px var(--font-ui); color: var(--muted);
+}
+.tn-tab.on { background: var(--card); color: var(--text); box-shadow: var(--lift); }
+
+/* The source switch only appears once there is more than one source to
+   switch between — see renderTournaments. */
+.tn-head-right { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tn-source .duel-seg-opt { padding: 7px 13px; font-size: 12.5px; }
+
+.tn-pick { max-width: 520px; width: min(520px, calc(100vw - 32px)); }
+.tn-pick-choice { grid-template-columns: 1fr; }
+
+.tn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(292px, 1fr));
+  gap: 16px;
+}
+
+.tn-card {
+  display: flex; flex-direction: column; gap: 9px;
+  text-align: left; cursor: pointer;
+  padding: 18px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift-card);
+  color: var(--text); font-family: var(--font-ui);
+  transition: transform .16s var(--ease), border-color .16s, box-shadow .16s;
+}
+.tn-card:hover { transform: translateY(-3px); border-color: var(--purple); box-shadow: 0 8px 0 var(--purple-soft); }
+.tn-card.running, .tn-card.ending { border-color: var(--green); }
+.tn-card.running:hover, .tn-card.ending:hover { box-shadow: 0 8px 0 var(--green-soft); }
+
+.tn-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tn-card-name { font-family: var(--font); font-size: 18px; font-weight: 900; letter-spacing: -.02em; line-height: 1.2; }
+.tn-card-terms { display: flex; flex-wrap: wrap; gap: 6px; }
+.tn-when { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.tn-card-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-top: 2px; padding-top: 11px;
+  border-top: 1px solid var(--border);
+}
+.tn-card-host { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: var(--text-2); }
+.tn-card-count { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+
+.tn-podium-mini { display: flex; flex-wrap: wrap; gap: 5px; }
+.tn-podium-chip {
+  font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: var(--r-pill);
+  background: var(--surface-2); color: var(--text-2);
+}
+.tn-podium-chip.p1 { background: var(--gold-soft); color: var(--gold-dark); }
+[data-theme="dark"] .tn-podium-chip.p1 { color: var(--gold); }
+
+/* ── STATUS + PILLS ─────────────────────────────────────────────────── */
+
+.tn-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: var(--r-pill);
+  background: var(--surface-2); color: var(--muted);
+}
+.tn-status.running, .tn-status.ending { background: var(--green-soft); color: var(--green-dark); }
+.tn-status.scheduled { background: var(--blue-soft); color: var(--blue-dark); }
+.tn-status.finished { background: var(--gold-soft); color: var(--gold-dark); }
+.tn-status.cancelled { background: var(--red-soft); color: var(--red-dark); }
+[data-theme="dark"] .tn-status.running, [data-theme="dark"] .tn-status.ending { color: var(--green-hi); }
+[data-theme="dark"] .tn-status.scheduled { color: var(--blue); }
+[data-theme="dark"] .tn-status.finished { color: var(--gold); }
+[data-theme="dark"] .tn-status.cancelled { color: var(--red); }
+
+.tn-live-dot {
+  width: 7px; height: 7px; border-radius: 999px; background: var(--green);
+  animation: tn-pulse 1.5s infinite;
+}
+@keyframes tn-pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
+.tn-pill {
+  display: inline-flex; align-items: center;
+  font-size: 11.5px; font-weight: 800;
+  padding: 4px 10px; border-radius: var(--r-pill);
+  background: var(--surface-2); color: var(--text-2);
+}
+.tn-pill.arena { background: var(--purple-soft); color: var(--purple-dark); }
+.tn-pill.retired { background: var(--surface-2); color: var(--muted); text-decoration: line-through; }
+.tn-pill.rated { background: var(--green-soft); color: var(--green-dark); }
+.tn-pill.berserk { background: var(--orange-soft); color: var(--orange-dark); }
+.tn-pill.soft { background: transparent; border: 1px solid var(--border-2); color: var(--muted); }
+[data-theme="dark"] .tn-pill.arena { color: #c79bff; }
+[data-theme="dark"] .tn-pill.rated { color: var(--green-hi); }
+[data-theme="dark"] .tn-pill.berserk { color: var(--orange); }
+
+/* ── ONE TOURNAMENT ─────────────────────────────────────────────────── */
+
+.tn-back {
+  border: 0; background: none; cursor: pointer;
+  font: 800 13.5px var(--font-ui); color: var(--muted);
+  padding: 0 0 12px;
+}
+.tn-back:hover { color: var(--text); }
+
+.tn-hero {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+  padding: 24px 26px;
+  border-radius: var(--r-xl);
+  background: var(--purple-soft);
+  margin-bottom: 16px;
+}
+.tn-hero.finished { background: var(--gold-soft); }
+.tn-hero.cancelled { background: var(--red-soft); }
+.tn-hero.retired { background: var(--surface-2); }
+.tn-hero-main { min-width: 0; flex: 1 1 340px; }
+.tn-hero-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 9px; }
+.tn-hero h2 {
+  font-family: var(--font); font-size: clamp(23px, 3.6vw, 32px);
+  font-weight: 900; letter-spacing: -.03em; line-height: 1.1;
+  margin: 0 0 10px; color: var(--text);
+}
+.tn-hero-terms { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tn-hero-desc { font-size: 14.5px; line-height: 1.6; color: var(--text-2); margin: 0 0 10px; max-width: 62ch; }
+.tn-hero-host { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--text-2); }
+
+.tn-hero-side {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+}
+.tn-clock { text-align: center; }
+.tn-clock b {
+  display: block; font-family: var(--font);
+  font-size: clamp(28px, 5vw, 38px); font-weight: 900;
+  letter-spacing: -.03em; line-height: 1; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.tn-clock small { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-2); margin-top: 4px; }
+.tn-clock.live b { color: var(--green-dark); }
+[data-theme="dark"] .tn-clock.live b { color: var(--green-hi); }
+
+.tn-joined {
+  font: 800 14px var(--font-ui); color: var(--green-dark);
+  background: var(--card); padding: 9px 16px; border-radius: var(--r-pill);
+}
+[data-theme="dark"] .tn-joined { color: var(--green-hi); }
+.tn-out { font: 700 13.5px var(--font-ui); color: var(--text-2); }
+
+.tn-berserk-toggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  font: 800 12.5px var(--font-ui); color: var(--text-2);
+  background: var(--card); padding: 8px 13px; border-radius: var(--r-pill);
+  cursor: pointer; border: 2px solid transparent;
+}
+.tn-berserk-toggle.on { border-color: var(--orange); color: var(--orange-dark); }
+[data-theme="dark"] .tn-berserk-toggle.on { color: var(--orange); }
+
+.tn-manage {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 11px 16px; margin-bottom: 16px;
+  background: var(--surface-2); border-radius: var(--r-md);
+  font: 700 13px var(--font-ui); color: var(--text-2);
+}
+.tn-manage > span { margin-right: auto; }
+
+/* ── PODIUM ─────────────────────────────────────────────────────────── */
+
+.tn-podium {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px; margin-bottom: 18px;
+}
+.tn-podium-card {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 18px 14px; border-radius: var(--r-lg);
+  background: var(--card); border: 2px solid var(--border);
+  box-shadow: var(--lift-card); position: relative;
+}
+.tn-podium-card.p1 { border-color: var(--gold); background: var(--gold-soft); }
+.tn-podium-card.p2 { border-color: var(--border-2); }
+.tn-podium-card.p3 { border-color: var(--orange); }
+.tn-podium-place {
+  position: absolute; top: 10px; left: 12px;
+  font: 900 13px var(--font); color: var(--muted);
+}
+.tn-podium-card b { font-family: var(--font); font-size: 16px; font-weight: 900; text-align: center; }
+.tn-podium-card small { font-size: 12px; font-weight: 700; color: var(--text-2); }
+
+/* ── LAYOUT ─────────────────────────────────────────────────────────── */
+
+.tn-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.tn-main { min-width: 0; }
+.tn-side { display: flex; flex-direction: column; gap: 14px; }
+.tn-side .tile { padding: 16px 18px; }
+.tn-side h4 { font-family: var(--font); font-size: 15px; font-weight: 900; margin: 0 0 10px; }
+
+/* ── STANDINGS ──────────────────────────────────────────────────────── */
+
+.tn-standings-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px;
+}
+.tn-standings-head h3 { font-family: var(--font); font-size: 17px; font-weight: 900; margin: 0; }
+.tn-standings-head .muted { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+
+.tn-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 78px 64px;
+  align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: var(--r-sm);
+}
+.tn-row-head {
+  font-size: 11px; font-weight: 800; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--muted);
+  border-bottom: 1px solid var(--border); border-radius: 0; padding-bottom: 8px;
+}
+.tn-rows .tn-row + .tn-row { border-top: 1px solid var(--border); border-radius: 0; }
+.tn-row.me { background: var(--green-soft); border-radius: var(--r-sm); }
+.tn-row.gone { opacity: .5; }
+
+.tn-c-rank { font-family: var(--font); font-size: 15px; font-weight: 900; text-align: center; color: var(--muted); }
+.tn-c-rank.gold { color: var(--gold-dark); }
+.tn-c-rank.silver { color: var(--text-2); }
+.tn-c-rank.bronze { color: var(--orange-dark); }
+[data-theme="dark"] .tn-c-rank.gold { color: var(--gold); }
+[data-theme="dark"] .tn-c-rank.bronze { color: var(--orange); }
+
+.tn-c-player { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tn-player-id { min-width: 0; line-height: 1.3; }
+.tn-player-name {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 14px; font-weight: 800; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tn-player-sub { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.tn-fire {
+  font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  background: var(--orange-soft); color: var(--orange-dark);
+  padding: 2px 7px; border-radius: var(--r-pill);
+}
+[data-theme="dark"] .tn-fire { color: var(--orange); }
+
+.tn-c-wdl { font-size: 13px; font-weight: 600; color: var(--text-2); text-align: center; font-variant-numeric: tabular-nums; }
+.tn-c-score { font-family: var(--font); font-size: 17px; font-weight: 900; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── SIDE PANELS ────────────────────────────────────────────────────── */
+
+.tn-next.ready, .tn-next.live { border-color: var(--green); box-shadow: 0 3px 0 var(--green-soft); }
+.tn-next-opp { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
+.tn-next-opp b { display: block; font-size: 14.5px; font-weight: 800; }
+.tn-next-opp small { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
+
+.tn-pool-bar {
+  height: 5px; border-radius: 3px; background: var(--surface-2);
+  overflow: hidden; margin-top: 12px;
+}
+.tn-pool-bar span {
+  display: block; height: 100%; width: 38%;
+  background: var(--green); border-radius: 3px;
+  animation: tn-slide 1.5s var(--ease) infinite;
+}
+@keyframes tn-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
+
+.tn-live-list { display: flex; flex-direction: column; gap: 6px; }
+.tn-live-row {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 11px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--text);
+  font: 700 12.5px var(--font-ui); text-align: left;
+}
+.tn-live-row:hover { border-color: var(--green); }
+.tn-live-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-vs { color: var(--muted); font-weight: 600; flex-shrink: 0; }
+
+.tn-rule {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 6px 0; font-size: 13.5px; color: var(--text-2);
+}
+.tn-rule + .tn-rule { border-top: 1px solid var(--border); }
+.tn-rule b { font-family: var(--font); font-weight: 900; color: var(--text); }
+
+/* A format that no longer exists. The notice reads as an explanation rather
+   than an error, because nothing went wrong — the format was retired. */
+.tn-retired {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 14px 16px; margin-bottom: 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.tn-retired b { font-family: var(--font); font-size: 14.5px; font-weight: 900; color: var(--text); }
+.tn-retired span { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+/* ── CREATE FORM ────────────────────────────────────────────────────── */
+
+.tn-create { max-width: 560px; width: min(560px, calc(100vw - 32px)); max-height: 92vh; overflow-y: auto; }
+.tn-field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.tn-field > label { font-size: 13px; font-weight: 800; color: var(--text-2); }
+.tn-field .opt { font-weight: 600; color: var(--muted); font-size: 12px; }
+.tn-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tn-hint { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+.tn-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tn-opt {
+  text-align: left; cursor: pointer;
+  padding: 12px 14px; border-radius: var(--r-md);
+  border: 2px solid var(--border); background: var(--surface);
+  font-family: var(--font-ui); color: var(--text);
+}
+.tn-opt.on { border-color: var(--purple); background: var(--purple-soft); }
+.tn-opt b { display: block; font-size: 14px; font-weight: 800; margin-bottom: 3px; }
+.tn-opt small { display: block; font-size: 12px; line-height: 1.45; color: var(--text-2); }
+
+.tn-switch {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; margin-top: 14px; padding: 13px 15px;
+  border: 2px solid var(--border); border-radius: var(--r-md);
+  background: var(--surface); cursor: pointer;
+}
+.tn-switch b { display: block; font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+.tn-switch small { display: block; font-size: 12px; line-height: 1.45; color: var(--text-2); }
+
+.tn-create-foot {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.tn-create-foot .create-error { margin-right: auto; }
+
+/* ── MATCH LINK SHEET ───────────────────────────────────────────────── */
+
+.ml-card { max-width: 460px; width: min(460px, calc(100vw - 32px)); }
+.ml-url-row { display: flex; gap: 8px; margin: 12px 0; }
+.ml-url-row input {
+  flex: 1; min-width: 0;
+  font: 700 13.5px var(--font-mono);
+  padding: 11px 13px; border-radius: var(--r-sm);
+  border: 2px solid var(--border); background: var(--surface-2); color: var(--text);
+}
+.ml-terms { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.ml-who {
+  padding: 13px 15px; border-radius: var(--r-md);
+  background: var(--blue-soft); margin-bottom: 12px;
+}
+.ml-who b { display: block; font-size: 13.5px; font-weight: 800; color: var(--blue-dark); margin-bottom: 3px; }
+.ml-who span { font-size: 12.5px; line-height: 1.5; color: var(--blue-dark); }
+[data-theme="dark"] .ml-who b, [data-theme="dark"] .ml-who span { color: var(--blue); }
+
+.ml-waiting {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 15px; border-radius: var(--r-md);
+  background: var(--surface-2);
+  font: 700 13.5px var(--font-ui); color: var(--text-2);
+}
+.ml-pulse {
+  width: 9px; height: 9px; border-radius: 999px;
+  background: var(--muted); animation: tn-pulse 1.4s infinite; flex-shrink: 0;
+}
+.ml-pulse.on { background: var(--green); }
+.ml-foot { display: flex; gap: 10px; justify-content: space-between; margin-top: 16px; }
+
+.duel-link-btn { margin-top: 10px; }
+.duel-link-btn svg { width: 17px; height: 17px; }
+.duel-pill.tourn { background: var(--purple-soft); color: var(--purple-dark); }
+.duel-pill.berserk { background: var(--orange-soft); color: var(--orange-dark); }
+[data-theme="dark"] .duel-pill.tourn { color: #c79bff; }
+[data-theme="dark"] .duel-pill.berserk { color: var(--orange); }
+
+/* ── HUB CHROME (shared by /clubs, /play, /tournaments) ─────────────── */
+
+/* The tabs sit dead centre of the bar, whatever is either side of them.
+   Auto-margins cannot do this: they only split the leftover space, so a wide
+   account block on the right drags the tabs left of centre. Three grid tracks
+   with equally flexible edges put the middle one at the real centre, and it
+   stays there as the sides change width — a "back to your game" chip
+   appearing, a longer email, a shorter name. */
+/* max-content floors, not 0: a plain 1fr would split the free space equally
+   and force the wider side (the account block) to overflow into the tabs long
+   before the bar actually ran out of room. With a floor, each side keeps what
+   it needs, the surplus is still split evenly — so the tabs are exactly
+   centred whenever there is room — and when there isn't, the bar drifts off
+   centre instead of overlapping. */
+.hub-nav {
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+}
+.hub-nav > .hub-logo { margin-right: 0; justify-self: start; }
+.hub-nav > .hub-nav-right { justify-self: end; }
+
+.hub-tabs {
+  display: flex; align-items: center; gap: 2px;
+  margin: 0; justify-self: center;
+}
+.hub-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 15px; border-radius: var(--r-pill);
+  font: 700 13.5px var(--font-ui); color: var(--text-2);
+  text-decoration: none; white-space: nowrap;
+}
+.hub-tab:hover { background: var(--surface-2); color: var(--text); }
+.hub-tab.on { background: var(--green-soft); color: var(--green-dark); font-weight: 800; }
+[data-theme="dark"] .hub-tab.on { color: var(--green-hi); }
+.hub-tab svg { width: 17px; height: 17px; flex-shrink: 0; }
+
+.hub-page { width: min(1180px, 100% - 48px); margin: 0 auto; padding: 34px 0 80px; }
+.hub-page-head { margin-bottom: 24px; }
+.hub-page-head h1 {
+  font-family: var(--font); font-size: 32px; font-weight: 900;
+  letter-spacing: -.03em; margin: 0 0 5px;
+}
+.hub-page-head p { margin: 0; color: var(--text-2); font-size: 15px; }
+
+/* the duels page needs room to breathe when it is the whole page */
+.hub-page .duel-page { margin-top: 4px; }
+
+/* ── MATCH LINK LANDING (/m/<code>) ─────────────────────────────────── */
+
+.mlp-wrap {
+  min-height: 100vh; display: grid; place-items: center;
+  padding: 24px; background: var(--bg);
+}
+.mlp-card {
+  width: min(460px, 100%); text-align: center;
+  padding: 36px 30px; border-radius: var(--r-xl);
+  background: var(--card); border: 2px solid var(--border);
+  box-shadow: var(--pop);
+}
+.mlp-mark {
+  width: 62px; height: 62px; margin: 0 auto 16px; border-radius: 20px;
+  display: grid; place-items: center; font-size: 30px; color: #fff;
+  background: linear-gradient(160deg, var(--green-hi), var(--green-dark));
+  box-shadow: 0 4px 0 #2f7a06;
+}
+.mlp-card h1 { font-family: var(--font); font-size: 25px; font-weight: 900; letter-spacing: -.03em; margin: 0 0 8px; }
+.mlp-card p { font-size: 14.5px; line-height: 1.6; color: var(--text-2); margin: 0 0 18px; }
+.mlp-terms { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 20px; }
+.mlp-from { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 18px; }
+.mlp-from b { font-size: 15px; font-weight: 800; }
+.mlp-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.mlp-spinner {
+  width: 34px; height: 34px; margin: 0 auto 16px;
+  border: 3px solid var(--border); border-top-color: var(--green);
+  border-radius: 999px; animation: mlp-spin .8s linear infinite;
+}
+@keyframes mlp-spin { to { transform: rotate(360deg); } }
+.mlp-card.bad .mlp-mark { background: linear-gradient(160deg, #ff7676, var(--red-dark)); box-shadow: 0 4px 0 #a01f1f; }
+
+/* ── WHAT'S NEW ─────────────────────────────────────────────────────── */
+
+/* The release note appears on club pages, which do not load guide.css — so
+   the change pills are styled here as well as there. */
+.whats-new-list .cl-kind {
+  flex-shrink: 0;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 3px 8px; border-radius: var(--r-pill);
+  margin-top: 2px; min-width: 62px; text-align: center;
+  background: var(--surface-2); color: var(--text-2);
+}
+.whats-new-list .cl-kind.green  { background: var(--green-soft);  color: var(--green-dark); }
+.whats-new-list .cl-kind.blue   { background: var(--blue-soft);   color: var(--blue-dark); }
+.whats-new-list .cl-kind.orange { background: var(--orange-soft); color: var(--orange-dark); }
+.whats-new-list .cl-kind.red    { background: var(--red-soft);    color: var(--red-dark); }
+[data-theme="dark"] .whats-new-list .cl-kind.green  { color: var(--green-hi); }
+[data-theme="dark"] .whats-new-list .cl-kind.blue   { color: var(--blue); }
+[data-theme="dark"] .whats-new-list .cl-kind.orange { color: var(--orange); }
+[data-theme="dark"] .whats-new-list .cl-kind.red    { color: var(--red); }
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+
+@media (max-width: 1080px) {
+  .tn-body { grid-template-columns: 1fr; }
+  .tn-side { flex-direction: row; flex-wrap: wrap; }
+  .tn-side > * { flex: 1 1 260px; }
+}
+
+@media (max-width: 720px) {
+  .tn-hero { padding: 18px 18px; gap: 16px; }
+  .tn-hero-side { width: 100%; justify-content: space-between; }
+  .tn-row { grid-template-columns: 30px minmax(0, 1fr) 66px 52px; gap: 7px; padding: 8px 6px; }
+  .tn-c-score { font-size: 15px; }
+  .tn-choice, .tn-row-2 { grid-template-columns: 1fr; }
+  .tn-side { flex-direction: column; }
+  .hub-page { width: calc(100% - 28px); padding-top: 22px; }
+
+  /* Too narrow to centre anything: the tabs drop to their own full-width line
+     under the logo and scroll sideways if they have to. */
+  .hub-nav { display: flex; flex-wrap: wrap; }
+  .hub-nav > .hub-logo { margin-right: auto; }
+  .hub-tabs {
+    order: 3; width: 100%; margin: 6px 0 0;
+    overflow-x: auto; justify-content: flex-start;
+  }
+  .hub-tab { padding: 8px 12px; font-size: 13px; }
+}
+
+/* Between those two, five tabs plus a logo plus an account block is a squeeze,
+   so the tab icons go before anything starts truncating. */
+@media (max-width: 1400px) and (min-width: 721px) {
+  .hub-tab { padding: 8px 11px; font-size: 13px; }
+  .hub-tab svg { display: none; }
+}

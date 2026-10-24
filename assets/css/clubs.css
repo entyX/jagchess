@@ -43,9 +43,17 @@ body.hub {
   color: var(--text);
 }
 
+.hub-logo-img { display: block; height: 36px; width: auto; }
+
 .hub-nav-right { display: flex; align-items: center; gap: 14px; }
 .hub-user { display: flex; align-items: center; gap: 10px; }
-.hub-user-info { line-height: 1.25; }
+.hub-user-info { line-height: 1.25; min-width: 0; }
+/* A long address must not be allowed to set the width of the whole bar and
+   push the centred tab strip off centre — it truncates instead. */
+.hub-user-name, .hub-user-mail {
+  max-width: 210px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .hub-user-name { font-family: var(--font); font-size: 14px; font-weight: 800; color: var(--text); }
 .hub-user-mail { font-size: 11.5px; color: var(--muted); }
 
@@ -257,16 +265,121 @@ body.hub {
 .club-card-meta svg { width: 16px; height: 16px; }
 .club-card-go { font-family: var(--font); font-size: 13.5px; font-weight: 800; color: var(--green-dark); }
 
-.hub-empty {
+/* ── NO CLUBS YET: THE HUB AS A DIRECTORY ───────────────────────
+   A member of nothing has no list to read, so the page stops pretending to
+   be one: searching for a club is the whole screen. The create button keeps
+   its corner — starting a club stays exactly where it always was. */
+
+.hub-head.bare { justify-content: flex-end; }
+
+.discover {
+  width: min(880px, 100%);
+  margin: 0 auto;
+  padding: 10px 0 30px;
   text-align: center;
-  padding: 70px 24px;
-  background: var(--card);
-  border: 2px dashed var(--border-2);
-  border-radius: var(--r-xl);
 }
-.hub-empty-art { font-size: 60px; line-height: 1; color: var(--green); margin-bottom: 10px; }
-.hub-empty h2 { font-size: 24px; margin-bottom: 8px; }
-.hub-empty p { max-width: 46ch; margin: 0 auto 24px; color: var(--text-2); }
+.discover-title {
+  font-size: clamp(30px, 4.4vw, 42px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  margin: 0 0 22px;
+}
+
+.discover-search { position: relative; max-width: 560px; margin: 0 auto 26px; }
+.discover-search input {
+  height: 54px;
+  padding: 0 52px 0 20px;
+  border-radius: var(--r-lg);
+  font-size: 16px;
+  box-shadow: var(--lift-card);
+}
+.discover-search input:focus { box-shadow: 0 0 0 4px rgba(28,176,246,0.14); }
+.discover-search .ds-ico {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 21px;
+  height: 21px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.discover-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+
+.discover-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  min-height: 150px;
+  padding: 16px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift-card);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s var(--ease), border-color .18s, box-shadow .18s;
+}
+.discover-card:hover { transform: translateY(-4px); border-color: var(--green); box-shadow: 0 9px 0 var(--green-soft); }
+.discover-card.busy { opacity: .55; pointer-events: none; }
+.discover-card-name {
+  font-family: var(--font);
+  font-size: 15.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.discover-card-meta { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: auto; }
+.discover-card-go { font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--green-dark); }
+
+/* placeholders while the directory is still on its way */
+.discover-card.skel {
+  border-style: dashed;
+  background: var(--surface-2);
+  box-shadow: none;
+  cursor: default;
+  animation: skel-pulse 1.4s ease-in-out infinite;
+}
+.discover-card.skel:hover { transform: none; border-color: var(--border); box-shadow: none; }
+@keyframes skel-pulse { 0%, 100% { opacity: .55; } 50% { opacity: .95; } }
+
+.discover-more-row { display: flex; justify-content: flex-end; margin-top: 10px; min-height: 26px; }
+.discover-more {
+  border: none;
+  background: none;
+  padding: 3px 2px;
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.discover-more:hover { color: var(--text); text-decoration: underline; }
+
+.discover-code { margin-top: 46px; }
+.discover-code h2 { font-size: 22px; margin: 0 0 14px; }
+.discover-code-row { display: flex; gap: 10px; justify-content: center; max-width: 420px; margin: 0 auto; }
+.discover-code-row input {
+  height: 54px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift-card);
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.discover-code-row input:focus { box-shadow: 0 0 0 4px rgba(28,176,246,0.14); }
+.discover-code-row .btn { flex-shrink: 0; }
+.discover-code .code-hint { margin-top: 11px; }
 
 /* ── JOIN MODAL ─────────────────────────────────────────────────────── */
 
@@ -576,4 +689,25 @@ body.hub {
   .hub-title { font-size: 27px; }
   .hub-user-info { display: none; }
   .field-row-2, .seg-choice { grid-template-columns: 1fr; }
+  .discover-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .discover-code { margin-top: 36px; }
+}
+
+@media (max-width: 440px) {
+  .discover-grid { grid-template-columns: 1fr; }
+  .discover-card { min-height: 0; }
+}
+
+
+/* ── hub nav breathing room ─────────────────────────────────────────
+   The name and email are the widest part of the bar’s right-hand side, and
+   the centred tab strip needs that space before anything else does. The
+   avatar still identifies who is signed in. */
+/* Tighter once the bar starts competing for room, so the centred tab strip
+   keeps the space before the address does. */
+@media (max-width: 1500px) {
+  .hub-user-name, .hub-user-mail { max-width: 150px; }
+}
+@media (max-width: 1240px) {
+  .hub-user-info { display: none; } /* centred-nav */
 }

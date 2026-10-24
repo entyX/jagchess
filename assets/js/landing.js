@@ -121,7 +121,7 @@
     });
   }
 
-  /* ── builder: club colour swatches ──────────────────────────────── */
+  /* ── builder: club color swatches ──────────────────────────────── */
   var swatches = document.querySelectorAll('.swatch');
   swatches.forEach(function (s) {
     s.addEventListener('click', function () {

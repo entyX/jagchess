@@ -282,17 +282,30 @@ function versionBits(version) {
   return (version << 12) | (rem & 0xfff);
 }
 
+/* The 15 format bits are written twice, in two differently-shaped runs.
+   Both are L-shaped and meet at (8,8), which makes them easy to write
+   transposed — and a transposed copy is not obviously wrong to look at: the
+   region still fills, the code still renders, and the bits are simply in
+   reverse order. Every scanner then fails the format block's BCH check and
+   refuses the whole code, which is why the modules below are spelled out
+   one line at a time rather than looped over a shared helper. */
 function writeFormat(m, size, mask) {
   const bits = formatBits(EC_BITS_M, mask);
   const bit = (i) => ((bits >>> i) & 1) === 1;
-  for (let i = 0; i <= 5; i++) m[8][i] = bit(i);
-  m[8][7] = bit(6);
-  m[8][8] = bit(7);
-  m[7][8] = bit(8);
-  for (let i = 9; i <= 14; i++) m[14 - i][8] = bit(i);
 
-  for (let i = 0; i <= 7; i++) m[size - 1 - i][8] = bit(i);
-  for (let i = 8; i <= 14; i++) m[8][size - 15 + i] = bit(i);
+  // copy 1 — bits 0-5 down column 8, then 9-14 leftwards along row 8
+  for (let i = 0; i <= 5; i++) m[i][8] = bit(i);
+  m[7][8] = bit(6);
+  m[8][8] = bit(7);
+  m[8][7] = bit(8);
+  for (let i = 9; i <= 14; i++) m[8][14 - i] = bit(i);
+
+  /* copy 2 — the same bits, the other way round: 14-8 up column 8 from the
+     bottom, then 7-0 rightwards along row 8. Not a mirror of copy 1 and not
+     the same direction either, which is exactly why it is worth reading back
+     in selfCheck rather than trusting the loop bounds. */
+  for (let i = 0; i <= 6; i++) m[size - 1 - i][8] = bit(14 - i);
+  for (let i = 0; i <= 7; i++) m[8][size - 8 + i] = bit(7 - i);
   m[size - 8][8] = true;                      // dark module, never overwritten
 }
 
@@ -328,7 +341,7 @@ function penalty(m, size) {
     score += runScore(m.map((row) => row[i]));
   }
 
-  // rule 2: every 2×2 block of one colour
+  // rule 2: every 2×2 block of one color
   for (let r = 0; r < size - 1; r++) {
     for (let c = 0; c < size - 1; c++) {
       const v = m[r][c];
@@ -404,7 +417,7 @@ export function encode(text, opts = {}) {
 
 /**
  * An SVG string. Scales to whatever box it is put in, and stays crisp.
- * `dark`/`light` accept any CSS colour, including a var().
+ * `dark`/`light` accept any CSS color, including a var().
  */
 export function toSVG(text, opts = {}) {
   const { modules, size } = encode(text, opts);
@@ -469,5 +482,31 @@ export function selfCheck() {
     }
     if (g2 && d2 !== d1 + 1) problems.push(`v${v}: group 2 blocks should hold one more codeword than group 1`);
   }
+
+  /* The format block, read back out of a real matrix. Both copies carry the
+     same 15 bits in different shapes, and getting one of them transposed
+     leaves a code that renders perfectly and scans nowhere — the region
+     fills, so nothing looks wrong until you point a phone at it. Reading it
+     back is the only way to catch that from inside this file. */
+  const FORMAT_1 = [[0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [5, 8], [7, 8], [8, 8],
+                    [8, 7], [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0]];
+
+  for (let mask = 0; mask < 8; mask++) {
+    const { m, size } = blankMatrix(2);
+    writeFormat(m, size, mask);
+    const want = formatBits(EC_BITS_M, mask);
+
+    // bit i of the value, given the cell that is supposed to hold it
+    const read = (cells) => cells.reduce((acc, [r, c], i) => acc | ((m[r][c] ? 1 : 0) << i), 0);
+
+    // copy 2 runs the other way: bit 14 at the bottom, bit 0 at the far right
+    const FORMAT_2 = [];
+    for (let i = 0; i <= 7; i++) FORMAT_2.push([8, size - 1 - i]);
+    for (let i = 0; i <= 6; i++) FORMAT_2.push([size - 7 + i, 8]);
+
+    if (read(FORMAT_1) !== want) problems.push(`mask ${mask}: the first format copy reads back wrong`);
+    if (read(FORMAT_2) !== want) problems.push(`mask ${mask}: the second format copy reads back wrong`);
+  }
+
   return problems;
 }

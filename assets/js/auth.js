@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider, signInWithPopup
 } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js';
+import { rememberSignedIn, forgetSignedIn } from './session-hint.js';
 
 const ADMIN_EMAILS = [
   'shaurya.sahdev7@gmail.com',
@@ -152,7 +153,7 @@ if (!cfg) {
     'auth/popup-closed-by-user': 'Google sign-in was cancelled.',
     'auth/popup-blocked': 'Your browser blocked the Google popup. Allow popups and retry.',
     'auth/network-request-failed': 'Network error — check your connection.',
-    'auth/unauthorized-domain': 'This domain isn\'t authorised for sign-in in Firebase.'
+    'auth/unauthorized-domain': 'This domain isn\'t authorized for sign-in in Firebase.'
   };
 
   const handleError = (e, fieldId) => {
@@ -168,7 +169,7 @@ if (!cfg) {
     return raw && /^\/[^/]/.test(raw) ? raw : '/clubs';
   };
 
-  const routeUser = async (user, extra) => {
+  const routeUser = async (user, extra, method) => {
     const email = (user?.email || '').trim().toLowerCase();
     const isAdminEmail = ADMIN_EMAILS.includes(email);
     const ref = doc(db, 'users', user.uid);
@@ -178,11 +179,13 @@ if (!cfg) {
       const data = snap.data();
       if (data.banned === true) {
         blocked = true;
+        forgetSignedIn();
         await signOut(auth);
         return openModal('suspended-modal');
       }
       if (data.deleted === true) {
         blocked = true;
+        forgetSignedIn();
         await signOut(auth);
         return openModal('deleted-modal');
       }
@@ -207,6 +210,16 @@ if (!cfg) {
       await setDoc(ref, payload, { merge: true });
     }
 
+    /* Analytics, if it loaded: name the user so returning visits can be
+       recognized, and count the auth itself. `method` is only set on a real
+       sign-in — arriving here with a session already open is a redirect,
+       not a login. */
+    window.jagIdentify?.(user.uid);
+    if (method) window.jagTrack?.(snap.exists() ? 'login' : 'sign_up', { method });
+
+    /* From here on the marketing site and the Network are behind you. */
+    rememberSignedIn();
+
     // roles now live per club — everyone lands on their club hub
     window.location.href = nextUrl();
   };
@@ -214,6 +227,8 @@ if (!cfg) {
   /* already signed in → go straight through */
   onAuthStateChanged(auth, (user) => {
     if (user && !blocked) routeUser(user).catch(e => handleError(e));
+    // sitting on the login screen with no session is as signed out as it gets
+    else if (!user) forgetSignedIn();
   });
 
   /* ── sign in ── */
@@ -230,7 +245,7 @@ if (!cfg) {
     try {
       await setPersistence(auth, $('remember').checked ? browserLocalPersistence : browserSessionPersistence);
       const res = await signInWithEmailAndPassword(auth, email, password);
-      await routeUser(res.user);
+      await routeUser(res.user, undefined, 'password');
     } catch (err) {
       handleError(err, 'password');
       busy(btn, false);
@@ -255,7 +270,7 @@ if (!cfg) {
       await setPersistence(auth, browserLocalPersistence);
       const res = await createUserWithEmailAndPassword(auth, email, password);
       try { await updateProfile(res.user, { displayName: username }); } catch (_) {}
-      await routeUser(res.user, { username });
+      await routeUser(res.user, { username }, 'password');
     } catch (err) {
       handleError(err, 'su-email');
       busy(btn, false);
@@ -273,7 +288,7 @@ if (!cfg) {
       await setPersistence(auth, browserLocalPersistence);
       const res = await signInWithPopup(auth, provider);
       const name = res.user.displayName || '';
-      await routeUser(res.user, name ? { username: name } : undefined);
+      await routeUser(res.user, name ? { username: name } : undefined, 'google');
     } catch (err) {
       handleError(err);
       busy(btn, false);

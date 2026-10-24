@@ -21,7 +21,7 @@
 
 import {
   connectGmail, disconnectGmail, connectedAccount, isConfigured as gmailConfigured,
-  sendViaGmail, wrapEmail,
+  sendViaGmail, wrapEmail, emailLogo,
 } from './gmail-send.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,7 +38,9 @@ const initialsOf = (name) => {
   return s.slice(0, 2).toUpperCase();
 };
 
-const ROLE_LABEL = { founder: 'Founder', admin: 'Admin', student: 'Student' };
+const ROLE_LABEL = {
+  founder: 'Founder', admin: 'Admin', student: 'Student', pending: 'Pending'
+};
 const isStaffRole = (r) => r === 'admin' || r === 'founder';
 
 const TEMPLATE = `
@@ -77,12 +79,28 @@ const TEMPLATE = `
 
     <div class="nl-field">
       <div class="nl-field-head">
-        <label data-nl="to-label">To</label>
+        <span class="nl-label-row">
+          <label data-nl="to-label">To</label>
+          <span class="nl-info" data-nl="info" tabindex="0" role="button"
+                aria-label="What the @ shortcuts do">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.2v4.6"/><path d="M12 8.1v.1"/></svg>
+            <span class="nl-info-pop" role="tooltip">
+              <b>Type @ to add a whole group at once</b>
+              <span><code>@members</code> everyone in the club, staff included</span>
+              <span data-nl="ping-pending"><code>@pending</code> everyone waiting on an invite —
+                they signed up or were typed in, and have no account yet</span>
+              <span><code>@admin</code> the founder and every admin, nobody else</span>
+              <i>Each one drops in as ordinary recipients, so you can take any of them straight
+                 back out again.</i>
+            </span>
+          </span>
+        </span>
         <button type="button" class="btn subtle nl-add-all" data-nl="add-all"></button>
       </div>
       <div class="nl-input-shell">
         <div class="nl-chips" data-nl="chips">
-          <input type="text" data-nl="input" placeholder="Type an email, then press Enter…" autocomplete="off" />
+          <input type="text" data-nl="input" placeholder="Type an email or @members, then press Enter…" autocomplete="off" />
         </div>
         <div class="nl-dropdown" data-nl="dropdown" hidden></div>
       </div>
@@ -96,16 +114,30 @@ const TEMPLATE = `
  * @param {HTMLElement} mount   container the field is rendered into
  * @param {object} opts
  *   getPeople()   -> [{ email, name, role, avatarColor }]  the roster
+ *   getPending()  -> [{ email, name }]  people waiting on an invite, if any
  *   getMe()       -> email of the signed-in admin, preselected as reply-to
  *   getClubName() -> club name, shown in the email header
+ *   getClubLogo() -> the club's badge as a data URL, for the masthead
+ *   getClubIcon() -> the glyph to fall back on when there is no badge
+ *   getClubColor() -> the colour that glyph sits on, the club's own
  *   addAllLabel   -> text on the bulk-add button
  * @returns control surface for the surrounding form
  */
 export function mountNewsletterMail(mount, opts = {}) {
+  /* A host that keeps no pending list at all — the site-wide console, which
+     has no club to be pending for — should not be offered @pending, so the
+     group is conditional on the roster existing rather than on it being
+     empty this minute. A club with nobody waiting still has the shortcut. */
+  const hasPending = typeof opts.getPending === 'function';
+
   const {
     getPeople = () => [],
+    getPending = () => [],
     getMe = () => '',
     getClubName = () => '',
+    getClubLogo = () => '',
+    getClubIcon = () => '',
+    getClubColor = () => '',
     addAllLabel = 'Add all club members',
   } = opts;
 
@@ -129,6 +161,8 @@ export function mountNewsletterMail(mount, opts = {}) {
   const acctHint = $('account-hint');
 
   addAllBtn.textContent = addAllLabel;
+  const pendingTip = $('ping-pending');
+  if (pendingTip) pendingTip.hidden = !hasPending;
 
   let recipients = [];
   let suggestions = [];
@@ -137,11 +171,69 @@ export function mountNewsletterMail(mount, opts = {}) {
   /* ── roster helpers ─────────────────────────────────────────────────── */
 
   // Everyone who can actually receive mail — no tombstoned or banned rows.
-  const people = () => getPeople()
+  const clean = (rows) => (rows || [])
     .filter((p) => p && p.email && isValidEmail(p.email) && !p.deleted && !p.banned)
     .map((p) => ({ ...p, email: String(p.email).trim().toLowerCase() }));
 
-  const personBy = (email) => people().find((p) => p.email === email);
+  const members = () => clean(getPeople());
+
+  /* People who have signed up or been typed in but have no account yet.
+     Somebody who has since joined is a member and nothing else — the row
+     they left behind is history, so it is dropped here rather than offering
+     the same person twice under two different labels. */
+  const waiting = () => {
+    const inClub = new Set(members().map((p) => p.email));
+    const seen = new Set();
+    return clean(getPending())
+      .filter((p) => !inClub.has(p.email) && !seen.has(p.email) && seen.add(p.email))
+      .map((p) => ({ ...p, role: 'pending' }));
+  };
+
+  const everyone = () => [...members(), ...waiting()];
+
+  /* Both halves keyed by address, built once. A ping can put two hundred
+     chips in the box at a stroke, and each of them wants to know who it
+     belongs to — asking the roster that question two hundred times over is
+     how a paste turns into a pause. */
+  const directory = () => new Map(everyone().map((p) => [p.email, p]));
+
+  /* ── the @ shortcuts ────────────────────────────────────────────────────
+     One press for a whole group. They expand into ordinary recipients
+     rather than staying as a group chip, so what you see in the box is
+     exactly who the message is going to and any one of them can be taken
+     back out. That also means a ping is a moment in time: add it, then
+     somebody joins, and they are not on this message.
+     ─────────────────────────────────────────────────────────────────── */
+
+  const PINGS = [
+    {
+      tag: '@members',
+      title: 'Everyone in the club',
+      sub: 'Students, admins and the founder',
+      one: 'member', many: 'members',
+      list: () => members()
+    },
+    hasPending ? {
+      tag: '@pending',
+      title: 'Everyone waiting to join',
+      sub: 'Signed up or typed in, with no account yet',
+      one: 'pending person', many: 'pending people',
+      list: () => waiting()
+    } : null,
+    {
+      tag: '@admin',
+      title: 'The founder and every admin',
+      sub: 'Nobody else gets a copy',
+      one: 'admin', many: 'admins',
+      list: () => members().filter((p) => isStaffRole(p.role))
+    }
+  ].filter(Boolean);
+
+  const pingBy = (text) => {
+    const tag = String(text || '').trim().toLowerCase().replace(/[,;]+$/, '');
+    return PINGS.find((p) => p.tag === tag) || null;
+  };
+  const looksLikePing = (text) => /^@/.test(String(text || '').trim());
 
   /* Who replies go to — a staff member, chosen from the dropdown. */
   const replyToAddress = () => (senderSel.value || '').trim().toLowerCase();
@@ -217,7 +309,7 @@ export function mountNewsletterMail(mount, opts = {}) {
   /* ── reply-to dropdown — founders and admins only ───────────────────── */
 
   const renderSender = () => {
-    const staff = people()
+    const staff = members()
       .filter((p) => isStaffRole(p.role))
       .sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email));
 
@@ -240,34 +332,74 @@ export function mountNewsletterMail(mount, opts = {}) {
 
   /* ── recipient chips ────────────────────────────────────────────────── */
 
-  const updateCount = () => {
+  const updateCount = (who = directory()) => {
     const n = recipients.length;
+    /* People with no account yet are worth counting separately: a message
+       written for the club reads differently to somebody who is not in it,
+       and it is easy to add a whole group without noticing. */
+    const outside = recipients.filter((e) => who.get(e)?.role === 'pending').length;
     countEl.textContent = n
-      ? `${n} recipient${n === 1 ? '' : 's'} · everyone is BCC'd, so nobody sees the list.`
+      ? `${n} recipient${n === 1 ? '' : 's'}` +
+        (outside ? ` · ${outside} not in the club yet` : '') +
+        " · everyone is BCC'd, so nobody sees the list."
       : 'No recipients yet.';
   };
 
   const renderChips = () => {
+    const who = directory();
     // Drop the old pills but leave the input where it is.
     chipsWrap.querySelectorAll('.nl-chip').forEach((el) => el.remove());
     recipients.forEach((email, i) => {
-      const p = personBy(email);
+      const p = who.get(email);
+      const pending = p?.role === 'pending';
       const chip = document.createElement('span');
-      chip.className = 'nl-chip';
-      chip.title = p?.name ? `${p.name} · ${email}` : email;
+      chip.className = 'nl-chip' + (pending ? ' is-pending' : '');
+      chip.title = (p?.name ? `${p.name} · ${email}` : email) +
+        (pending ? ' · waiting on an invite, not in the club yet' : '');
       chip.innerHTML =
         `<span class="nl-chip-avatar" style="background:${esc(p?.avatarColor || '#8296a4')}">${esc(initialsOf(p?.name || email))}</span>` +
         `<span class="nl-chip-label">${esc(p?.name || email)}</span>` +
         `<button type="button" class="nl-chip-x" data-idx="${i}" aria-label="Remove ${esc(email)}" title="Remove ${esc(email)}">×</button>`;
       chipsWrap.insertBefore(chip, input);
     });
-    updateCount();
+    updateCount(who);
+  };
+
+  /* Adds everyone a ping stands for. The sending address is left out, the
+     way it is for a single recipient — it gets its own copy regardless. */
+  const expandPing = (tag) => {
+    const ping = pingBy(tag);
+    if (!ping) {
+      setStatus(`There is no ${String(tag).trim().toLowerCase()} group. Try @members, @pending or @admin.`, 'warn');
+      return false;
+    }
+    const from = sendingAddress();
+    const before = recipients.length;
+    ping.list().forEach((p) => {
+      if (p.email !== from && !recipients.includes(p.email)) recipients.push(p.email);
+    });
+    const added = recipients.length - before;
+
+    input.value = '';
+    renderChips();
+    hideDropdown();
+    setStatus(
+      added
+        ? `${ping.tag} added ${added} ${added === 1 ? ping.one : ping.many}.`
+        : `${ping.tag} has nobody to add — ${ping.list().length ? 'they are all on the list already' : 'there is nobody in that group yet'}.`,
+      added ? 'ok' : 'info'
+    );
+    return added > 0;
   };
 
   /* Returns true when the address landed as a chip. On failure the typed
      text is left alone so a half-finished address can go on being typed. */
   const addRecipient = (raw) => {
-    const email = String(raw || '').trim().toLowerCase().replace(/^[<,;]+|[>,;]+$/g, '');
+    const text = String(raw || '').trim();
+    if (!text) return false;
+    if (looksLikePing(text)) return expandPing(text);
+
+    const email = text.toLowerCase().replace(/^[<,;]+|[>,;]+$/g, '');
     if (!email) return false;
     if (!isValidEmail(email)) {
       setStatus(`"${email}" isn't a valid email address.`, 'warn');
@@ -304,32 +436,62 @@ export function mountNewsletterMail(mount, opts = {}) {
     });
   };
 
+  /* A ping row and a person row live in the same list, so both carry a
+     `value` — a tag or an address — and Enter does not have to know which
+     one it landed on. */
+  const pingSuggestions = (q) => PINGS
+    .filter((ping) => ping.tag.startsWith(q))
+    .map((ping) => {
+      const n = ping.list().filter((p) => p.email !== sendingAddress()).length;
+      return { kind: 'ping', value: ping.tag, ping, n };
+    })
+    .filter((row) => row.n > 0);
+
+  const pingRowHTML = (row, on) => `
+    <div class="nl-suggestion nl-suggestion-ping${on ? ' active' : ''}" data-value="${esc(row.value)}">
+      <span class="nl-suggestion-avatar nl-ping-mark">@</span>
+      <span class="nl-suggestion-text">
+        <span class="nl-suggestion-name">${esc(row.ping.tag)} · ${esc(row.ping.title)}</span>
+        <span class="nl-suggestion-email">${esc(row.ping.sub)}</span>
+      </span>
+      <span class="nl-suggestion-role ping">${row.n} ${esc(row.n === 1 ? row.ping.one : row.ping.many)}</span>
+    </div>`;
+
+  const personRowHTML = (row, on) => {
+    const p = row.person;
+    const role = p.role || 'student';
+    return `<div class="nl-suggestion${on ? ' active' : ''}" data-value="${esc(p.email)}">
+      <span class="nl-suggestion-avatar" style="background:${esc(p.avatarColor || '#8296a4')}">${esc(initialsOf(p.name || p.email))}</span>
+      <span class="nl-suggestion-text">
+        <span class="nl-suggestion-name">${esc(p.name || p.email.split('@')[0])}</span>
+        <span class="nl-suggestion-email">${esc(p.email)}</span>
+      </span>
+      <span class="nl-suggestion-role ${esc(role)}">${esc(ROLE_LABEL[role] || 'Student')}</span>
+    </div>`;
+  };
+
   const refreshSuggestions = () => {
     const q = input.value.trim().toLowerCase();
     if (!q) { hideDropdown(); return; }
     const from = sendingAddress();
-    const matches = people()
+
+    /* An @ is never the start of an address, so it is unambiguously a
+       group — and it says so before anything has been typed after it. */
+    const rows = looksLikePing(q) ? pingSuggestions(q) : everyone()
       .filter((p) =>
         p.email !== from &&
         !recipients.includes(p.email) &&
         (p.email.includes(q) || (p.name || '').toLowerCase().includes(q)))
-      .slice(0, 6);
+      .slice(0, 6)
+      .map((person) => ({ kind: 'person', value: person.email, person }));
 
-    if (!matches.length) { hideDropdown(); return; }
-    suggestions = matches;
+    if (!rows.length) { hideDropdown(); return; }
+    suggestions = rows;
     activeIdx = 0;
     dropdown.hidden = false;
-    dropdown.innerHTML = matches.map((p, i) => {
-      const role = p.role || 'student';
-      return `<div class="nl-suggestion${i === 0 ? ' active' : ''}" data-email="${esc(p.email)}">
-        <span class="nl-suggestion-avatar" style="background:${esc(p.avatarColor || '#8296a4')}">${esc(initialsOf(p.name || p.email))}</span>
-        <span class="nl-suggestion-text">
-          <span class="nl-suggestion-name">${esc(p.name || p.email.split('@')[0])}</span>
-          <span class="nl-suggestion-email">${esc(p.email)}</span>
-        </span>
-        <span class="nl-suggestion-role ${esc(role)}">${esc(ROLE_LABEL[role] || 'Student')}</span>
-      </div>`;
-    }).join('');
+    dropdown.innerHTML = rows
+      .map((row, i) => (row.kind === 'ping' ? pingRowHTML(row, i === 0) : personRowHTML(row, i === 0)))
+      .join('');
   };
 
   input.addEventListener('input', refreshSuggestions);
@@ -350,12 +512,12 @@ export function mountNewsletterMail(mount, opts = {}) {
     // Space only commits once the text already reads as a whole address, so
     // it stays usable while an address is still being typed.
     const commits = e.key === 'Enter' || e.key === ',' || e.key === ';' ||
-      (e.key === ' ' && isValidEmail(typed));
+      (e.key === ' ' && (isValidEmail(typed) || !!pingBy(typed)));
 
     if (commits) {
       e.preventDefault();
       const picked = suggestions[activeIdx];
-      if (picked && e.key === 'Enter') addRecipient(picked.email);
+      if (picked && e.key === 'Enter') addRecipient(picked.value);
       else if (typed) addRecipient(typed);
       return;
     }
@@ -371,7 +533,7 @@ export function mountNewsletterMail(mount, opts = {}) {
   // Losing focus shouldn't silently drop a finished address.
   input.addEventListener('blur', () => {
     const typed = input.value.trim();
-    if (typed && isValidEmail(typed)) addRecipient(typed);
+    if (typed && (isValidEmail(typed) || pingBy(typed))) addRecipient(typed);
   });
 
   input.addEventListener('paste', (e) => {
@@ -387,7 +549,7 @@ export function mountNewsletterMail(mount, opts = {}) {
     const item = e.target.closest('.nl-suggestion');
     if (!item) return;
     e.preventDefault();          // beat the input's blur handler to the punch
-    addRecipient(item.dataset.email);
+    addRecipient(item.dataset.value);
     input.focus();
   });
 
@@ -411,7 +573,7 @@ export function mountNewsletterMail(mount, opts = {}) {
   addAllBtn.addEventListener('click', () => {
     const from = sendingAddress();
     const before = recipients.length;
-    people().forEach((p) => {
+    members().forEach((p) => {
       if (p.email !== from && !recipients.includes(p.email)) recipients.push(p.email);
     });
     const added = recipients.length - before;
@@ -448,11 +610,21 @@ export function mountNewsletterMail(mount, opts = {}) {
     }
 
     const replyTo = replyToAddress();
-    const replyToName = personBy(replyTo)?.name || '';
+    const replyToName = directory().get(replyTo)?.name || '';
+
+    /* A club's badge rides along with the message rather than being linked
+       to: it lives as a data URL in the club's own document, and a data URL
+       in an img is stripped by every mail client there is. */
+    const { logo, inline } = await emailLogo(getClubLogo());
 
     return sendViaGmail({
       subject,
-      html: wrapEmail(subject, html, replyToName || replyTo || connectedAccount().email, getClubName()),
+      html: wrapEmail(subject, html, replyToName || replyTo || connectedAccount().email, getClubName(), {
+        logo,
+        icon: getClubIcon(),
+        color: getClubColor(),
+      }),
+      inline,
       recipients: [...recipients],
       replyTo,
       replyToName,

@@ -12,14 +12,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin · JagChess</title>
-  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/assets/img/jagchess-mark.png" sizes="256x256" />
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700;800&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/vendor/jquery-ui/jquery-ui.min.css" />
   <link rel="stylesheet" href="../assets/vendor/chessboard/chessboard-1.0.0.min.css" />
   <link rel="stylesheet" href="../assets/css/styles.css" />
   <link rel="stylesheet" href="../assets/css/admin.css" />
+  <link rel="stylesheet" href="../assets/css/tournaments.css" />
+  <link rel="stylesheet" href="../assets/css/lichess.css" />
   <link rel="stylesheet" href="../assets/css/newsletter-mail.css" />
 </head>
 <body class="adm app" id="app">
@@ -79,6 +83,16 @@
           <button class="tab" data-tab="attendance">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.4" width="14" height="16.4" rx="3.2"/><path d="M9.2 4.4V3.2h5.6v1.2"/><path d="M9 12.6l2.1 2.1 4-4"/></svg>
             <span>Attendance</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Integrations</div>
+        <div class="tabs">
+          <button class="tab" data-tab="lichess">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 9.4 6l3.4 2.6-2.2 2.4 3.6 3.1-1.6 2.3"/><path d="M6.8 17.2h10.4l1.2 3.4H5.6Z"/></svg>
+            <span>Lichess</span>
           </button>
         </div>
       </div>
@@ -370,6 +384,8 @@
           <input id="news-title" placeholder="Subject" />
           <div class="rte-wrap">
             <div class="rte-toolbar" id="rte-toolbar">
+              <div class="rte-group" id="rte-font-slot"></div>
+              <div class="rte-sep"></div>
               <div class="rte-group">
                 <div class="rte-size-control">
                   <button class="rte-size-step" id="rte-size-dec" title="Decrease font size">−</button>
@@ -507,6 +523,27 @@
 
       </div>
     </section>
+
+    <!-- ══ LICHESS ═══════════════════════════════════════════════════
+         The admin side of the lichess integration: which teams the site
+         watches for tournaments, whether the connection is healthy, and
+         what has been synchronized recently. Mounted by admin.js from
+         assets/js/lichess-admin.js, which is the same panel a club admin
+         gets on their own Tournaments page.
+    -->
+    <section id="lichess" class="section">
+      <div class="section-head">
+        <div>
+          <h2>Lichess</h2>
+          <p class="section-sub">
+            Teams whose tournaments appear on the global Tournaments page, and how the
+            connection to lichess.org is doing.
+          </p>
+        </div>
+      </div>
+      <div id="lichess-host"><div class="empty-state">Loading…</div></div>
+    </section>
+
     </main>
   </div>
 
@@ -630,6 +667,7 @@
   <script src="../assets/vendor/chessboard/chessboard-1.0.0.min.js"></script>
   <script src="../assets/js/ui-select.js"></script>
   <script src="../assets/js/firebase-config.js"></script>
+  <script type="module" src="../assets/js/analytics.js"></script>
   <script type="module" src="../assets/js/theme.js"></script>
   <script type="module" src="../assets/js/admin.js"></script>
 </body>

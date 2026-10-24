@@ -8,8 +8,31 @@ rules_version = '2';
 //    clubs/{clubId}                     club directory entry (clubId == slug)
 //    clubs/{clubId}/members/{uid}       membership, role, points, streak
 //    clubs/{clubId}/bans/{uid}          kick / ban record and any appeal
+//    clubs/{clubId}/applications/{id}   a Network sign-up from someone with
+//                                       no account yet
 //    clubs/{clubId}/<content>           events, puzzles, announcements, …
+//    clubs/{clubId}/puzzleCollections    the shelves puzzles are filed on
+//    publicClubs/{clubId}               world-readable mirror of a public club
+//    publicPuzzleCollections/{cId__collId} a collection a club shares
+//    publicPuzzles/{cId__puzzleId}      a puzzle on a shared collection
+//    publicAttendance/{clubId__eventId} world-readable copy of ONE open check-in
 //    clubCodes/{CODE}                   join-code → clubId (get only, never list)
+//    duels/{gameId}                     a game of chess, club-scoped or global
+//    tournaments/{id}                   a JagChess arena, and its players
+//    matchLinks/{code}                  a one-shot "play me" link
+//    lichessTeams/{key}                 a lichess team this site monitors
+//    lichessTournaments/{lichessId}     a lichess tournament, mirrored here
+//    lichessSyncEvents/{id}             the sync log the admin page reads
+//    lichessSync/{scope}                the lease: which tab is syncing
+//    lichessAccounts/{uid}              a member's lichess username (no token)
+//
+//  A note on the trust model, because the rules below only make sense with it:
+//  JagChess has no server. A finished game is settled by whichever player's
+//  tab is still open, which means a player must be able to write the OTHER
+//  player's rating — that is what `touchesOnly(['rating', 'record'])` is for,
+//  and it is why tournament scoring is open to participants in the same way.
+//  Everything written that way is an absolute value computed from a snapshot
+//  frozen when the game began, so two clients writing at once agree.
 //
 //  Roles: founder > admin > student.
 //    founder — one per club, cannot be demoted, kicked or banned by anyone
@@ -44,6 +67,12 @@ service cloud.firestore {
       return isMember(clubId) && roleIn(clubId) == 'founder';
     }
 
+    // a JagChess site administrator, as /admin decides it
+    function isSiteAdmin() {
+      return signedIn() &&
+        get(/databases/$(database)/documents/users/$(uid())).data.get('role', '') == 'admin';
+    }
+
     function touchesOnly(keys) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
@@ -58,10 +87,10 @@ service cloud.firestore {
       allow create: if signedIn() && uid() == userId;
       // your own profile is yours; anyone else may only touch the club and
       // ban indexes, which is what joining, importing and moderating do —
-      // plus `rating`, so the winner of a global duel can post both new
-      // ratings even if the loser has already closed the tab
+      // plus `rating` and `record`, so the winner of a global duel can post
+      // both results even if the loser has already closed the tab
       allow update: if signedIn() &&
-                       (uid() == userId || touchesOnly(['clubs', 'bannedFrom', 'rating']));
+                       (uid() == userId || touchesOnly(['clubs', 'bannedFrom', 'rating', 'record']));
       allow delete: if false;
     }
 
@@ -83,13 +112,13 @@ service cloud.firestore {
 
         // Only a founder may set roles. Admins may edit any non-founder row
         // (points, for instance) but never a role. You may edit your own row
-        // but never your own role. Any member may write `rating` on any row,
-        // which is how a finished duel settles both players' ratings when
-        // only one of them is still on the page.
+        // but never your own role. Any member may write `rating` and `record`
+        // on any row, which is how a finished duel or tournament game settles
+        // both players when only one of them is still on the page.
         allow update: if isFounder(clubId)
                       || (uid() == memberId && !changes(['role']))
                       || (isStaff(clubId) && resource.data.role != 'founder' && !changes(['role']))
-                      || (isMember(clubId) && touchesOnly(['rating']));
+                      || (isMember(clubId) && touchesOnly(['rating', 'record']));
 
         // Founders cannot be removed; admins may only remove students.
         allow delete: if isFounder(clubId)
@@ -106,10 +135,136 @@ service cloud.firestore {
         allow delete: if isStaff(clubId);
       }
 
+      /* ── registration applications ────────────────────────────────────
+         The one place in JagChess a signed-OUT visitor may write. That is
+         the whole point of the JagChess Network: somebody with no account
+         can put their name down, and the club's admins invite them later.
+
+         What keeps it from being an open write endpoint:
+           · create only — nobody but staff can read, change or remove a row
+           · the club must have a live public listing, so a private club and
+             a club that does not exist both refuse it outright
+           · every field is checked for type and length, so a row cannot be
+             used as free storage
+         Read stays staff-only, because these rows are people's names and
+         email addresses. */
+      match /applications/{id} {
+        function sized(v, n) { return v is string && v.size() > 0 && v.size() <= n; }
+        function validApplication() {
+          return request.resource.data.status == 'pending'
+                 && sized(request.resource.data.firstName, 60)
+                 && sized(request.resource.data.lastName, 60)
+                 && sized(request.resource.data.email, 140)
+                 && request.resource.data.clubId == clubId
+                 && request.resource.data.answers is map
+                 && request.resource.data.answers.size() <= 40
+                 // the club's 20 of its own, plus the three built-in ones
+                 && request.resource.data.questions is list
+                 && request.resource.data.questions.size() <= 25
+                 && request.resource.data.submittedAt is number
+                 && exists(/databases/$(database)/documents/publicClubs/$(clubId));
+        }
+        allow read:   if isStaff(clubId);
+        /* Staff create these as well as visitors: a check-in from somebody
+           with no account opens a pending place for them, filled in from the
+           name and address they just typed, and that write comes from an
+           admin's browser rather than theirs. It also has to work in a club
+           with no public listing at all, which validApplication() requires
+           and a private club does not have. */
+        allow create: if isStaff(clubId) || validApplication();
+        allow update, delete: if isStaff(clubId);
+      }
+
+      /* ── "is this address already a member?" ──────────────────────────
+         One document per member, named after a SHA-256 of their address and
+         holding nothing but a timestamp. It exists so the public
+         registration form can tell somebody they are already in the club
+         rather than taking a sign-up nobody needs.
+
+         `get` is open and `list` is not — exactly the bargain clubCodes
+         makes. You can ask about an address you already have; you cannot
+         walk the collection to collect any. Without a server to ask on the
+         visitor's behalf, that is as far as this can be closed down. */
+      match /memberEmails/{key} {
+        allow get:    if true;
+        allow list:   if isMember(clubId);
+        allow write:  if isMember(clubId);
+      }
+
       // admin-authored content
       match /events/{id}          { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
-      match /puzzles/{id}         { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
+      /* Third-party connections the club has made — at present the Google
+         Calendar the events are mirrored into. Staff-read, not member-read:
+         it carries the personal address of whoever connected it, and no
+         member screen needs to know that. */
+      match /integrations/{id}    { allow read, write: if isStaff(clubId); }
       match /announcements/{id}   { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
+
+      /* ── puzzle collections ───────────────────────────────────────────
+         The shelves. Staff decide what they are, who may put a puzzle on
+         one, and whether the shelf is shared outside the club — and that
+         last answer decides for everything on it, which is why a member
+         cannot change one.
+
+         With one exception, and it is the reason the exception exists at
+         all: every club has a shelf for its members' own puzzles, and a
+         member should never open the builder only to be told there is
+         nowhere to put what they just made. So any member may CREATE that
+         one — at a fixed id, taking members' puzzles, marked as the
+         default — and nothing else about it. Creating a document that
+         already exists is refused by the rule below, so the worst a member
+         can do with this is write the same shelf a second time, which they
+         cannot. */
+      match /puzzleCollections/{id} {
+        allow read:   if isMember(clubId);
+        allow create: if isStaff(clubId)
+                      || (isMember(clubId)
+                          && id == 'custom'
+                          && request.resource.data.kind == 'custom'
+                          && request.resource.data.isDefault == true
+                          && request.resource.data.visibility == 'public');
+        allow update, delete: if isStaff(clubId);
+      }
+
+      /* ── puzzles ──────────────────────────────────────────────────────
+         Staff publish the club's puzzles. A member may publish one of their
+         own, and the conditions below are the whole of what keeps that from
+         being a way around either the points or the moderation:
+
+           · `custom` is set and `points` is zero, so nobody can mint points
+             by writing an easy puzzle and then solving it
+           · they are named as the author, so nobody can publish as somebody
+             else — or publish anonymously as somebody else
+           · it goes onto a collection an admin opened for exactly this. That
+             is the moderation: no custom collection, no member puzzles, and
+             an admin can close the shelf at any time
+
+         Editing and deleting your own are allowed and stay inside the same
+         three conditions. Staff may do either to anything, which is also
+         what retires the original when a puzzle is adopted. */
+      match /puzzles/{id} {
+        function customShelf(collId) {
+          return exists(/databases/$(database)/documents/clubs/$(clubId)/puzzleCollections/$(collId))
+                 && get(/databases/$(database)/documents/clubs/$(clubId)/puzzleCollections/$(collId)).data.kind == 'custom';
+        }
+        function ownCustom(data) {
+          return data.custom == true
+                 && data.authorUid == uid()
+                 && data.points == 0
+                 && data.collectionId is string
+                 && data.collectionId.size() > 0
+                 && customShelf(data.collectionId);
+        }
+        function isMineAlready() {
+          return resource.data.custom == true && resource.data.authorUid == uid();
+        }
+        allow read:   if isMember(clubId);
+        allow create: if isStaff(clubId)
+                      || (isMember(clubId) && ownCustom(request.resource.data));
+        allow update: if isStaff(clubId)
+                      || (isMember(clubId) && isMineAlready() && ownCustom(request.resource.data));
+        allow delete: if isStaff(clubId) || (isMember(clubId) && isMineAlready());
+      }
       match /shopItems/{id}       { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
       match /attendanceForms/{id} { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
 
@@ -121,10 +276,59 @@ service cloud.firestore {
                          (isMember(clubId) && request.resource.data.userId == uid());
         allow update, delete: if isStaff(clubId);
       }
+      /* ── check-ins ────────────────────────────────────────────────────
+         The second place in JagChess a signed-OUT visitor may write, and for
+         the same reason as the first: a QR code taped to a table is scanned
+         by whoever is in the room, and a register that only records the
+         people with accounts is not a register.
+
+         What keeps it from being an open write endpoint:
+           · create only, and never on a row that already exists — so the
+             deterministic id (event + hash of the address) is one check-in
+             per person per event, enforced by Firestore rather than by a
+             check somebody has to remember to write
+           · the event must have a live public copy, which only staff can
+             publish, so a club that has published nothing takes nothing
+           · and it is inside that copy's own window, so a form is writable
+             for the length of the event and not a moment longer
+           · the points are read off the published copy, not off the request,
+             so a guest cannot decide what their own check-in is worth
+           · every field is checked for type and length
+
+         Reading stays members-only: these rows carry names and addresses.
+         Nobody signed out can read one back, which is also why the points
+         are awarded later, by staff — see reconcileAttendance. */
       match /attendanceResponses/{id} {
+        function openForm() {
+          let fid = clubId + '__' + request.resource.data.eventId;
+          return get(/databases/$(database)/documents/publicAttendance/$(fid)).data;
+        }
+        function sizedAt(v, n) { return v is string && v.size() > 0 && v.size() <= n; }
+        function validCheckIn() {
+          let r = request.resource.data;
+          let f = openForm();
+          return r.guest == true
+                 && r.clubId == clubId
+                 && r.userId == ''
+                 && r.awarded == false
+                 && r.eventId is string
+                 && sizedAt(r.firstName, 60)
+                 && sizedAt(r.lastName, 60)
+                 && sizedAt(r.email, 140)
+                 && r.answers is map
+                 && r.answers.size() <= 40
+                 // the club's 20 of its own, plus the three built-in ones
+                 && r.questions is list
+                 && r.questions.size() <= 25
+                 && r.submittedAt is number
+                 && r.points == f.points
+                 && request.time.toMillis() >= f.opensAt
+                 && request.time.toMillis() <= f.closesAt;
+        }
         allow read:   if isMember(clubId);
         allow create: if isStaff(clubId) ||
-                         (isMember(clubId) && request.resource.data.userId == uid());
+                         (isMember(clubId) && request.resource.data.userId == uid()) ||
+                         validCheckIn();
         allow update, delete: if isStaff(clubId);
       }
       match /puzzleAttempts/{id} {
@@ -181,6 +385,335 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.from.uid == uid();
       allow update, delete: if signedIn() &&
                        (resource.data.from.uid == uid() || resource.data.toUid == uid());
+    }
+
+    // ── match links ────────────────────────────────────────────────────
+    //
+    //  A one-shot seat. The link id is the secret, so reading one you were
+    //  sent is fine; what is guarded is who may take it and who may change it.
+
+    match /matchLinks/{code} {
+      allow read:   if signedIn();
+      allow create: if signedIn() && request.resource.data.from.uid == uid();
+      // the maker may cancel it; anybody else may only claim an open one,
+      // and only by putting their own uid in claimedBy
+      allow update: if signedIn() &&
+                       (resource.data.from.uid == uid()
+                        || (resource.data.status == 'open'
+                            && request.resource.data.claimedBy == uid()));
+      allow delete: if signedIn() && resource.data.from.uid == uid();
+    }
+
+    // ── tournaments ────────────────────────────────────────────────────
+    //
+    //  Root-level for the same reason duels are: a global tournament has
+    //  entrants from clubs that share nothing. Pairing and scoring run in the
+    //  entrants' browsers, so participants must be able to write rows that are
+    //  not their own. Every such write is an absolute value guarded by an
+    //  idempotency key — see tournaments-core.js.
+
+    match /tournaments/{tid} {
+      function isHost() {
+        return signedIn() && resource.data.host.uid == uid();
+      }
+      // the fields the engine advances from any watching entrant's tab
+      function engineFields() {
+        return touchesOnly([
+          'status', 'startedAt', 'finishedAt', 'playerCount',
+          'finalStandings', 'podiumResult', 'eventId'
+        ]);
+      }
+
+      allow read:   if signedIn();
+      allow create: if signedIn() && request.resource.data.host.uid == uid();
+      allow update: if isHost() || (signedIn() && engineFields());
+      allow delete: if isHost();
+
+      // one row per entrant: score, record, state, pairing
+      match /players/{playerId} {
+        allow read:   if signedIn();
+        // you enter yourself; the host may add or remove anybody
+        allow create: if signedIn() &&
+                         (playerId == uid() ||
+                          get(/databases/$(database)/documents/tournaments/$(tid)).data.host.uid == uid());
+        // results are recorded by whichever player's tab is still alive
+        allow update: if signedIn();
+        allow delete: if signedIn() &&
+                         (playerId == uid() ||
+                          get(/databases/$(database)/documents/tournaments/$(tid)).data.host.uid == uid());
+      }
+
+      /* Brackets were discontinued in 26.9.19.3. The tree of a tournament
+         drawn before then is still readable, and the host can clear it when
+         they delete the tournament — nothing new is ever written here. */
+      match /matches/{matchIdx} {
+        allow read:   if signedIn();
+        allow create: if false;
+        allow update: if false;
+        allow delete: if isHost();
+      }
+    }
+
+    // ── the lichess integration ────────────────────────────────────────
+    //
+    //  JagChess mirrors lichess tournaments so that a page full of spectators
+    //  is a page full of Firestore listeners rather than a page full of calls
+    //  to lichess. Everything under lichessTournaments is therefore a COPY of
+    //  public lichess data, written by whichever signed-in tab currently holds
+    //  the sync lease — the same "whoever is here does the work" model the
+    //  duels and arena engines already use, for the same reason: there is no
+    //  server.
+    //
+    //  What is NOT open: which teams get monitored. That decides what appears
+    //  on the site, so it is staff-only — a club's own staff for a club team,
+    //  a site administrator for a global one.
+    //
+    //  No OAuth token is ever stored in Firestore. lichessAccounts holds a
+    //  username and the scopes granted, nothing that could be used to act as
+    //  anybody. See lichess-auth.js.
+
+    match /lichessTeams/{teamKey} {
+      // who may configure monitoring for this row's scope
+      function mayConfigure(data) {
+        return data.scope == 'club'
+          ? isStaff(data.clubId)
+          : isSiteAdmin();
+      }
+
+      allow read:   if signedIn();
+      allow create: if signedIn() && mayConfigure(request.resource.data);
+      allow update: if signedIn() && mayConfigure(resource.data)
+                                  && mayConfigure(request.resource.data);
+      allow delete: if signedIn() && mayConfigure(resource.data);
+    }
+
+    match /lichessTournaments/{lichessId} {
+      // the document id is lichess's own tournament id, and nothing else is
+      // allowed to claim it — that is what stops duplicates
+      function idMatches() { return request.resource.data.lichessId == lichessId; }
+
+      allow read:   if signedIn();
+      allow create: if signedIn() && idMatches();
+      allow update: if signedIn() && idMatches();
+      // history is not the sync worker's to throw away
+      allow delete: if isSiteAdmin();
+
+      // one row per player, keyed by lichess user id
+      match /participants/{userId} {
+        allow read:  if signedIn();
+        allow write: if signedIn();
+      }
+
+      // one row per game, keyed by lichess game id
+      match /games/{gameId} {
+        allow read:  if signedIn();
+        allow write: if signedIn();
+      }
+    }
+
+    // the log the admin monitoring page reads; trimmed by the sync worker
+    match /lichessSyncEvents/{eventId} {
+      allow read:   if signedIn();
+      allow create: if signedIn();
+      allow update: if false;
+      allow delete: if signedIn();
+    }
+
+    // the lease that keeps exactly one tab talking to lichess
+    match /lichessSync/{scopeKey} {
+      allow read:  if signedIn();
+      allow write: if signedIn();
+    }
+
+    // a member's lichess link. Readable so a standings row can be matched to
+    // a JagChess account; writable only by its owner.
+    match /lichessAccounts/{userId} {
+      allow read:   if signedIn();
+      allow write:  if signedIn() && uid() == userId;
+    }
+
+    // ── the public club listing ────────────────────────────────────────
+    //
+    //  The JagChess Network page is open to the world, so what it reads has
+    //  to be too. This is a copy of the safe half of a club document — name,
+    //  icon, description, member count, the registration form — and never
+    //  the join code. It exists only while the club is public: making a club
+    //  private deletes it, which is what takes the club off the Network.
+    //
+    //  ANY signed-in user may write it — not only the club's own members. A
+    //  directory that waits for somebody from each club to sign in is a
+    //  directory with clubs missing from it, and a club nobody can find is
+    //  the one failure this page cannot have. Opening the hub repairs the
+    //  listings for every club on the site.
+    //
+    //  What makes that safe is that a listing is a copy, not an opinion: the
+    //  rule below reads the club document and accepts the write only if every
+    //  mirrored field matches it exactly. Nobody can rename, re-describe or
+    //  re-badge a club they are not in, because nobody can write anything the
+    //  club does not already say. The same check in reverse governs deletes:
+    //  a listing may only be removed once the club really has gone private.
+    match /publicClubs/{clubId} {
+      function clubOf()     { return get(/databases/$(database)/documents/clubs/$(clubId)).data; }
+      function isPublic(c)  { return c.get('visibility', 'public') != 'private'; }
+
+      function copiesTheClub() {
+        let c = clubOf();
+        let r = request.resource.data;
+        return isPublic(c)
+               && r.clubId == clubId
+               && r.visibility == 'public'
+               && r.name == c.get('name', '')
+               && r.slug == c.get('slug', clubId)
+               && r.icon == c.get('icon', '')
+               && r.color == c.get('color', '')
+               && r.photo == c.get('photo', '')
+               && r.description == c.get('description', '')
+               && r.memberCount == c.get('memberCount', 0)
+               && r.createdAt == c.get('createdAt', 0)
+               && r.blocks == c.get('blocks', [])
+               && r.registrationForm == c.get('registrationForm', []);
+      }
+
+      allow get, list: if true;
+
+      /* Two ways in, and the first is the safety net: a club's own members can
+         always publish its listing, whatever the field-by-field check makes of
+         it. Only the second, open to any signed-in user, has to prove the
+         listing is a faithful copy — because that is the one being used to
+         publish clubs the writer has nothing to do with. */
+      allow create: if (isMember(clubId) && isPublic(clubOf()))
+                    || (signedIn() && copiesTheClub());
+
+      // the counter moves on its own as people join, ahead of any full refresh
+      allow update: if (isMember(clubId) && isPublic(clubOf()))
+                    || (signedIn() && (copiesTheClub() || touchesOnly(['memberCount'])));
+
+      allow delete: if isStaff(clubId) || (signedIn() && !isPublic(clubOf()));
+    }
+
+    // ── one open check-in ──────────────────────────────────────────────
+    //
+    //  `clubs/{id}/events` and `clubs/{id}/attendanceForms` are member-only
+    //  and have to stay that way: between them they are the club's whole
+    //  calendar. So an event whose check-in is open — and only that event —
+    //  is copied out to a document anybody may read, carrying the questions,
+    //  the reward and the window it is open for.
+    //
+    //  Unlike publicClubs this is not tied to the club being public: a club
+    //  that is closed to new members still meets on Tuesdays, and the people
+    //  in the room still have to sign in on the sheet. Only staff may publish
+    //  one, which is what makes it safe for the check-in rule above to read
+    //  the reward out of here rather than out of the visitor's request.
+    match /publicAttendance/{formId} {
+      function mine(clubId) { return signedIn() && isStaff(clubId); }
+
+      allow get, list: if true;
+      allow create, update: if mine(request.resource.data.clubId)
+                            && formId == request.resource.data.clubId + '__' + request.resource.data.eventId
+                            && request.resource.data.points is number
+                            && request.resource.data.opensAt is number
+                            && request.resource.data.closesAt is number;
+      allow delete: if mine(resource.data.clubId);
+    }
+
+    /* ── the shared puzzle library ──────────────────────────────────────
+       A club's puzzles are member-only and stay that way. What a club can
+       do instead is offer a collection to everybody on JagChess as a free
+       resource, and that is what these two collections are: a copy of one
+       collection, and a copy of each puzzle on it, readable by anyone signed
+       in. There is no server here to fetch a stranger a puzzle from a club
+       they are not in, so the club publishes the copy itself — exactly the
+       bargain publicClubs and publicAttendance already make.
+
+       The copy is keyed `clubId__localId` and the rule checks that the key
+       matches what is inside it. That is what stops a club writing a copy
+       under somebody else's club, and it is the only reason the reader can
+       trust the club name on the card.
+
+       Staff write their club's copies. A member writes the copy of their
+       own custom puzzle and nothing else, because a custom collection that is
+       shared has to carry members' puzzles out with it and there is nobody
+       else to write them. The same three conditions apply as on the puzzle
+       itself, so a copy cannot claim to be worth points the original is
+       not. */
+
+    match /publicPuzzleCollections/{copyId} {
+      function keyed() {
+        return copyId == request.resource.data.clubId + '__' + request.resource.data.collectionId;
+      }
+      /* The members' shelf is public by definition, so the member who is
+         about to publish onto it may write its copy. Without this the shelf
+         only appears once a member of staff happens to open the club's
+         puzzles page, and until then the member's own puzzle is out there
+         on a shelf the library cannot name. Narrow on purpose: the default
+         custom shelf of a club they are actually in, and nothing else. */
+      function ownDefaultShelf() {
+        return request.resource.data.collectionId == 'custom'
+               && request.resource.data.kind == 'custom'
+               && request.resource.data.isDefault == true
+               && isMember(request.resource.data.clubId);
+      }
+      /* The one shelf with no club behind it. Anybody signed in may bring it
+         into existence, because somebody in no club at all has to be able to;
+         nobody may edit it afterwards, so the first writer cannot be
+         overwritten by the next. */
+      function globalShelf() {
+        return request.resource.data.clubId == '__global'
+               && request.resource.data.collectionId == 'custom'
+               && request.resource.data.kind == 'custom';
+      }
+      allow get, list: if signedIn();
+      allow create: if signedIn() && keyed()
+                    && (globalShelf()
+                        || isStaff(request.resource.data.clubId)
+                        || ownDefaultShelf());
+      allow update: if signedIn() && keyed()
+                    && (isSiteAdmin()
+                        || (request.resource.data.clubId != '__global'
+                            && (isStaff(request.resource.data.clubId) || ownDefaultShelf())));
+      allow delete: if signedIn()
+                    && (isSiteAdmin()
+                        || (resource.data.clubId != '__global' && isStaff(resource.data.clubId)));
+    }
+
+    match /publicPuzzles/{copyId} {
+      function ownCopy(data) {
+        return data.custom == true && data.authorUid == uid() && data.points == 0;
+      }
+      function keyed() {
+        return copyId == request.resource.data.clubId + '__' + request.resource.data.puzzleId;
+      }
+      function isGlobal() { return request.resource.data.clubId == '__global'; }
+      /* A global puzzle has no club copy behind it: this document IS the
+         puzzle, so the same three conditions that gate a member's club
+         puzzle gate it here instead. */
+      function ownGlobal() { return isGlobal() && ownCopy(request.resource.data); }
+      /* An update must find the document already yours. Checking only the
+         incoming data would let anybody overwrite somebody else's copy by
+         writing their own name into it, since the key is derived from the
+         data rather than from the author. */
+      function alreadyMine() { return resource.data.authorUid == uid(); }
+      allow get, list: if signedIn();
+      allow create: if signedIn() && keyed()
+                    && (ownGlobal()
+                        || isStaff(request.resource.data.clubId)
+                        || (isMember(request.resource.data.clubId)
+                            && ownCopy(request.resource.data)));
+      allow update: if signedIn() && keyed()
+                    && ((ownGlobal() && alreadyMine())
+                        || (!isGlobal() && isStaff(request.resource.data.clubId))
+                        || (!isGlobal()
+                            && isMember(request.resource.data.clubId)
+                            && ownCopy(request.resource.data)
+                            && alreadyMine()));
+      allow delete: if signedIn()
+                    && (isSiteAdmin()
+                        || (resource.data.clubId == '__global' && alreadyMine())
+                        || (resource.data.clubId != '__global'
+                            && (isStaff(resource.data.clubId)
+                                || (isMember(resource.data.clubId)
+                                    && resource.data.custom == true
+                                    && alreadyMine()))));
     }
 
     // ── join codes ─────────────────────────────────────────────────────

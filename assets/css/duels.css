@@ -717,8 +717,17 @@ body.duel-open > .piece-417db {
 .lb-mini.watch { border-color: rgba(255,75,75,.4); color: var(--red-dark); }
 .lb-mini.watch:hover { background: var(--red-soft); border-color: var(--red); color: var(--red-dark); }
 
-/* the rated board carries an extra column for the rating */
-.lb-row.has-duel { grid-template-columns: 62px minmax(0,1fr) 96px 168px; }
+/* the rated board carries two extra columns: the rating, and the record */
+.lb-row.has-duel { grid-template-columns: 62px minmax(0,1fr) 96px 104px 168px; }
+
+.lb-col-wdl {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.lb-row-head .lb-col-wdl { text-align: center; }
 
 .lb-tabs { display: flex; gap: 7px; margin-bottom: 14px; }
 .lb-tab {
@@ -808,8 +817,9 @@ body.duel-open > .piece-417db {
   .duel-stage-bar { padding: 10px 14px; }
   .duel-clock { font-size: 21px; padding: 3px 10px; }
   .duel-lobby-card { padding: 26px 20px 20px; }
-  .lb-row.has-duel { grid-template-columns: 44px minmax(0,1fr) 78px; }
+  .lb-row.has-duel { grid-template-columns: 44px minmax(0,1fr) 78px 80px; }
   .lb-row.has-duel .lb-row-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .lb-col-wdl { font-size: 12px; }
   .duel-invite-host { left: 14px; right: 14px; max-width: none; }
   .topbar-stats { order: 3; }
 }

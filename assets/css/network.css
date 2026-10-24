@@ -1,0 +1,626 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   network.css — the JagChess Network: the public club directory.
+   Builds on landing.css, which owns the palette, the shell and the buttons.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.net-page { padding-top: 72px; }
+
+/* ── HERO ───────────────────────────────────────────────────────────── */
+
+.net-hero {
+  position: relative;
+  padding: 58px 0 44px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.net-hero::before {
+  content: '';
+  position: absolute;
+  top: -180px;
+  right: -120px;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(88,204,2,.14), transparent 68%);
+  pointer-events: none;
+}
+.net-hero .shell { position: relative; }
+.net-hero h1 { font-size: clamp(32px, 4.4vw, 52px); margin: 12px 0 14px; }
+.net-hero .hl { color: var(--green-dark); }
+.net-hero .lead { max-width: 660px; margin-bottom: 26px; }
+
+.net-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 620px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 var(--border);
+  transition: border-color .16s, box-shadow .16s;
+}
+.net-search:focus-within {
+  border-color: var(--green);
+  box-shadow: 0 4px 0 var(--green-dark);
+}
+.net-search > svg {
+  width: 20px;
+  height: 20px;
+  margin-left: 16px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.net-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  padding: 15px 14px;
+  font-family: var(--font-ui);
+  font-size: 15.5px;
+  color: var(--text);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.net-search input::-webkit-search-cancel-button { display: none; }
+.net-search input::placeholder { color: var(--muted); }
+.net-search-x {
+  border: none;
+  background: var(--bg-alt);
+  color: var(--text-2);
+  width: 30px;
+  height: 30px;
+  margin-right: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.net-search-x:hover { background: var(--border); color: var(--text); }
+
+.net-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px;
+  margin-top: 22px;
+  font-size: 14px;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.net-stats b {
+  font-family: var(--font);
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--text);
+  margin-right: 5px;
+}
+
+/* ── THE PITCH ───────────────────────────────────────────────────────
+   One strip under the clubs rather than a slab above them: somebody who
+   has just scrolled a page of clubs already knows what an account is for,
+   and does not need to be sold one before seeing a single card.
+   ─────────────────────────────────────────────────────────────────── */
+
+.net-pitch {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 26px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  border: 2px solid var(--green);
+  background: var(--green-soft);
+  flex-wrap: wrap;
+}
+.pitch-mark {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--green);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+.pitch-line {
+  flex: 1;
+  min-width: 260px;
+  font-size: 13.5px;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+.pitch-line b { color: var(--green-dark); font-family: var(--font); font-size: 14.5px; margin-right: 4px; }
+.pitch-buttons { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+
+/* ── THE GRID ───────────────────────────────────────────────────────── */
+
+.net-body { padding: 40px 0 90px; }
+
+.net-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.net-list-head h2 { font-size: 23px; }
+
+.net-sort { display: flex; gap: 6px; }
+.net-sort-opt {
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--text-2);
+  border-radius: 11px;
+  padding: 7px 14px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all .15s;
+}
+.net-sort-opt:hover { border-color: var(--border-2); color: var(--text); }
+.net-sort-opt.on { border-color: var(--green); background: var(--green-soft); color: var(--green-dark); }
+
+.net-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+.net-card {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 22px;
+  border-radius: 20px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 4px 0 var(--border);
+  cursor: pointer;
+  text-align: left;
+  transition: transform .17s var(--ease), border-color .17s, box-shadow .17s;
+}
+.net-card:hover,
+.net-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--green);
+  box-shadow: 0 7px 0 var(--green-dark);
+  outline: none;
+}
+
+.net-card-top { display: flex; align-items: center; gap: 13px; }
+.net-card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  font-size: 23px;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.16);
+}
+.net-card-id { min-width: 0; }
+.net-card-id h3 {
+  font-size: 18px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.net-card-slug {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.net-card-desc {
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 44px;
+}
+
+.net-card-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.net-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.net-chip.more { background: var(--card); color: var(--muted); }
+
+.net-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 13px;
+  border-top: 1px solid var(--border);
+}
+.net-card-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.net-card-count svg { width: 16px; height: 16px; color: var(--muted); }
+.net-card-go {
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 900;
+  color: var(--green-dark);
+}
+
+/* loading placeholders, so the grid never pops in from nothing */
+.net-card.is-loading { pointer-events: none; gap: 11px; }
+.net-card.is-loading span {
+  display: block;
+  height: 13px;
+  border-radius: 7px;
+  background: var(--bg-alt);
+  animation: net-pulse 1.3s ease-in-out infinite;
+}
+.net-card.is-loading span:first-child { height: 48px; width: 60%; }
+.net-card.is-loading span:last-child { width: 40%; }
+@keyframes net-pulse { 50% { opacity: .45; } }
+
+.net-empty {
+  text-align: center;
+  padding: 70px 20px;
+  border: 2px dashed var(--border-2);
+  border-radius: 22px;
+}
+.net-empty-art { font-size: 44px; margin-bottom: 10px; }
+.net-empty h3 { font-size: 21px; margin-bottom: 8px; }
+.net-empty p { color: var(--text-2); font-size: 15px; }
+
+/* ── THE CLUB MODAL ─────────────────────────────────────────────────── */
+
+.net-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(10, 32, 42, .58);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 18px;
+  overflow-y: auto;
+  animation: net-fade .2s ease both;
+}
+.net-modal[hidden] { display: none; }
+@keyframes net-fade { from { opacity: 0; } }
+
+.net-modal-card {
+  position: relative;
+  width: min(1120px, 100%);
+  background: var(--card);
+  border-radius: 26px;
+  border: 2px solid var(--border);
+  box-shadow: 0 30px 80px rgba(10, 32, 42, .3);
+  overflow: hidden;
+  animation: net-rise .26s var(--ease) both;
+}
+@keyframes net-rise { from { opacity: 0; transform: translateY(18px) scale(.985); } }
+
+.net-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--text-2);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.net-modal-close:hover { background: var(--bg-alt); color: var(--text); border-color: var(--border-2); }
+
+.net-modal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+/* left — what the club is */
+.cm-left { padding: 34px 32px; }
+.cm-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.cm-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.16);
+}
+.cm-left h2 { font-size: 26px; line-height: 1.12; }
+.cm-slug { font-size: 12.5px; color: var(--muted); font-weight: 600; word-break: break-all; }
+
+.cm-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cm-desc {
+  margin-top: 14px;
+  font-size: 15px;
+  color: var(--text-2);
+  line-height: 1.65;
+}
+
+.cm-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+.cm-stat {
+  padding: 14px 12px;
+  border-radius: 15px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.cm-stat b {
+  display: block;
+  font-family: var(--font);
+  font-size: 21px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.1;
+}
+.cm-stat span { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+
+.cm-section { margin-top: 24px; }
+.cm-section h4 {
+  font-size: 12px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 11px;
+}
+
+.cm-steps { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.cm-steps li { font-size: 13.5px; color: var(--text-2); line-height: 1.55; }
+.cm-steps b { color: var(--text); }
+
+/* right — what you can do about it */
+.cm-right {
+  padding: 34px 32px 34px 30px;
+  background: var(--bg-alt);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cm-pitch {
+  display: flex;
+  gap: 13px;
+  margin-top: 24px;
+  padding: 16px 18px;
+  border-radius: 17px;
+  border: 2px solid var(--green);
+  background: var(--green-soft);
+}
+.cm-pitch-mark {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--green);
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+}
+.cm-pitch b {
+  display: block;
+  font-family: var(--font);
+  font-size: 14.5px;
+  color: var(--green-dark);
+  line-height: 1.35;
+}
+.cm-pitch p {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.55;
+  margin-top: 5px;
+}
+.cm-pitch-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 11px; }
+
+.cm-panel {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 19px;
+  padding: 22px;
+}
+.cm-panel h3 { font-size: 19px; margin-bottom: 7px; }
+.cm-panel-sub { font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin-bottom: 18px; }
+.cm-panel-foot {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 600;
+}
+.cm-panel .btn3d.block { justify-content: center; }
+
+.cm-done { text-align: center; }
+.cm-done-mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: 27px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 var(--green-dark);
+}
+.cm-done-next {
+  margin: 18px 0 12px;
+  padding: 16px;
+  border-radius: 15px;
+  background: var(--green-soft);
+  text-align: left;
+}
+.cm-done-next b { font-family: var(--font); font-size: 14px; color: var(--green-dark); }
+.cm-done-next p { font-size: 13px; color: var(--text-2); line-height: 1.55; margin: 6px 0 12px; }
+
+/* ── THE CONFIRMATION ────────────────────────────────────────────────
+   Deliberately small. The club modal has done its job and closed; what is
+   left is one piece of news and two ways forward.
+   ─────────────────────────────────────────────────────────────────── */
+
+.net-done-modal { align-items: center; }
+
+.net-done-card {
+  position: relative;
+  width: min(460px, 100%);
+  padding: 34px 30px 28px;
+  border-radius: 24px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 30px 80px rgba(10, 32, 42, .3);
+  text-align: center;
+  animation: net-rise .26s var(--ease) both;
+}
+.net-done-card h2 { font-size: 24px; margin-bottom: 10px; }
+
+.net-done-mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: 27px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 var(--green-dark);
+}
+
+.net-done-sub { font-size: 14.5px; color: var(--text-2); line-height: 1.6; }
+.net-done-sub b { color: var(--text); }
+
+.net-done-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.net-done-or::before,
+.net-done-or::after { content: ''; flex: 1; height: 2px; background: var(--border); }
+
+.net-done-alt { font-size: 13.5px; color: var(--text-2); line-height: 1.55; margin-bottom: 14px; }
+.net-done-card .btn3d.block { justify-content: center; }
+.net-done-card .btn3d.ghost { margin-top: 8px; }
+
+/* ── TOASTS (borrowed shape from the app, so errors look the same) ───── */
+
+.toast-host {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+.toast {
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 18px 44px rgba(20, 38, 47, .25);
+  animation: toast-in .28s var(--ease) both;
+}
+.toast.error { background: var(--red); }
+.toast.ok { background: var(--green); }
+.toast.out { animation: toast-out .3s var(--ease) both; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(10px) scale(.97); } }
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+
+/* ── phones and tablets ──────────────────────────────────────────────
+   The club modal drops to the registration form alone. On a small screen
+   the stats, the module chips and the pitch are three screenfuls of
+   scrolling in front of the one thing the page opened to do, and the form's
+   own heading already names the club. The pitch still has its place — the
+   strip under the grid — which is where someone deciding between an account
+   and a form is actually standing.
+   ─────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .net-modal-grid { grid-template-columns: 1fr; }
+  .cm-left { display: none; }
+  .cm-right {
+    border-left: none;
+    background: var(--card);
+    padding: 30px 26px;
+    gap: 0;
+  }
+  .cm-panel { border: none; padding: 0; }
+  /* the close button floats over this corner now that nothing else does */
+  .cm-panel h3 { padding-right: 36px; }
+  .net-modal-card { width: min(560px, 100%); }
+}
+
+@media (max-width: 720px) {
+  .net-page { padding-top: 66px; }
+  .net-hero { padding: 40px 0 34px; }
+  .net-modal { padding: 14px 10px; }
+  .net-pitch { gap: 12px; padding: 14px 16px; }
+  .pitch-buttons { width: 100%; }
+  .pitch-buttons .btn3d { flex: 1; justify-content: center; }
+  .cm-left, .cm-right { padding: 26px 20px; }
+  .cm-left h2 { font-size: 22px; }
+  .net-grid { grid-template-columns: 1fr; }
+}

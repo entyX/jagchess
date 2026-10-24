@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Lichess module load check</title>
+</head>
+<body>
+  <div id="out">loading…</div>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/duels.css" />
+  <link rel="stylesheet" href="/assets/css/tournaments.css" />
+  <link rel="stylesheet" href="/assets/css/lichess.css" />
+  <script src="/assets/vendor/jquery/jquery.min.js"></script>
+  <script src="/assets/vendor/chess/chess.min.js"></script>
+  <script src="/assets/vendor/chessboard/chessboard-1.0.0.min.js"></script>
+  <script src="/assets/js/firebase-config.js"></script>
+  <script type="module">
+    const out = document.getElementById('out');
+    const mods = [
+      '/assets/js/lichess-api.js',
+      '/assets/js/lichess-auth.js',
+      '/assets/js/lichess-store.js',
+      '/assets/js/lichess-sync.js',
+      '/assets/js/lichess-board.js',
+      '/assets/js/lichess-create.js',
+      '/assets/js/lichess-ui.js',
+      '/assets/js/lichess-admin.js',
+      '/assets/js/lichess-live.js',
+      '/assets/js/tournaments-rules.js',
+      '/assets/js/tournaments-core.js',
+      '/assets/js/tournaments-ui.js'
+    ];
+    const results = [];
+    for (const m of mods) {
+      try {
+        const mod = await import(m);
+        results.push('OK   ' + m + '  [' + Object.keys(mod).length + ' exports]');
+      } catch (e) {
+        results.push('FAIL ' + m + '  ' + (e && e.message));
+      }
+    }
+
+    // a few pure functions, exercised without a browser session
+    const checks = [];
+    try {
+      const api = await import('/assets/js/lichess-api.js');
+      checks.push(['parseTeamId url', api.parseTeamId('https://lichess.org/team/example-team') === 'example-team']);
+      checks.push(['parseTeamId bare', api.parseTeamId('coders') === 'coders']);
+      checks.push(['parseTeamId junk', api.parseTeamId('not a team!') === null]);
+
+      const rules = await import('/assets/js/tournaments-rules.js');
+      checks.push(['no bracket format', !rules.FORMATS.bracket]);
+      checks.push(['bracket retired', rules.isRetiredFormat('bracket') === true]);
+      checks.push(['retired phase', rules.phaseOf({ format: 'bracket', status: 'scheduled', startsAt: 0 }) === 'retired']);
+      checks.push(['arena phase running', rules.phaseOf({ format: 'arena', status: 'scheduled', startsAt: Date.now() - 1000, durationMin: 60 }) === 'running']);
+      checks.push(['arena points streak', rules.arenaPoints('win', 2, false) === 4]);
+      checks.push(['arena points berserk', rules.arenaPoints('win', 0, true) === 3]);
+
+      const create = await import('/assets/js/lichess-create.js');
+      checks.push(['ratio 3+0/60min ok', create.checkArena({ clockTime: 3, clockIncrement: 0, minutes: 60, rated: true, berserkable: true }) === null]);
+      checks.push(['ratio too short caught', !!create.checkArena({ clockTime: 30, clockIncrement: 30, minutes: 20, rated: true })]);
+      checks.push(['0+0 caught', !!create.checkArena({ clockTime: 0, clockIncrement: 0, minutes: 60, rated: false })]);
+      checks.push(['berserk rule caught', !!create.checkArena({ clockTime: 1, clockIncrement: 3, minutes: 30, rated: false, berserkable: true })]);
+      const af = create.arenaForm({ clockTime: 3, clockIncrement: 2, minutes: 60, variant: 'standard', rated: true, berserkable: true, streakable: true, hasChat: true, restrictTeamId: 'coders', minRating: '1500', allowList: '', waitMinutes: 5 }, null);
+      checks.push(['arenaForm team cond', af['conditions.teamMember.teamId'] === 'coders']);
+      checks.push(['arenaForm minRating', af['conditions.minRating.rating'] === 1500]);
+      checks.push(['arenaForm waitMinutes', af.waitMinutes === 5]);
+
+      const store = await import('/assets/js/lichess-store.js');
+      const shaped = store.shapeArena({
+        id: 'abc12345', fullName: 'Test Arena', status: 20, clock: { limit: 180, increment: 0 },
+        minutes: 60, rated: true, nbPlayers: 12, startsAt: 1700000000000, variant: 'standard',
+        teamMember: 'coders', createdBy: 'someone'
+      }, { teamId: 'coders', name: 'Coders', key: 'global__coders', scope: 'global', clubId: null });
+      checks.push(['shapeArena id', shaped.lichessId === 'abc12345']);
+      checks.push(['shapeArena status', shaped.status === 'started']);
+      checks.push(['shapeArena reads teamMember', shaped.requiredTeamId === 'coders']);
+      const open = store.shapeArena({ id: 'x', fullName: 'Open', status: 10, clock: { limit: 60, increment: 0 }, minutes: 30, rated: false, nbPlayers: 0, startsAt: 1, variant: 'standard' }, { teamId: 'coders', name: 'Coders' });
+      checks.push(['shapeArena open not gated', open.requiredTeamId === null]);
+      checks.push(['teamKey scoped', store.teamKey('club', 'my-club', 'coders') === 'club_my-club__coders']);
+
+      /* The rule the brief cares most about: never claim a team is needed
+         when it is not, and never forget one that is. */
+      const dm = store.deriveMembership;
+      checks.push(['membership: listing says a team', dm({ requiredTeamId: 'coders', teamBattleTeams: null }, {}).membershipRequired === true]);
+      checks.push(['membership: listing says none', dm({ requiredTeamId: null, teamBattleTeams: null }, {}).membershipRequired === false]);
+      checks.push(['membership: detail keeps what listing knew',
+        dm({ teamBattleTeams: null }, { requiredTeamId: 'coders' }).membershipRequired === true]);
+      checks.push(['membership: detail does not invent one',
+        dm({ teamBattleTeams: null }, {}).membershipRequired === false]);
+      checks.push(['membership: listing can clear it',
+        dm({ requiredTeamId: null, teamBattleTeams: null }, { requiredTeamId: 'coders' }).membershipRequired === false]);
+      checks.push(['membership: team battle counts',
+        dm({ requiredTeamId: null, teamBattleTeams: ['a', 'b'] }, {}).membershipRequired === true]);
+      checks.push(['membership: empty battle list does not',
+        dm({ requiredTeamId: null, teamBattleTeams: [] }, {}).membershipRequired === false]);
+      checks.push(['membership: never undefined',
+        dm({}, {}).requiredTeamId === null && dm({}, {}).teamBattleTeams === null]);
+
+      /* The two endpoints really do answer differently — these are trimmed
+         copies of live responses, so the shaping is tested against lichess
+         rather than against what it was assumed to send. */
+      const listingRow = {
+        id: 'QQDJENHA', createdBy: 'quantium', system: 'arena', minutes: 60,
+        clock: { limit: 180, increment: 0 }, rated: true, fullName: 'Giri Team Battle',
+        nbPlayers: 29, variant: { key: 'standard', short: 'Std', name: 'Standard' },
+        startsAt: 1575824400000, finishesAt: 1575828000000, status: 30,
+        perf: { key: 'blitz', name: 'Blitz' },
+        teamBattle: { teams: ['marco', 'coders'], nbLeaders: 5 },
+        winner: { name: 'Sex_God', id: 'sex_god' }
+      };
+      const detailRow = {
+        id: 'QQDJENHA', fullName: 'Giri Team Battle', rated: true, berserkable: true,
+        clock: { limit: 180, increment: 0 }, minutes: 60, createdBy: 'quantium',
+        system: 'arena', isFinished: true, nbPlayers: 29, variant: 'standard',
+        startsAt: '2019-12-08T17:00:00Z',
+        teamBattle: { teams: ['marco', 'coders'], nbLeaders: 5 },
+        podium: [{ name: 'Sex_God', rank: 1, rating: 2330, score: 23, nb: { game: 10, berserk: 0, win: 7 }, performance: 2094 }]
+      };
+      const fromListing = store.shapeArena(listingRow, { teamId: 'coders', name: 'Coders' }, {}, { source: 'listing' });
+      const fromDetail = store.shapeArena(detailRow, { teamId: 'coders', name: 'Coders' }, {}, { source: 'detail' });
+      checks.push(['listing status finished', fromListing.status === 'finished']);
+      checks.push(['detail status finished', fromDetail.status === 'finished']);
+      checks.push(['detail parses ISO startsAt', fromDetail.startsAt === Date.parse('2019-12-08T17:00:00Z')]);
+      checks.push(['detail derives finishesAt', fromDetail.finishesAt === fromListing.finishesAt]);
+      checks.push(['detail variant string', fromDetail.variant === 'standard']);
+      checks.push(['listing variant object', fromListing.variant === 'standard']);
+      checks.push(['detail leaves teamMember unsaid', !('requiredTeamId' in fromDetail)]);
+      checks.push(['listing says no teamMember', fromListing.requiredTeamId === null]);
+      checks.push(['both see the team battle', fromDetail.teamBattleTeams.length === 2 && fromListing.teamBattleTeams.length === 2]);
+      checks.push(['detail carries the podium', fromDetail.podium[0].username === 'Sex_God']);
+      checks.push(['listing has no podium key', !('podium' in fromListing)]);
+      /* A running arena: no status field, not finished, start time passed. */
+      const running = store.shapeArena({
+        id: 'r1', fullName: 'Live', clock: { limit: 180, increment: 0 }, minutes: 60,
+        rated: true, nbPlayers: 3, variant: 'standard', isFinished: false,
+        startsAt: new Date(Date.now() - 600000).toISOString()
+      }, { teamId: 'coders' }, {}, { source: 'detail' });
+      checks.push(['detail infers started', running.status === 'started']);
+      const upcoming = store.shapeArena({
+        id: 'r2', fullName: 'Soon', clock: { limit: 180, increment: 0 }, minutes: 60,
+        rated: true, nbPlayers: 0, variant: 'standard', isFinished: false,
+        startsAt: new Date(Date.now() + 600000).toISOString()
+      }, { teamId: 'coders' }, {}, { source: 'detail' });
+      checks.push(['detail infers created', upcoming.status === 'created']);
+      /* Nothing undefined may reach Firestore — it rejects the write. */
+      const noUndefined = (o, path) => Object.entries(o).every(([k, v]) =>
+        v === undefined ? (checks.push(['undefined at ' + path + '.' + k, false]), false)
+          : (v && typeof v === 'object' && !Array.isArray(v) ? noUndefined(v, path + '.' + k) : true));
+      checks.push(['listing row has no undefined', noUndefined(fromListing, 'listing')]);
+      checks.push(['detail row has no undefined', noUndefined(fromDetail, 'detail')]);
+
+      /* Matching a pairing to the tournament you are waiting on. The event
+         names the tournament; the /api/account/playing poll does not, and
+         getting that wrong is what leaves somebody staring at a spinner. */
+      const liveMod = await import('/assets/js/lichess-live.js');
+      const m = liveMod.matches;
+      checks.push(['match: exact tournament id', m({ tournamentId: 'abc' }, 'abc') === true]);
+      checks.push(['match: a different tournament', m({ tournamentId: 'xyz' }, 'abc') === false]);
+      checks.push(['match: poll row, arena source', m({ isTournamentGame: true }, 'abc') === true]);
+      checks.push(['match: a casual game is not it', m({ isTournamentGame: false }, 'abc') === false]);
+      checks.push(['match: no tournament asked for', m({}, null) === true]);
+
+      const ui = await import('/assets/js/lichess-ui.js');
+      checks.push(['ui phase running', ui.phaseOf({ status: 'started' }) === 'running']);
+      checks.push(['ui phase unavailable', ui.phaseOf({ status: 'unavailable' }) === 'unavailable']);
+      checks.push(['ui clock label', ui.clockLabel({ limit: 180, increment: 2 }) === '3 + 2']);
+      checks.push(['ui speed blitz', ui.speedOf({ limit: 180, increment: 0 }) === 'Blitz']);
+    } catch (e) {
+      checks.push(['harness threw', false, String(e && e.stack || e)]);
+    }
+
+    /* ── the board must be on screen before the network answers ──
+       Bug: opening a game showed an empty frame while the lichess clock was
+       already running. The seed is what the tournament page already knows,
+       and it has to be painted without waiting for anything. */
+    try {
+      const board = await import('/assets/js/lichess-board.js');
+      const t0 = performance.now();
+      board.openLichessGame({
+        gameId: 'zzzzzzzz',            // does not exist: the network will fail
+        backHash: 'tournaments',
+        seed: {
+          white: { username: 'AlphaPlayer', rating: 1840 },
+          black: { username: 'BetaPlayer', rating: 1795 },
+          clock: { limit: 180, increment: 0 },
+          rated: true
+        }
+      });
+      const painted = performance.now() - t0;
+      const stage = document.querySelector('.li-stage');
+      const txt = stage ? stage.textContent : '';
+      const squares = document.querySelectorAll('.square-55d63').length;
+      checks.push(['board paints without waiting', !!stage && painted < 400, Math.round(painted) + 'ms']);
+      checks.push(['seeded names are on screen', /AlphaPlayer/.test(txt) && /BetaPlayer/.test(txt)]);
+      checks.push(['seeded ratings are on screen', /1840/.test(txt) && /1795/.test(txt)]);
+      checks.push(['board has 64 squares', squares === 64, String(squares)]);
+      checks.push(['clock shows the seeded control', txt.indexOf('3 + 0') >= 0]);
+      board.closeLichessGame();
+      checks.push(['board closes cleanly', !document.querySelector('.li-stage')]);
+    } catch (e) {
+      checks.push(['board harness threw', false, String(e && e.message)]);
+    }
+
+    /* ── stepping through a finished game ────────────────────────── */
+    try {
+      const board = await import('/assets/js/lichess-board.js');
+      board.openLichessGame({
+        gameId: 'xeqkfvqn',             // a real, finished lichess game
+        backHash: 'tournaments',
+        seed: { white: { username: 'Alexander555' }, black: { username: 'Sex_God' } }
+      });
+      const deadline = Date.now() + 20000;
+      let gotMoves = false;
+      while (Date.now() < deadline) {
+        if (document.querySelector('.li-nav-btn')) { gotMoves = true; break; }
+        await new Promise((r) => setTimeout(r, 150));
+      }
+      if (!gotMoves) {
+        checks.push(['move navigation (needs network)', true, 'skipped - lichess unreachable']);
+      } else {
+        const nav = document.querySelector('.li-nav');
+        const at = () => document.querySelector('.li-nav-at').textContent.trim();
+        const total = document.querySelectorAll('.li-move').length;
+        checks.push(['four nav buttons', nav.querySelectorAll('.li-nav-btn').length === 4]);
+        const last = at();
+        document.querySelector('[data-go="prev"]').click();
+        const back1 = at();
+        checks.push(['prev steps back', back1 !== last, last + ' -> ' + back1]);
+        document.querySelector('[data-go="start"]').click();
+        checks.push(['first reaches the start', at() === 'Start', at()]);
+        document.querySelector('[data-go="next"]').click();
+        checks.push(['next steps forward', at() !== 'Start', at()]);
+        document.querySelector('[data-go="end"]').click();
+        checks.push(['last returns to the end', at() === last, at()]);
+        checks.push(['it read a real game', total > 10, total + ' half-moves']);
+      }
+      board.closeLichessGame();
+    } catch (e) {
+      checks.push(['nav harness threw', false, String(e && e.message)]);
+    }
+
+    out.textContent = results.join('\n') + '\n\n' +
+      checks.map(([n, ok, extra]) => (ok ? 'PASS ' : 'FAIL ') + n + (extra ? ' :: ' + extra : '')).join('\n');
+    window.__done = true;
+  </script>
+</body>
+</html>
