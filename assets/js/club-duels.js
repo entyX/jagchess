@@ -1308,12 +1308,16 @@ export function openDuelStage(ctx, gameId) {
       trashSpeed: 120,
       dropOffBoard: 'snapback',
       onDragStart: (src, piece) => {
-        if (!canMove()) return false;
         if (piece[0] !== S.myColor) return false;
+        if (!canMove() && !canPremove()) return false;
         selected = null;
-        showHints(src);
+        if (canMove()) showHints(src);
       },
-      onDrop: (from, to) => { clearHints(); return attemptMove(from, to); },
+      onDrop: (from, to) => {
+        clearHints();
+        if (!canMove() && canPremove()) { if (from !== to) setPremove(from, to); return 'snapback'; }
+        return attemptMove(from, to);
+      },
       onSnapEnd: () => S.board.position(currentFen(), false)
     });
     sizeBoard();
@@ -1321,6 +1325,27 @@ export function openDuelStage(ctx, gameId) {
 
   const canMove = () => !!S.myColor && live() && S.view == null && !S.pending &&
     S.chess && S.chess.turn() === S.myColor;
+
+  /* A premove: queued while it is the other side's turn, played the moment
+     their move lands if it is still legal, dropped quietly if not. */
+  let premove = null;
+  const canPremove = () => !!S.myColor && live() && S.view == null && S.chess &&
+    (S.chess.turn() !== S.myColor || S.pending);
+
+  function paintPremove() {
+    boardHost.querySelectorAll('.duel-pre').forEach((n) => n.classList.remove('duel-pre'));
+    if (premove) [premove.from, premove.to].forEach((q) => squareEl(q)?.classList.add('duel-pre'));
+  }
+  function setPremove(from, to) { premove = { from, to }; paintPremove(); }
+  function clearPremove() { premove = null; paintPremove(); }
+
+  function playPremove() {
+    if (!premove || !canMove()) return;
+    const { from, to } = premove;
+    clearPremove();
+    const legal = S.chess.moves({ verbose: true }).filter((m) => m.from === from && m.to === to);
+    if (legal.length) commitMove(from, to, 'q', true);
+  }
 
   const currentFen = () => (S.view == null ? S.chess.fen() : replay(S.game.moves, S.view).fen());
 
@@ -1372,7 +1397,20 @@ export function openDuelStage(ctx, gameId) {
   }
 
   /* tap a piece, then tap where it goes; dragging works too */
+  boardHost.addEventListener('contextmenu', (e) => {
+    if (premove) { e.preventDefault(); clearPremove(); selected = null; clearHints(); }
+  });
+
   boardHost.addEventListener('click', (e) => {
+    const sq0 = squareOf(e.target);
+    if (!canMove() && canPremove() && sq0) {
+      // tap your piece, then tap where it should go once they have moved
+      const mine = S.chess.get(sq0);
+      if (selected && sq0 !== selected) { setPremove(selected, sq0); selected = null; clearHints(); return; }
+      if (mine && mine.color === S.myColor) { clearPremove(); selected = sq0; clearHints(); squareEl(sq0)?.classList.add('duel-from'); }
+      else { selected = null; clearHints(); clearPremove(); }
+      return;
+    }
     if (!canMove()) return;
     const sq = squareOf(e.target);
     if (!sq) return;
@@ -1996,7 +2034,9 @@ export function openDuelStage(ctx, gameId) {
           const last = S.chess.history({ verbose: true }).pop();
           if (last && last.color !== S.myColor) sfx(last, S.chess);
         }
-        if (after < before && prev) toast('A move was taken back');
+        if (after < before && prev) { toast('A move was taken back'); clearPremove(); }
+        paintPremove();
+        playPremove();
       }
     }
 

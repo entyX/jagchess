@@ -1121,3 +1121,6 @@ body.duel-open > .piece-417db {
 .recent-body b { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recent-body small { color: var(--muted); font-size: 12.5px; }
 .recent-row .delta { font-weight: 650; font-size: 13px; }
+
+/* a queued premove */
+.duel-board-wrap .duel-pre { box-shadow: inset 0 0 0 999px rgba(110, 91, 255, .38); }
