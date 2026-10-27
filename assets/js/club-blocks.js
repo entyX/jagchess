@@ -20,6 +20,8 @@ import {
   readRecord
 } from './club-duels.js';
 import { renderTournaments } from './tournaments-ui.js';
+import { watchRanked, rankedBoardHTML, wireRankedBoard, modeOf, MODES, openLinkUsernames, LINK_SVG, TROPHY_SVG } from './ranked.js';
+import { noteMyRank, openAccountSettings } from './profile-card.js';
 import { openAttendanceShare, openClubShare } from './club-share.js';
 import { mountNewsletterMail } from './newsletter-mail.js';
 import { fontSelectHTML, wireFontSelect } from './mail-fonts.js';
@@ -977,9 +979,14 @@ async function renderLeaderboard(ctx, host) {
   host.innerHTML = `
     <div class="lb-tabs">
       <button class="lb-tab on" data-t="points">Points</button>
+      <button class="lb-tab lb-tab-ranked" data-t="ranked">${TROPHY_SVG}Ranked</button>
       <button class="lb-tab" data-t="club">Club rating</button>
       <button class="lb-tab" data-t="global">Global rating</button>
     </div>
+    <section class="tile lb-ranked" id="lb-ranked" hidden>
+      <div class="tz-panel-head"><div><h3>Ranked leaderboard</h3><small id="lb-ranked-sub"></small></div></div>
+      <div id="lb-ranked-body">${rankedBoardHTML(null, ctx)}</div>
+    </section>
     ${ctx.isAdmin ? `
     <div class="tile lb-setting">
       <div>
@@ -1023,9 +1030,29 @@ async function renderLeaderboard(ctx, host) {
     tab = b.dataset.t;
     host.querySelectorAll('.lb-tab').forEach((t) => t.classList.toggle('on', t.dataset.t === tab));
     host.querySelector('#lb-metric').textContent = tab === 'points' ? 'Points' : 'Rating';
+    const ranked = tab === 'ranked';
+    host.querySelector('#lb-ranked').hidden = !ranked;
+    host.querySelector('.lb-tile').hidden = ranked;
+    if (host.querySelector('.lb-setting')) host.querySelector('.lb-setting').hidden = ranked;
+    if (ranked) { startRanked(); return; }
     if (tab === 'global') await loadProfiles();
     paint();
   };
+
+  /* The ranked board is its own subscription, started the first time the
+     tab is opened rather than on every visit to the points table. */
+  let stopRanked = null;
+  function startRanked() {
+    if (stopRanked) return;
+    stopRanked = watchRanked(ctx, (board) => {
+      host.querySelector('#lb-ranked-sub').textContent =
+        `${MODES[modeOf(ctx)].label} · ${board.tournaments} event${board.tournaments === 1 ? '' : 's'} counted · updates live`;
+      const box = host.querySelector('#lb-ranked-body');
+      box.innerHTML = rankedBoardHTML(board, ctx);
+      wireRankedBoard(box, ctx, board);
+      noteMyRank(ctx, board);
+    });
+  }
 
   /* Global numbers are not on the member row, so they come from the user
      profiles — one read for the whole club, and only when asked for. */
@@ -1082,7 +1109,7 @@ async function renderLeaderboard(ctx, host) {
 
       return `<div class="lb-row has-duel${me ? ' lb-row-me' : ''}">
         <span class="lb-col-rank ${medal}">${i + 1}</span>
-        <span class="lb-col-player">
+        <span class="lb-col-player lb-clickable" data-profile="${esc(m.uid || m.id)}">
           <span class="lb-avatar" style="background:${esc(m.avatarColor || '#2e90fa')}">${esc(initials(m.username || m.email))}</span>
           <span class="lb-player-info">
             <span class="lb-player-name">${esc(m.username || 'Player')}${me ? '<span class="lb-me-badge">You</span>' : ''}${isStaff(m.role) ? `<span class="role-pill ${esc(m.role)}" style="margin-left:8px">${esc(ROLE_LABEL[m.role])}</span>` : ''}</span>
@@ -1113,7 +1140,7 @@ async function renderLeaderboard(ctx, host) {
 
   const stopGames = watchActiveDuels((rows) => { games = rows; paint(); });
 
-  return () => { stop(); stopGames(); };
+  return () => { stop(); stopGames(); if (stopRanked) stopRanked(); };
 }
 
 /* ═══════════════════════════════════════════════════════════════════ */
@@ -1544,6 +1571,19 @@ async function renderProfile(ctx, host) {
         </div>
       </section>
 
+      <section class="tile pf-cardcta">
+        <div class="pf-cardcta-art"><span>♞</span></div>
+        <div class="pf-cardcta-body">
+          <h3>Your profile card</h3>
+          <p class="pf-hint" style="margin:2px 0 0">What people see when they press your name. Connect lichess, add your
+            chess.com, USCF, FIDE and NW Chess ratings, and pick a style — ranked podiums unlock rarer ones.</p>
+        </div>
+        <div class="pf-cardcta-btns">
+          <button class="btn subtle" data-profile="${esc(ctx.user.uid)}">View my card</button>
+          <button class="btn primary" id="pf-account">Account settings</button>
+        </div>
+      </section>
+
       <section class="tile pf-edit">
         <h3>Appearance</h3>
         <div class="pf-field">
@@ -1599,6 +1639,8 @@ async function renderProfile(ctx, host) {
     } catch (e) { console.error(e); toast('Could not save', 'error'); }
     btn.disabled = false; btn.textContent = 'Save changes';
   };
+
+  host.querySelector('#pf-account').onclick = () => openAccountSettings(ctx);
 
   host.querySelector('#pf-leave').onclick = async () => {
     const ok = await confirmDialog({
@@ -1775,16 +1817,23 @@ async function renderMembers(ctx, host) {
       return `<div class="user-row">
         <div class="user-rank${i === 0 ? ' top' : ''}">${i + 1}</div>
         <div class="user-avatar-circle" style="background:${esc(m.avatarColor || '#2e90fa')}">${esc(initials(m.username || m.email))}</div>
-        <div class="user-info">
+        <div class="user-info lb-clickable" data-profile="${esc(m.uid || m.id)}">
           <div class="user-uid">${esc(m.username || 'Player')}
             <span class="role-pill ${esc(role)}">${esc(ROLE_LABEL[role] || 'Student')}</span></div>
           <div class="user-role">${esc(m.email || '')}</div>
         </div>
         <div class="user-pts-col"><span class="user-pts-num">${m.points || 0}</span><span class="user-pts-label">pts</span></div>
-        <button class="user-edit-btn" data-m="${esc(m.id)}">${manageable || m.uid === ctx.user.uid ? 'Manage' : 'View'}</button>
+        <div class="user-row-btns">
+          <button class="user-icon-btn" data-li-link="${esc(m.id)}" title="Link lichess usernames">${LINK_SVG}</button>
+          <button class="user-edit-btn" data-m="${esc(m.id)}">${manageable || m.uid === ctx.user.uid ? 'Manage' : 'View'}</button>
+        </div>
       </div>`;
     }).join('');
     host.querySelectorAll('[data-m]').forEach((b) => (b.onclick = () => manage(members.find((x) => x.id === b.dataset.m))));
+    host.querySelectorAll('[data-li-link]').forEach((b) => (b.onclick = () => {
+      const m = members.find((x) => x.id === b.dataset.liLink);
+      if (m) openLinkUsernames(ctx, { ...m, uid: m.uid || m.id });
+    }));
   };
 
   host.querySelectorAll('.filter-btn').forEach((b) => (b.onclick = () => {

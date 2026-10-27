@@ -11,6 +11,7 @@
 import {
   auth, db, doc, getDoc, setDoc, requireUser, signOut, initials, esc, CLUB_COLORS
 } from './club-core.js';
+import { installProfileCards, openAccountSettings } from './profile-card.js';
 
 export const HUB_TABS = [
   {
@@ -76,7 +77,7 @@ export async function bootHub(active) {
 
   /* clubId null is the whole signal: every club-scoped branch in the duels
      and tournaments modules folds away when it sees this. */
-  return {
+  const ctx = {
     clubId: null,
     club: { name: 'JagChess', blocks: [] },
     user,
@@ -86,6 +87,20 @@ export async function bootHub(active) {
     page: active,
     cleanup: null
   };
+
+  /* Your name in the corner is the way into your own account, and anybody
+     else's name anywhere on the page is the way into theirs. */
+  installProfileCards(ctx);
+  const me = document.querySelector('.hub-user');
+  if (me) {
+    me.classList.add('hub-user-btn');
+    me.setAttribute('role', 'button');
+    me.tabIndex = 0;
+    me.title = 'Account settings';
+    me.onclick = () => openAccountSettings(ctx);
+    me.onkeydown = (e) => { if (e.key === 'Enter') openAccountSettings(ctx); };
+  }
+  return ctx;
 }
 
 function paintChrome(user, username, avatarColor, active) {

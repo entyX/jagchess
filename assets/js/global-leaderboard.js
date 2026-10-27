@@ -14,6 +14,8 @@ import {
 import { readRating, displayRating } from './glicko2.js';
 import { readRecord, watchActiveDuels, gameOf, setDuelIntent } from './club-duels.js';
 import { bootHub } from './hub-shell.js';
+import { watchRanked, rankedBoardHTML, wireRankedBoard, TROPHY_SVG } from './ranked.js';
+import { noteMyRank } from './profile-card.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -29,6 +31,7 @@ const SWORD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
   let players = [];
   let games = [];
   let sortBy = 'rating';
+  let stopRanked = null;
 
   const host = $('hub-main');
   host.innerHTML = `
@@ -36,7 +39,12 @@ const SWORD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
       <button class="lb-tab on" data-s="rating">Global rating</button>
       <button class="lb-tab" data-s="wins">Most wins</button>
       <button class="lb-tab" data-s="games">Most games</button>
+      <button class="lb-tab lb-tab-ranked" data-s="ranked">${TROPHY_SVG}Ranked</button>
     </div>
+    <section class="tile lb-ranked" id="lb-ranked" hidden>
+      <div class="tz-panel-head"><div><h3>Ranked leaderboard</h3><small id="lb-ranked-sub">Trophies from every global lichess tournament · updates live</small></div></div>
+      <div id="lb-ranked-body">${rankedBoardHTML(null, ctx)}</div>
+    </section>
     <div class="tile lb-tile">
       <div class="lb-row lb-row-head has-duel">
         <span class="lb-col-rank">Rank</span>
@@ -54,6 +62,17 @@ const SWORD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
     if (!b) return;
     sortBy = b.dataset.s;
     host.querySelectorAll('.lb-tab').forEach((t) => t.classList.toggle('on', t.dataset.s === sortBy));
+    host.querySelector('#lb-ranked').hidden = sortBy !== 'ranked';
+    host.querySelector('.lb-tile').hidden = sortBy === 'ranked';
+    if (sortBy === 'ranked') {
+      if (!stopRanked) stopRanked = watchRanked(ctx, (board) => {
+        const box = host.querySelector('#lb-ranked-body');
+        box.innerHTML = rankedBoardHTML(board, ctx);
+        wireRankedBoard(box, ctx, board);
+        noteMyRank(ctx, board);
+      });
+      return;
+    }
     host.querySelector('#lb-metric').textContent =
       sortBy === 'rating' ? 'Rating' : sortBy === 'wins' ? 'Wins' : 'Games';
     paint();
@@ -99,7 +118,7 @@ const SWORD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 
       return `<div class="lb-row has-duel${me ? ' lb-row-me' : ''}">
         <span class="lb-col-rank ${medal}">${i + 1}</span>
-        <span class="lb-col-player">
+        <span class="lb-col-player lb-clickable" data-profile="${esc(p.uid)}">
           <span class="lb-avatar" style="background:${esc(p.avatarColor || '#2e90fa')}">${esc(initials(p.username || p.email))}</span>
           <span class="lb-player-info">
             <span class="lb-player-name">${esc(p.username || 'Player')}${me ? '<span class="lb-me-badge">You</span>' : ''}</span>

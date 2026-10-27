@@ -33,6 +33,11 @@ import { TIME_CONTROLS, tcLabel, tcCategory, loadMyRatings } from './club-duels.
 import * as li from './lichess-ui.js';
 import { listTeams, watchTournaments as watchLichess } from './lichess-store.js';
 import { openLichessCreate } from './lichess-create.js';
+import {
+  watchRanked, rankedBoardHTML, wireRankedBoard, modeOf, setMode as setRankedMode, MODES,
+  mayArchive, setArchived, podiumHTML, personAvatar, TROPHY_SVG
+} from './ranked.js';
+import { noteMyRank } from './profile-card.js';
 
 import {
   RETIRED_FORMATS, DURATIONS, tcFromId, phaseOf, arenaEndsAt,
@@ -88,9 +93,33 @@ const PHASE_LABEL = {
 const tournamentHash = (id) => 'tournament/' + id;
 
 /* ═══════════════════════════════════════════════════════════════════ */
-/*  THE LIST                                                           */
+/*  THE HOME SCREEN                                                    */
 /* ═══════════════════════════════════════════════════════════════════ */
 
+/* Two very different phase vocabularies, reduced to the one question the
+   list asks: is this still to come, or is it over? */
+const openish = (kind, phase) => kind === 'lichess'
+  ? (phase === 'scheduled' || phase === 'starting' || phase === 'running')
+  : (phase === 'scheduled' || phase === 'running' || phase === 'ending');
+
+const isLive = (r) => r.phase === 'running' || r.phase === 'ending' || r.phase === 'starting';
+
+const endedAt = (r) => (r.kind === 'lichess'
+  ? (r.t.finishedSeenAt || r.t.finishesAt || r.t.startsAt || 0)
+  : (r.t.finishedAt || r.t.startsAt || 0));
+
+const TAB_KEY = 'jag-tn-tab';
+
+const ARCHIVE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4.5" rx="1.2"/><path d="M5 8.5V18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5"/><path d="M10 12.5h4"/></svg>';
+const RESTORE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v4.4h4.4"/></svg>';
+
+/**
+ * The Tournaments page. Its front door is the ranked season — the standing
+ * board on the left, and on the right whatever is happening: live events
+ * when there are any, the latest results when there are not. Upcoming and
+ * History are a tab away, and look like what they are: a schedule and a
+ * trophy cabinet.
+ */
 export async function renderTournaments(ctx, host, api) {
   const mayHost = ctx.clubId ? ctx.isAdmin : true;
   /* Configuring which lichess teams a page watches decides what everyone
@@ -98,60 +127,99 @@ export async function renderTournaments(ctx, host, api) {
      inside a club, and the site administrator at /admin outside one. The
      hub's Tournaments page therefore has no setup tab. */
   const maySetUp = !!ctx.clubId && ctx.isAdmin;
+  const staff = mayArchive(ctx);
   let all = [];
   let lichess = [];
-  let tab = 'open';
+  let board = null;
+  let tab = 'ranked';
+  try { tab = sessionStorage.getItem(TAB_KEY + (ctx.clubId || '')) || 'ranked'; } catch (_) {}
+  if (tab === 'setup' && !maySetUp) tab = 'ranked';
   let source = 'all';
   let setupCleanup = null;
 
+  const seasonName = ctx.clubId ? ((ctx.club && ctx.club.name) || 'Club') : 'JagChess';
+
   host.innerHTML = `
-    <div class="tn-head">
-      <div class="tn-tabs">
-        <button class="tn-tab on" data-t="open">Upcoming &amp; live</button>
-        <button class="tn-tab" data-t="history">History</button>
-        ${maySetUp ? '<button class="tn-tab" data-t="setup">Lichess</button>' : ''}
-      </div>
-      <div class="tn-head-right">
+    <div class="tz">
+      <section class="tz-hero">
+        <div class="tz-hero-glow"></div>
+        <div class="tz-hero-main">
+          <span class="tz-eyebrow">${TROPHY_SVG}Ranked season</span>
+          <h2>${esc(seasonName)} <span>Ranked</span></h2>
+          <p class="tz-hero-sub" id="tz-mode-sub"></p>
+          <div class="tz-hero-stats" id="tz-stats"></div>
+        </div>
+        <div class="tz-hero-side">
+          ${staff ? `
+            <div class="tz-mode">
+              <small>Trophies from</small>
+              <div class="duel-seg" id="tz-mode">
+                <button type="button" class="duel-seg-opt" data-m="lichess">Lichess points</button>
+                <button type="button" class="duel-seg-opt" data-m="wdl">W · D · L</button>
+              </div>
+            </div>` : ''}
+          ${mayHost ? '<button class="btn primary" id="tn-new">＋ New tournament</button>' : ''}
+        </div>
+      </section>
+
+      <div class="tz-nav">
+        <div class="tz-tabs" id="tz-tabs">
+          <button class="tz-tab" data-t="ranked">${TROPHY_SVG}Ranked</button>
+          <button class="tz-tab" data-t="open"><span class="tz-tab-dot" id="tz-live-dot" hidden></span>Live &amp; upcoming<span class="tz-count" id="tz-open-n"></span></button>
+          <button class="tz-tab" data-t="history">History<span class="tz-count" id="tz-hist-n"></span></button>
+          ${maySetUp ? '<button class="tz-tab" data-t="setup">Lichess setup</button>' : ''}
+        </div>
         <div class="duel-seg tn-source" id="tn-source" hidden>
           <button type="button" class="duel-seg-opt on" data-s="all">All</button>
           <button type="button" class="duel-seg-opt" data-s="jag">JagChess</button>
           <button type="button" class="duel-seg-opt" data-s="lichess">Lichess</button>
         </div>
-        ${mayHost ? '<button class="btn primary" id="tn-new">＋ New tournament</button>' : ''}
       </div>
-    </div>
-    <div id="tn-list"></div>`;
 
-  if (mayHost) {
-    host.querySelector('#tn-new').onclick = () => openNewMenu(ctx, host.querySelector('#tn-new'));
-  }
+      <div id="tz-body"></div>
+    </div>`;
 
-  host.querySelector('#tn-source').onclick = (e) => {
+  const q = (s) => host.querySelector(s);
+
+  if (mayHost) q('#tn-new').onclick = () => openNewMenu(ctx, q('#tn-new'));
+
+  if (q('#tz-mode')) q('#tz-mode').onclick = async (e) => {
+    const b = e.target.closest('[data-m]');
+    if (!b || b.dataset.m === modeOf(ctx)) return;
+    try {
+      await setRankedMode(ctx, b.dataset.m);
+      paintHero();
+      toast(`Ranked now scores by ${MODES[b.dataset.m].label}`, 'ok');
+    } catch (err) {
+      console.error(err);
+      toast('Could not change the scoring', 'error');
+    }
+  };
+
+  q('#tn-source').onclick = (e) => {
     const b = e.target.closest('[data-s]');
     if (!b) return;
     source = b.dataset.s;
-    host.querySelectorAll('#tn-source [data-s]').forEach((x) =>
-      x.classList.toggle('on', x.dataset.s === source));
-    paint();
+    host.querySelectorAll('#tn-source [data-s]').forEach((x) => x.classList.toggle('on', x.dataset.s === source));
+    paintBody();
   };
 
-  host.querySelector('.tn-tabs').onclick = (e) => {
+  q('#tz-tabs').onclick = (e) => {
     const b = e.target.closest('[data-t]');
     if (!b) return;
     tab = b.dataset.t;
-    host.querySelectorAll('.tn-tab').forEach((x) => x.classList.toggle('on', x.dataset.t === tab));
-    paint();
+    try { sessionStorage.setItem(TAB_KEY + (ctx.clubId || ''), tab); } catch (_) {}
+    paintBody();
   };
 
   /* The admin panel is a whole module with its own subscriptions, so it is
      mounted and unmounted rather than repainted with the list. */
-  async function mountSetup() {
-    const list = host.querySelector('#tn-list');
-    list.innerHTML = '<div class="empty-state">Loading…</div>';
+  async function mountSetup(box) {
+    box.innerHTML = '<div class="empty-state">Loading…</div>';
     const { renderLichessAdmin } = await import('./lichess-admin.js');
     if (tab !== 'setup') return;
-    list.innerHTML = '';
-    setupCleanup = renderLichessAdmin(ctx, list, { ownSync: false });
+    box.innerHTML = '';
+    setupCleanup = renderLichessAdmin(ctx, box, { ownSync: false });
   }
 
   const unmountSetup = () => {
@@ -160,95 +228,301 @@ export async function renderTournaments(ctx, host, api) {
     setupCleanup = null;
   };
 
-  /* Two very different phase vocabularies, reduced to the one question the
-     list asks: is this still to come, or is it over? */
-  const openish = (kind, phase) => kind === 'lichess'
-    ? (phase === 'scheduled' || phase === 'starting' || phase === 'running')
-    : (phase === 'scheduled' || phase === 'running' || phase === 'ending');
+  /* ── the rows every view is cut from ─────────────────────────────── */
 
-  function paint() {
+  function rows(now = Date.now()) {
+    const jag = (source === 'lichess' ? [] : all).map((t) => ({ kind: 'jag', t, phase: phaseOf(t, now) }));
+    const lic = (source === 'jag' ? [] : lichess).map((t) => ({ kind: 'lichess', t, phase: li.phaseOf(t, now) }));
+    /* An archived event is gone for students, and kept — marked — for staff,
+       who are the ones who can bring it back. */
+    return [...jag, ...lic].filter((r) => staff || !r.t.staffHidden);
+  }
+
+  const openRows = (now) => rows(now)
+    .filter((r) => openish(r.kind, r.phase))
+    .sort((a, b) => (isLive(a) ? 0 : 1) - (isLive(b) ? 0 : 1) || (a.t.startsAt || 0) - (b.t.startsAt || 0));
+
+  const historyRows = (now) => rows(now)
+    .filter((r) => !openish(r.kind, r.phase) && r.phase !== 'cancelled')
+    .sort((a, b) => endedAt(b) - endedAt(a));
+
+  /* ── a person, from whichever side of the integration named them ─── */
+
+  function who(kind, p) {
+    if (kind === 'jag') return { uid: p.uid, person: p };
+    const id = String(p.username || '').toLowerCase();
+    const uid = board && board.links && board.links[id];
+    const person = uid && board.people[uid];
+    return uid && person
+      ? { uid, person: { ...person, username: person.username || p.username }, alias: p.username }
+      : { uid: null, person: { username: p.username, avatarColor: '#8a8f99' } };
+  }
+
+  const podiumOf = (r) => (r.kind === 'lichess' ? (r.t.podium || []) : (r.t.podiumResult || []));
+
+  /* ── the pieces ──────────────────────────────────────────────────── */
+
+  const termsHTML = (r) => {
+    const t = r.t;
+    if (r.kind === 'lichess') {
+      return `<span class="tz-term li">Lichess ${t.kind === 'swiss' ? 'Swiss' : 'Arena'}</span>
+        <span class="tz-term">${esc(li.clockLabel(t.clock))} ${esc(li.speedOf(t.clock))}</span>
+        ${t.rated ? '<span class="tz-term rated">Rated</span>' : ''}`;
+    }
+    return `<span class="tz-term jag">${esc(formatName(t.format))}</span>
+      <span class="tz-term">${tcLabel(t.tc)} ${tcCategory(t.tc)}</span>
+      ${t.rated ? '<span class="tz-term rated">Rated</span>' : ''}`;
+  };
+
+  const openAttrs = (r) => r.kind === 'lichess'
+    ? `data-open-lichess="${esc(r.t.id)}"` : `data-open="${esc(r.t.id)}"`;
+
+  const archiveBtn = (r) => staff
+    ? `<button class="tz-icon-btn" data-archive="${r.kind}:${esc(r.t.id)}" data-hidden="${r.t.staffHidden ? 1 : 0}"
+        title="${r.t.staffHidden ? 'Restore — show to students and count it again' : 'Archive — hide from students and the ranked board'}">
+        ${r.t.staffHidden ? RESTORE_SVG : ARCHIVE_SVG}</button>` : '';
+
+  const count = (r) => r.kind === 'lichess' ? (r.t.nbPlayers || 0) : (r.t.playerCount || 0);
+
+  /** One finished event, as a ticket with its podium on it. */
+  function ticketHTML(r) {
+    const t = r.t;
+    const d = new Date(t.startsAt || endedAt(r));
+    const pod = podiumOf(r).slice(0, 3);
+    return `
+      <div class="tz-ticket ${t.staffHidden ? 'archived' : ''}" ${openAttrs(r)} role="button" tabindex="0">
+        <div class="tz-date">
+          <span>${d.toLocaleDateString(undefined, { month: 'short' })}</span>
+          <b>${d.getDate()}</b>
+          <small>${d.getFullYear()}</small>
+        </div>
+        <div class="tz-ticket-main">
+          <div class="tz-ticket-top">
+            <b class="tz-ticket-name">${esc(t.name)}</b>
+            ${t.staffHidden ? '<span class="tz-archived-pill">Archived</span>' : ''}
+            ${r.phase === 'retired' ? '<span class="tz-archived-pill">Discontinued</span>' : ''}
+            ${r.phase === 'unavailable' ? '<span class="tz-archived-pill">Unavailable</span>' : ''}
+          </div>
+          <div class="tz-terms">${termsHTML(r)}<span class="tz-term ghost">${count(r)} player${count(r) === 1 ? '' : 's'}</span></div>
+        </div>
+        <div class="tz-ticket-pod">${pod.length ? pod.map((p, i) => {
+          const w = who(r.kind, p);
+          return `<span class="tz-medal m${i + 1}" ${w.uid ? `data-profile="${esc(w.uid)}"` : ''} title="${['1st', '2nd', '3rd'][i]} · ${esc(w.person.username)}${p.score != null ? ' · ' + p.score + ' pts' : ''}">
+            ${personAvatar(w.person, i === 0 ? 34 : 28, 'ring ' + ['gold', 'silver', 'bronze'][i])}
+            <em>${esc(w.person.username)}</em>
+          </span>`;
+        }).join('') : '<span class="tz-nopod">No podium recorded</span>'}</div>
+        ${archiveBtn(r)}
+        <span class="tz-chev">›</span>
+      </div>`;
+  }
+
+  /** One live or upcoming event, big. */
+  function liveCardHTML(r, now) {
+    const t = r.t;
+    const live = isLive(r);
+    const ends = r.kind === 'lichess' ? t.finishesAt : arenaEndsAt(t);
+    const label = r.kind === 'lichess' ? li.PHASE_LABEL[r.phase] : PHASE_LABEL[r.phase];
+    return `
+      <div class="tz-live ${live ? 'on' : 'soon'} ${t.staffHidden ? 'archived' : ''}" ${openAttrs(r)} role="button" tabindex="0">
+        <div class="tz-live-top">
+          <span class="tn-status ${r.phase}">${live ? '<span class="tn-live-dot"></span>' : ''}${esc(label)}</span>
+          ${t.staffHidden ? '<span class="tz-archived-pill">Archived</span>' : ''}
+          ${archiveBtn(r)}
+        </div>
+        <b class="tz-live-name">${esc(t.name)}</b>
+        <div class="tz-terms">${termsHTML(r)}</div>
+        <div class="tz-live-foot">
+          <div class="tz-live-clock">
+            <b data-until="${live ? (ends || 0) : (t.startsAt || 0)}">${live
+              ? (ends ? countdown(ends - now) : '—')
+              : countdown((t.startsAt || 0) - now)}</b>
+            <small>${live ? (ends ? 'left' : (t.kind === 'swiss' ? `round ${t.round || 0}/${t.nbRounds || '?'}` : 'running')) : 'until it starts'}</small>
+          </div>
+          <div class="tz-live-count"><b>${count(r)}</b><small>player${count(r) === 1 ? '' : 's'}</small></div>
+          <span class="btn ${live ? 'primary' : 'subtle'} sm">${live ? 'Watch · Play' : 'Details'}</span>
+        </div>
+      </div>`;
+  }
+
+  /* ── painting ────────────────────────────────────────────────────── */
+
+  function paintHero() {
+    const mode = modeOf(ctx);
+    q('#tz-mode-sub').textContent = ctx.clubId
+      ? `${MODES[mode].label} · ${MODES[mode].hint}`
+      : 'Global lichess tournaments. Every lichess point is a trophy.';
+    if (q('#tz-mode')) {
+      q('#tz-mode').querySelectorAll('[data-m]').forEach((b) => b.classList.toggle('on', b.dataset.m === mode));
+    }
+    const s = (n, label) => `<div class="tz-stat"><b>${n}</b><small>${label}</small></div>`;
+    q('#tz-stats').innerHTML = board
+      ? s(board.tournaments, board.tournaments === 1 ? 'event counted' : 'events counted')
+        + s(board.rows.length, board.rows.length === 1 ? 'ranked player' : 'ranked players')
+        + s(board.games, board.games === 1 ? 'game' : 'games')
+        + (board.liveCount ? `<div class="tz-stat live"><b>${board.liveCount}</b><small>live now</small></div>` : '')
+      : s('—', 'events counted') + s('—', 'ranked players') + s('—', 'games');
+  }
+
+  function paintCounts(now) {
+    const open = openRows(now);
+    const hist = historyRows(now);
+    q('#tz-open-n').textContent = open.length || '';
+    q('#tz-hist-n').textContent = hist.length || '';
+    q('#tz-live-dot').hidden = !open.some(isLive);
+  }
+
+  function paintBody() {
+    host.querySelectorAll('.tz-tab').forEach((x) => x.classList.toggle('on', x.dataset.t === tab));
+    /* The season banner is the point of the Ranked tab; elsewhere it steps
+       back to a strip so the schedule or the cabinet gets the room. */
+    q('.tz-hero').classList.toggle('compact', tab !== 'ranked');
+    const body = q('#tz-body');
+    const now = Date.now();
+    paintCounts(now);
+
     if (tab === 'setup') {
-      host.querySelector('#tn-source').hidden = true;
-      const btn = host.querySelector('#tn-new');
-      if (btn) btn.hidden = true;
-      if (!setupCleanup) mountSetup();
+      q('#tn-source').hidden = true;
+      if (!setupCleanup) mountSetup(body);
       return;
     }
     unmountSetup();
-    const btn = host.querySelector('#tn-new');
-    if (btn) btn.hidden = false;
+    q('#tn-source').hidden = tab === 'ranked' || !lichess.length || !all.length;
 
-    const now = Date.now();
-    host.querySelector('#tn-source').hidden = !lichess.length;
-
-    const jagRows = (source === 'lichess' ? [] : all)
-      .map((t) => ({ kind: 'jag', t, phase: phaseOf(t, now) }));
-    const liRows = (source === 'jag' ? [] : lichess)
-      .map((t) => ({ kind: 'lichess', t, phase: li.phaseOf(t, now) }));
-
-    /* A discontinued format is history whatever its status says — an
-       unfinished bracket must not sit at the top of "upcoming" forever. */
-    const rows = [...jagRows, ...liRows].filter(({ kind, phase }) =>
-      tab === 'open' ? openish(kind, phase) : !openish(kind, phase));
-
-    // live first, then whatever starts soonest
-    const liveRank = (r) => (r.phase === 'running' || r.phase === 'ending' || r.phase === 'starting' ? 0 : 1);
-    rows.sort((a, b) => {
-      if (tab === 'open') {
-        return liveRank(a) - liveRank(b) || (a.t.startsAt || 0) - (b.t.startsAt || 0);
-      }
-      const ended = (r) => (r.kind === 'lichess' ? (r.t.finishesAt || r.t.startsAt || 0)
-        : (r.t.finishedAt || r.t.startsAt || 0));
-      return ended(b) - ended(a);
-    });
-
-    const list = host.querySelector('#tn-list');
-    if (!rows.length) {
-      list.innerHTML = `<div class="empty-state">${tab === 'open'
-        ? (mayHost
-          ? 'No tournaments scheduled. Create one — a date on the calendar is the best thing you can give a club.'
-          : 'No tournaments scheduled right now.')
-        : 'No tournaments have finished yet.'}</div>`;
+    if (tab === 'ranked') {
+      body.innerHTML = `
+        <div class="tz-split">
+          <section class="tz-panel tz-board-panel">
+            <div class="tz-panel-head">
+              <div><h3>Leaderboard</h3><small>${MODES[modeOf(ctx)].short} · updates live</small></div>
+            </div>
+            <div id="tz-board">${rankedBoardHTML(board, ctx)}</div>
+          </section>
+          <section class="tz-panel tz-feed-panel">
+            <div id="tz-feed"></div>
+          </section>
+        </div>`;
+      paintBoard();
+      paintFeed();
       return;
     }
 
-    list.innerHTML = `<div class="tn-grid">${rows.map(({ kind, t, phase }) => {
-      if (kind === 'lichess') return li.lichessCard(t, now);
-      const live = phase === 'running' || phase === 'ending';
-      const podium = t.podiumResult || [];
-      return `
-      <button class="tn-card ${phase}" data-open="${esc(t.id)}">
-        <div class="tn-card-top">
-          <span class="tn-status ${phase}">${live ? '<span class="tn-live-dot"></span>' : ''}${PHASE_LABEL[phase]}</span>
-          <span class="tn-when">${phase === 'scheduled'
-            ? 'in ' + countdown(t.startsAt - now)
-            : live
-              ? countdown(arenaEndsAt(t) - now) + ' left'
-              : startLabel(t)}</span>
-        </div>
-        <div class="tn-card-name">${esc(t.name)}</div>
-        <div class="tn-card-terms">${termPills(t)}</div>
-        ${podium.length ? `<div class="tn-podium-mini">${podium.slice(0, 3).map((p, i) =>
-          `<span class="tn-podium-chip p${i + 1}">${['1st', '2nd', '3rd'][i]} ${esc(p.username)}</span>`).join('')}</div>` : ''}
-        <div class="tn-card-foot">
-          <span class="tn-card-host">${avatarHTML(t.host, 20)} ${esc(t.host.username)}</span>
-          <span class="tn-card-count">${t.playerCount || 0} ${(t.playerCount || 0) === 1 ? 'player' : 'players'}</span>
-        </div>
-      </button>`;
-    }).join('')}</div>`;
+    if (tab === 'open') {
+      const rs = openRows(now);
+      body.innerHTML = rs.length
+        ? `<div class="tz-live-grid">${rs.map((r) => liveCardHTML(r, now)).join('')}</div>`
+        : emptyHTML(mayHost
+          ? 'Nothing scheduled. A date on the calendar is the best thing you can give a club.'
+          : 'Nothing scheduled right now. Check back soon.');
+      wireList(body);
+      return;
+    }
 
-    list.querySelectorAll('[data-open]').forEach((b) => {
-      b.onclick = () => { location.hash = tournamentHash(b.dataset.open); };
+    // history: a cabinet, grouped by month
+    const rs = historyRows(now);
+    if (!rs.length) { body.innerHTML = emptyHTML('No tournaments have finished yet.'); return; }
+    const groups = [];
+    rs.forEach((r) => {
+      const d = new Date(r.t.startsAt || endedAt(r));
+      const key = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      const g = groups[groups.length - 1];
+      if (g && g.key === key) g.rows.push(r); else groups.push({ key, rows: [r] });
     });
-    list.querySelectorAll('[data-open-lichess]').forEach((b) => {
+    body.innerHTML = `<div class="tz-history">${groups.map((g) => `
+      <div class="tz-month">
+        <div class="tz-month-head"><b>${esc(g.key)}</b><span>${g.rows.length} event${g.rows.length === 1 ? '' : 's'}</span></div>
+        <div class="tz-tickets">${g.rows.map(ticketHTML).join('')}</div>
+      </div>`).join('')}</div>`;
+    wireList(body);
+  }
+
+  function paintBoard() {
+    const box = q('#tz-board');
+    if (!box) return;
+    box.innerHTML = rankedBoardHTML(board, ctx);
+    wireRankedBoard(box, ctx, board);
+  }
+
+  /* Right of the board: whatever is happening, or the latest results. */
+  function paintFeed() {
+    const box = q('#tz-feed');
+    if (!box) return;
+    const now = Date.now();
+    const open = openRows(now);
+    const liveRows = open.filter(isLive);
+    const next = open.find((r) => !isLive(r));
+    const recent = historyRows(now).slice(0, 6);
+
+    if (liveRows.length) {
+      box.innerHTML = `
+        <div class="tz-panel-head"><div><h3><span class="tn-live-dot"></span> Happening now</h3><small>${liveRows.length} live · trophies move as games finish</small></div></div>
+        <div class="tz-feed-live">${liveRows.map((r) => liveCardHTML(r, now)).join('')}</div>
+        ${next ? `<div class="tz-feed-sub">Up next</div>${liveCardHTML(next, now)}` : ''}
+        ${recent.length ? `<div class="tz-feed-sub">Latest results</div>
+          <div class="tz-tickets compact">${recent.slice(0, 3).map(ticketHTML).join('')}</div>` : ''}
+        <button class="tz-more" data-goto="history">See past tournaments →</button>`;
+    } else {
+      box.innerHTML = `
+        <div class="tz-panel-head"><div><h3>Recent results</h3><small>${recent.length ? 'The latest podiums' : 'Nothing has finished yet'}</small></div></div>
+        ${next ? `<div class="tz-feed-sub">Up next</div>${liveCardHTML(next, now)}<div class="tz-feed-sub">Latest</div>` : ''}
+        ${recent.length ? `<div class="tz-tickets compact">${recent.map(ticketHTML).join('')}</div>`
+          : '<div class="rk-empty"><b>No results yet</b><small>Finished tournaments land here with their podiums.</small></div>'}
+        ${historyRows(now).length > recent.length ? '<button class="tz-more" data-goto="history">All history →</button>' : ''}`;
+    }
+    wireList(box);
+  }
+
+  const emptyHTML = (msg) => `<div class="rk-empty wide"><span class="rk-empty-ico">${TROPHY_SVG}</span><b>${esc(msg)}</b></div>`;
+
+  function wireList(scope) {
+    scope.querySelectorAll('[data-open]').forEach((b) => {
+      b.onclick = () => { location.hash = tournamentHash(b.dataset.open); };
+      b.onkeydown = (e) => { if (e.key === 'Enter') b.onclick(); };
+    });
+    scope.querySelectorAll('[data-open-lichess]').forEach((b) => {
       b.onclick = () => { location.hash = li.hashFor(b.dataset.openLichess); };
+      b.onkeydown = (e) => { if (e.key === 'Enter') b.onclick(); };
+    });
+    scope.querySelectorAll('[data-goto]').forEach((b) => {
+      b.onclick = () => { tab = b.dataset.goto; paintBody(); };
+    });
+    scope.querySelectorAll('[data-archive]').forEach((b) => {
+      b.onclick = async (e) => {
+        e.stopPropagation();
+        const [kind, id] = b.dataset.archive.split(':');
+        const hide = b.dataset.hidden !== '1';
+        if (hide) {
+          const ok = await confirmDialog({
+            title: 'Archive this tournament?',
+            body: 'Students will no longer see it, and it stops counting towards the ranked leaderboard. You can restore it any time.',
+            confirmText: 'Archive'
+          });
+          if (!ok) return;
+        }
+        try {
+          await setArchived(kind, id, hide);
+          toast(hide ? 'Archived — hidden from students and ranked' : 'Restored', 'ok');
+        } catch (err) {
+          console.error(err);
+          toast(err.code === 'permission-denied' ? 'Only club staff can archive tournaments.' : 'Could not change that', 'error');
+        }
+      };
     });
   }
 
+  /* ── keeping it live ─────────────────────────────────────────────── */
+
   const stops = [
-    watchTournamentList(ctx, (rows) => { all = rows; paint(); }),
-    watchLichess(ctx, (rows) => { lichess = rows; paint(); })
+    watchTournamentList(ctx, (r) => { all = r; paintBody(); }),
+    watchLichess(ctx, (r) => { lichess = r; paintBody(); }),
+    watchRanked(ctx, (b) => {
+      board = b;
+      paintHero();
+      if (tab === 'ranked') { paintBoard(); paintFeed(); }
+      noteMyRank(ctx, b);
+    })
   ];
+  paintHero();
 
   /* A club's lichess teams have to be synced by somebody, and this is the
      page where the result shows. Outside a club the hub page has already
@@ -259,8 +533,22 @@ export async function renderTournaments(ctx, host, api) {
       .then(({ startSync }) => { stops.push(startSync(ctx)); })
       .catch((e) => console.warn('Could not start the lichess sync', e));
   }
-  // the countdowns on the cards have to move on their own
-  const tick = setInterval(paint, 1000);
+
+  /* Countdowns move on their own, without redrawing anything else; a start
+     time passing changes what belongs where, so that redraws once. */
+  let lastSplit = '';
+  const tick = setInterval(() => {
+    const now = Date.now();
+    host.querySelectorAll('[data-until]').forEach((n) => {
+      const at = +n.dataset.until;
+      if (at) n.textContent = countdown(at - now);
+    });
+    const split = openRows(now).map((r) => r.t.id + r.phase).join();
+    if (split !== lastSplit) {
+      if (lastSplit) paintBody();
+      lastSplit = split;
+    }
+  }, 1000);
 
   return () => {
     unmountSetup();
@@ -563,7 +851,7 @@ export async function renderTournamentView(ctx, host, id, api) {
         ${phase === 'cancelled' ? '<div class="empty-state">This tournament was cancelled.</div>' : ''}
         ${retiredHTML(phase)}
 
-        ${t.podiumResult && t.podiumResult.length ? podiumHTML(t.podiumResult) : ''}
+        ${t.podiumResult && t.podiumResult.length ? arenaPodium(t.podiumResult) : ''}
 
         <div class="tn-body">
           <div class="tn-main">
@@ -632,15 +920,15 @@ export async function renderTournamentView(ctx, host, id, api) {
         </label>` : ''}`;
   }
 
-  function podiumHTML(podium) {
-    const label = ['Champion', 'Runner-up', 'Third', 'Fourth'];
-    return `<section class="tn-podium">${podium.map((p, i) => `
-      <div class="tn-podium-card p${i + 1}">
-        <span class="tn-podium-place">${i + 1}</span>
-        ${avatarHTML(p, 44)}
-        <b>${esc(p.username)}</b>
-        <small>${label[i]}${p.score != null && !isRetiredFormat(t.format) ? ` · ${p.score} pts` : ''}</small>
-      </div>`).join('')}</section>`;
+  function arenaPodium(podium) {
+    const label = ['Champion', 'Runner-up', 'Third'];
+    const scored = !isRetiredFormat(t.format);
+    return `<section class="tz-podium-stage">${podiumHTML(podium.slice(0, 3).map((p, i) => ({
+      uid: p.uid,
+      person: p,
+      value: p.score != null && scored ? `${TROPHY_SVG}${p.score} pts` : '',
+      sub: label[i]
+    })), { cls: 'big' })}</section>`;
   }
 
   /* ── standings ─────────────────────────────────────────────────── */
@@ -670,7 +958,7 @@ export async function renderTournamentView(ctx, host, id, api) {
         <div class="tn-rows">${rows.map((p, i) => {
           const isMe = p.uid === ctx.user.uid;
           const medal = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-          return `<div class="tn-row ${isMe ? 'me' : ''} ${p.state === 'out' ? 'gone' : ''}">
+          return `<div class="tn-row ${isMe ? 'me' : ''} ${p.state === 'out' ? 'gone' : ''}" data-profile="${esc(p.uid)}">
             <span class="tn-c-rank ${medal}">${p.place || i + 1}</span>
             <span class="tn-c-player">
               ${avatarHTML(p, 30)}

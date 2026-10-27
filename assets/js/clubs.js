@@ -13,6 +13,7 @@ import {
 } from './club-core.js';
 
 import { hubTabsHTML } from './hub-shell.js';
+import { installProfileCards, openAccountSettings } from './profile-card.js';
 
 const $ = (id) => document.getElementById(id);
 /* What each starting point puts in the club's menu. A school club gets the
@@ -69,6 +70,16 @@ let bannedFrom = {};   // clubId → true, kept on the user profile for cheap fi
 
   const me = await getDoc(doc(db, 'users', user.uid));
   bannedFrom = (me.exists() && me.data().bannedFrom) || {};
+
+  /* Account settings live behind your name here as on every hub page. */
+  const acct = { clubId: null, user, member: { uid: user.uid, username: name }, isAdmin: false };
+  installProfileCards(acct);
+  const chip = document.querySelector('.hub-user');
+  if (chip) {
+    chip.classList.add('hub-user-btn');
+    chip.title = 'Account settings';
+    chip.onclick = () => openAccountSettings(acct);
+  }
 
   // the club address preview follows whichever domain you're actually on
   document.querySelectorAll('[data-host]').forEach((n) => (n.textContent = location.host + '/clubs/'));

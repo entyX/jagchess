@@ -20,6 +20,7 @@ import {
 import { openClubShare, canShareClub } from './club-share.js';
 import { enableReorder } from './nav-reorder.js';
 import { maybePromptAttendance, openGuestAttendance } from './club-attendance.js';
+import { installProfileCards, openAccountSettings } from './profile-card.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -130,6 +131,7 @@ let myGame = null;
   paintStats();
   buildNav();
   wireChrome();
+  installProfileCards(ctx);
   document.body.classList.toggle('is-editor', ctx.isAdmin);
   paintSetup();
 
@@ -822,6 +824,7 @@ function openUserMenu() {
   const dark = currentTheme() === 'dark';
   openMenu($('nav-user'), `
     <button class="pop-item" data-act="profile">${icon('user')}<span>Your profile</span></button>
+    <button class="pop-item" data-act="account">${icon('cog')}<span>Account settings</span></button>
     <button class="pop-item" data-act="theme">${icon(dark ? 'sun' : 'moon')}<span>${dark ? 'Light mode' : 'Dark mode'}</span></button>
     <button class="pop-item" data-act="tour">${icon('sparkle')}<span>Show me around</span></button>
     <a class="pop-item" data-act="help" href="/guide" target="_blank" rel="noopener">${icon('help')}<span>Help guide</span></a>
@@ -831,6 +834,7 @@ function openUserMenu() {
     place: 'above',
     onPick: (act) => {
       if (act === 'profile') { location.hash = 'profile'; $('app').classList.remove('nav-open'); }
+      if (act === 'account') { $('app').classList.remove('nav-open'); openAccountSettings(ctx); }
       if (act === 'theme') toggleTheme();
       if (act === 'tour') startTour();
       if (act === 'logout') signOut(auth).then(() => (location.href = '/login'));

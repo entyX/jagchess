@@ -42,6 +42,9 @@ import {
 import * as live from './lichess-live.js';
 import { focusTournament } from './lichess-sync.js';
 import { openLichessGame, closeLichessGame } from './lichess-board.js';
+import {
+  loadRanked, lastRanked, podiumHTML, personAvatar, mayArchive, setArchived, TROPHY_SVG
+} from './ranked.js';
 
 /* ── shared bits ───────────────────────────────────────────────────── */
 
@@ -182,6 +185,14 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
   let games = [];
   let dead = false;
   let tab = 'standings';
+  let gameFilter = '';
+  /* Who each lichess name is on JagChess, when anybody has said. */
+  let board = lastRanked(ctx);
+  const jagOf = (name) => {
+    const uid = board && board.links && board.links[String(name || '').toLowerCase()];
+    const person = uid && board.people && board.people[uid];
+    return uid && person ? { uid, person } : null;
+  };
 
   /* What lichess says about your teams. `null` means we have not asked or
      could not — never "you are not a member", which is the distinction that
@@ -280,7 +291,8 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
       t && t.membershipRequired, t && t.requiredTeamId,
       parts.length, parts.slice(0, 40).map((p) => p.userId + p.rank + p.score).join(','),
       games.length, games.filter((g) => g.state !== store.GAME_STATE.FINISHED).map((g) => g.gameId).join(','),
-      tab, joinState, s && s.username, myTeams && myTeams.length, amIn()
+      tab, joinState, s && s.username, myTeams && myTeams.length, amIn(),
+      t && t.staffHidden, board ? Object.keys(board.links || {}).length : -1
     ].join('|');
   }
 
@@ -303,7 +315,7 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
               <span class="tn-status ${phase}">${phase === 'running' || phase === 'starting' ? '<span class="tn-live-dot"></span>' : ''}${PHASE_LABEL[phase]}</span>
               <span class="tn-pill lichess">Lichess ${esc(t.kind === 'swiss' ? 'Swiss' : 'Arena')}</span>
               ${t.teamName ? `<span class="tn-pill soft">${esc(t.teamName)}</span>` : ''}
-              ${t.clubName ? `<span class="tn-pill soft">${esc(t.clubName)}</span>` : ''}
+              ${t.clubName && t.clubName !== t.teamName ? `<span class="tn-pill soft">${esc(t.clubName)}</span>` : ''}
             </div>
             <h2>${esc(t.name)}</h2>
             <div class="tn-hero-terms">${termPills()}</div>
@@ -313,7 +325,10 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
               ${t.durationMin ? ' · ' + t.durationMin + ' minutes' : ''}
               ${t.kind === 'swiss' && t.nbRounds ? ` · round ${t.round || 0} of ${t.nbRounds}` : ''}
             </div>
-            <a class="li-out" href="${esc(t.url)}" target="_blank" rel="noopener">Open on lichess.org ↗</a>
+            <div class="li-hero-links">
+              <a class="li-out" href="${esc(t.url)}" target="_blank" rel="noopener">Open on lichess.org ↗</a>
+              ${mayArchive(ctx) ? `<button class="li-out li-archive" id="li-archive">${t.staffHidden ? 'Restore to students &amp; ranked' : 'Archive this tournament'}</button>` : ''}
+            </div>
           </div>
           <div class="tn-hero-side">
             <div id="li-clock">${clockPanel(phase, now)}</div>
@@ -321,15 +336,16 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
           </div>
         </section>
 
+        ${t.staffHidden ? `<div class="li-notice-bar"><b>Archived.</b><span>Students do not see this tournament, and it does not count towards the ranked leaderboard.</span></div>` : ''}
         ${accessNotice(phase)}
 
-        ${t.podium && t.podium.length ? podiumHTML(t.podium) : ''}
+        ${t.podium && t.podium.length ? lichessPodium(t.podium) : ''}
 
         <div class="tn-body">
           <div class="tn-main">
             <div class="li-tabs">
               <button class="tn-tab ${tab === 'standings' ? 'on' : ''}" data-tab="standings">Standings</button>
-              <button class="tn-tab ${tab === 'games' ? 'on' : ''}" data-tab="games">Games${games.length ? ` <span class="li-count">${games.length}</span>` : ''}</button>
+              <button class="tn-tab ${tab === 'games' ? 'on' : ''}" data-tab="games">Match history${games.length ? ` <span class="li-count">${games.length}</span>` : ''}</button>
               <button class="tn-tab ${tab === 'about' ? 'on' : ''}" data-tab="about">About</button>
             </div>
             ${tab === 'standings' ? standingsHTML() : tab === 'games' ? gamesHTML() : aboutHTML()}
@@ -497,7 +513,7 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
             <span class="tn-c-player">
               ${avatarFor(p.username, 30)}
               <span class="tn-player-id">
-                <span class="tn-player-name">${titleTag(p.title)}${esc(p.username)}${isMe ? '<span class="lb-me-badge">You</span>' : ''}</span>
+                <span class="tn-player-name">${titleTag(p.title)}${esc(p.username)}${isMe ? '<span class="lb-me-badge">You</span>' : ''}${jagChip(p.username)}</span>
                 <span class="tn-player-sub">${p.rating ? esc(String(p.rating)) : 'unrated'}${p.team ? ' · ' + esc(p.team) : ''}${inGame ? ' · <span class="li-inplay">playing now</span>' : ''}</span>
               </span>
             </span>
@@ -519,28 +535,67 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
   const finished = () => games.filter((g) => g.state === store.GAME_STATE.FINISHED);
   const ongoing = () => games.filter((g) => g.state !== store.GAME_STATE.FINISHED);
 
+  /* Match history: every game, each one a button that opens it on a
+     JagChess board — live if it is still going, as a replay if it is not. */
   function gamesHTML() {
     if (!games.length) {
       return `<section class="tile"><div class="empty-state">${isOver(t)
         ? 'The games for this tournament have not been archived yet.'
         : 'No games yet. They appear here as soon as the first pairings are made.'}</div></section>`;
     }
-    const row = (g) => {
-      const res = g.state === store.GAME_STATE.FINISHED
-        ? (g.result || '—') : '<span class="li-playing">playing</span>';
-      return `<button class="li-game-row" data-game="${esc(g.gameId)}">
-        <span class="li-g-side ${g.winner === 'white' ? 'won' : ''}">${avatarFor(g.white.username, 22)} ${esc(g.white.username)}<i>${g.white.rating || ''}</i></span>
-        <span class="li-g-res">${res}</span>
-        <span class="li-g-side ${g.winner === 'black' ? 'won' : ''}">${avatarFor(g.black.username, 22)} ${esc(g.black.username)}<i>${g.black.rating || ''}</i></span>
-      </button>`;
+    const byTime = (a, b) => (b.createdAt || b.updatedAt || 0) - (a.createdAt || a.updatedAt || 0);
+    const done = finished().sort(byTime);
+    const total = done.length;
+    const side = (g, color) => {
+      const p = g[color] || {};
+      const res = g.state !== store.GAME_STATE.FINISHED ? 'live'
+        : !g.winner ? 'draw' : g.winner === color ? 'won' : 'lost';
+      const diff = p.ratingDiff != null && p.ratingDiff !== 0
+        ? `<em class="${p.ratingDiff > 0 ? 'up' : 'down'}">${p.ratingDiff > 0 ? '+' : ''}${p.ratingDiff}</em>` : '';
+      return `<span class="mh-side ${res} ${color}">
+        <i class="mh-piece ${color}"></i>
+        <span class="mh-name">${titleTag(p.title)}${esc(p.username || '?')}${p.berserk ? '<span class="mh-berserk" title="Berserked">⚡</span>' : ''}</span>
+        <small>${p.rating || ''}${diff}</small>
+      </span>`;
     };
+    const plies = (g) => (g.moves ? g.moves.trim().split(/\s+/).length : 0);
+    const resultOf = (g) => g.state !== store.GAME_STATE.FINISHED
+      ? '<span class="mh-res live"><span class="tn-live-dot"></span>live</span>'
+      : `<span class="mh-res">${g.winner === 'white' ? '1–0' : g.winner === 'black' ? '0–1' : '½–½'}</span>`;
+    const row = (g, n) => `
+      <button class="mh-row ${g.state === store.GAME_STATE.FINISHED ? '' : 'live'}" data-game="${esc(g.gameId)}"
+        data-names="${esc(((g.white.username || '') + ' ' + (g.black.username || '')).toLowerCase())}">
+        <span class="mh-no">${n ? '#' + n : ''}</span>
+        ${side(g, 'white')}
+        ${resultOf(g)}
+        ${side(g, 'black')}
+        <span class="mh-meta">${plies(g) ? Math.ceil(plies(g) / 2) + ' moves' : ''}${g.status && g.status !== 'started' ? ' · ' + esc(g.status) : ''}</span>
+        <span class="mh-watch">${g.state === store.GAME_STATE.FINISHED ? '▶ Replay' : '● Watch'}</span>
+      </button>`;
     return `
-      <section class="tile">
-        ${ongoing().length ? `<div class="tn-standings-head"><h3>In progress</h3><span class="muted">${ongoing().length}</span></div>
-          <div class="li-games">${ongoing().slice(0, 40).map(row).join('')}</div>` : ''}
-        ${finished().length ? `<div class="tn-standings-head"><h3>Finished</h3><span class="muted">${finished().length}</span></div>
-          <div class="li-games">${finished().slice(0, 120).map(row).join('')}</div>` : ''}
+      <section class="tile mh">
+        <div class="mh-head">
+          <div><h3>Match history</h3><small>Every game opens on a JagChess board${ongoing().length ? ' — live ones follow along move by move' : ''}.</small></div>
+          <input class="mh-filter" id="mh-filter" placeholder="Filter by player" value="${esc(gameFilter)}" autocomplete="off" />
+        </div>
+        ${ongoing().length ? `<div class="mh-group">In progress · ${ongoing().length}</div>
+          <div class="mh-list">${ongoing().slice(0, 40).map((g) => row(g, 0)).join('')}</div>` : ''}
+        ${done.length ? `<div class="mh-group">Finished · ${done.length}</div>
+          <div class="mh-list">${done.slice(0, 200).map((g, k) => row(g, total - k)).join('')}</div>` : ''}
+        <div class="mh-none" hidden>No games for that player.</div>
       </section>`;
+  }
+
+  function applyGameFilter() {
+    const f = gameFilter.trim().toLowerCase();
+    let shown = 0;
+    host.querySelectorAll('.mh-row').forEach((r) => {
+      const ok = !f || r.dataset.names.includes(f);
+      r.hidden = !ok;
+      if (ok) shown++;
+    });
+    const none = host.querySelector('.mh-none');
+    if (none) none.hidden = shown > 0;
   }
 
   function liveGamesHTML() {
@@ -584,7 +639,8 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
       t.private ? ['Private', 'A password is needed to enter'] : null,
       ['Detected', t.detectedAt ? `${fmtDate(t.detectedAt)} · ${fmtTime(t.detectedAt)}` : '—'],
       ['Last synchronized', t.lastSyncedAt ? `${fmtDate(t.lastSyncedAt)} · ${fmtTime(t.lastSyncedAt)}` : 'never'],
-      ['Archived here', t.archived ? 'Yes — this page no longer depends on lichess' : 'Not yet']
+      ['Saved on JagChess', t.archived ? 'Yes — this page no longer depends on lichess' : 'Not yet'],
+      ['Shown to students', t.staffHidden ? 'No — archived by staff, and left out of ranked' : 'Yes']
     ].filter(Boolean);
 
     return `<section class="tile">
@@ -629,21 +685,30 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
       </p>
       <div class="tn-rule"><span>Last synchronized</span><b id="li-ago">${t.lastSyncedAt
         ? countdown(Date.now() - t.lastSyncedAt) + ' ago' : 'never'}</b></div>
-      ${t.archived ? '<div class="tn-rule"><span>Archived</span><b>Yes</b></div>' : ''}
+      ${t.archived ? '<div class="tn-rule"><span>Saved on JagChess</span><b>Yes</b></div>' : ''}
       ${stale ? '<p class="field-hint bad" style="margin:8px 0 0">This is behind. Lichess may be unreachable or rate-limiting.</p>' : ''}
       <button class="btn subtle block sm" id="li-refresh">Refresh now</button>
     </section>`;
   }
 
-  function podiumHTML(podium) {
-    const label = ['Champion', 'Runner-up', 'Third'];
-    return `<section class="tn-podium">${podium.slice(0, 3).map((p, i) => `
-      <div class="tn-podium-card p${i + 1}">
-        <span class="tn-podium-place">${i + 1}</span>
-        ${avatarFor(p.username, 44)}
-        <b>${esc(p.username)}</b>
-        <small>${label[i]} · ${p.score || 0} pts</small>
-      </div>`).join('')}</section>`;
+  /* A lichess name that belongs to somebody here gets their JagChess face,
+     and the card that goes with it. */
+  function jagChip(name) {
+    const j = jagOf(name);
+    return j ? `<span class="li-jag-chip" data-profile="${esc(j.uid)}" title="${esc(j.person.username || '')} on JagChess">${esc(j.person.username || 'JagChess')}</span>` : '';
+  }
+
+  function lichessPodium(podium) {
+    return `<section class="tz-podium-stage">${podiumHTML(podium.slice(0, 3).map((p) => {
+      const j = jagOf(p.username);
+      return {
+        uid: j ? j.uid : null,
+        person: j ? { ...j.person, username: j.person.username || p.username } : { username: p.username, avatarColor: '#8a8f99' },
+        value: `${TROPHY_SVG}${p.score || 0} pts`,
+        sub: [j && j.person.username !== p.username ? '@' + esc(p.username) : '', p.performance ? 'perf ' + p.performance : '', p.games ? `${p.wins || 0}/${p.games} won` : '']
+          .filter(Boolean).join(' · ')
+      };
+    }), { cls: 'big' })}</section>`;
   }
 
   /* ── wiring ────────────────────────────────────────────────────── */
@@ -658,8 +723,21 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
     host.querySelectorAll('[data-game]').forEach((b) => {
       b.onclick = () => enterGame(b.dataset.game);
     });
+    if (q('#mh-filter')) {
+      q('#mh-filter').oninput = (e) => { gameFilter = e.target.value; applyGameFilter(); };
+      applyGameFilter();
+    }
+    if (q('#li-archive')) q('#li-archive').onclick = async () => {
+      const hide = !t.staffHidden;
+      try {
+        await setArchived('lichess', t.id || t.lichessId, hide);
+        toast(hide ? 'Archived — hidden from students and ranked' : 'Restored', 'ok');
+      } catch (e) {
+        toast(e.code === 'permission-denied' ? 'Only club staff can archive tournaments.' : 'Could not change that', 'error');
+      }
+    };
     host.querySelectorAll('[data-player]').forEach((b) => {
-      b.onclick = () => openPlayerCard(t, b.dataset.player, parts, games);
+      b.onclick = () => openPlayerCard(t, b.dataset.player, parts, games, jagOf(b.dataset.player));
     });
 
     if (q('#li-login-2')) q('#li-login-2').onclick = () => connect(PLAYER_SCOPES);
@@ -975,6 +1053,7 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
   /** Once, when the tournament first loads. */
   async function onFirstLoad() {
     refreshTeams();
+    if (!board) loadRanked(ctx).then((b) => { board = b; if (!dead) render(); }).catch(() => {});
     /* Ask lichess straight away rather than waiting out the first interval,
        so opening the page shows the current state and not the last one
        somebody else's tab happened to record. */
@@ -1074,7 +1153,7 @@ export async function renderLichessGame(ctx, host, id, gameId, api2 = {}) {
 /* ═══════════════════════════════════════════════════════════════════ */
 
 /** A player's performance in the tournament you are looking at. */
-export function openPlayerCard(t, username, parts, games) {
+export function openPlayerCard(t, username, parts, games, jag) {
   const key = String(username || '').toLowerCase();
   const p = parts.find((x) => x.userId === key);
   const theirs = games.filter((g) =>
@@ -1107,10 +1186,11 @@ export function openPlayerCard(t, username, parts, games) {
       return `<div class="li-pg ${res}">
         <span class="li-pg-res">${res}</span>
         <span>${white ? 'White' : 'Black'} vs ${esc(opp)}</span>
-        <a href="${esc(api.gameUrl(g.gameId))}" target="_blank" rel="noopener">↗</a>
+        <a href="#${esc(gameHashFor(t.id || t.lichessId, g.gameId))}" data-x title="Watch on JagChess">▶</a>
       </div>`;
     }).join('') : '<div class="empty-state">No games stored for this player yet.</div>'}</div>
     <div class="li-modal-foot">
+      ${jag ? `<button class="btn primary" data-profile="${esc(jag.uid)}" data-x>JagChess profile</button>` : ''}
       <a class="btn subtle" href="#${esc(playerHashFor(username))}" data-x>All their tournaments</a>
       <a class="btn subtle" href="${esc(api.userUrl(username))}" target="_blank" rel="noopener">Profile on lichess ↗</a>
     </div>

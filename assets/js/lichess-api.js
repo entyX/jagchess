@@ -237,6 +237,10 @@ export async function testToken(token) {
 
 export const account = (token) => getJSON('/api/account', { token, retries: 1 });
 
+/** Anybody's public profile, ratings included. No token. */
+export const publicUser = (username) =>
+  getJSON('/api/user/' + encodeURIComponent(username), { retries: 1 });
+
 /* ═══════════════════════════════════════════════════════════════════ */
 /*  TEAMS                                                              */
 /* ═══════════════════════════════════════════════════════════════════ */

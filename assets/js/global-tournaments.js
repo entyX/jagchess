@@ -112,8 +112,9 @@ function adoptPath() {
       head.hidden = true;
       cleanup = await renderLichessTournament(ctx, host, liGame[1], { listHash: '' });
     } else {
-      // the duel stage is a layer too; keep the list underneath it
-      head.hidden = false;
+      // the duel stage is a layer too; keep the list underneath it.
+      // The ranked hero says what the page heading would.
+      head.hidden = true;
       cleanup = await renderTournaments(ctx, host, {});
     }
 

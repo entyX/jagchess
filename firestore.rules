@@ -192,6 +192,14 @@ service cloud.firestore {
       }
 
       // admin-authored content
+      // a lichess USERNAME staff have said belongs to a member — what the
+      // ranked board uses to credit trophies to somebody who never connected
+      // a lichess account. Members read it; only staff say who is who.
+      match /lichessLinks/{lichessId} {
+        allow read:  if isMember(clubId);
+        allow write: if isStaff(clubId);
+      }
+
       match /events/{id}          { allow read: if isMember(clubId); allow write: if isStaff(clubId); }
       /* Third-party connections the club has made — at present the Google
          Calendar the events are mirrored into. Staff-read, not member-read:
@@ -427,9 +435,17 @@ service cloud.firestore {
         ]);
       }
 
+      // archiving hides a club's tournament from students and the ranked
+      // board; that is the club staff's call, not only the host's
+      function staffArchive() {
+        return touchesOnly(['staffHidden', 'staffHiddenAt'])
+          && resource.data.get('clubId', null) != null
+          && isStaff(resource.data.clubId);
+      }
+
       allow read:   if signedIn();
       allow create: if signedIn() && request.resource.data.host.uid == uid();
-      allow update: if isHost() || (signedIn() && engineFields());
+      allow update: if isHost() || (signedIn() && engineFields()) || staffArchive();
       allow delete: if isHost();
 
       // one row per entrant: score, record, state, pairing
@@ -495,9 +511,19 @@ service cloud.firestore {
       // allowed to claim it — that is what stops duplicates
       function idMatches() { return request.resource.data.lichessId == lichessId; }
 
+      // the sync never writes the archive flag; only those who run the
+      // place may — club staff for a club's events, a site admin otherwise
+      function mayArchive() {
+        return resource.data.get('clubId', null) != null
+          ? isStaff(resource.data.clubId)
+          : isSiteAdmin();
+      }
+
       allow read:   if signedIn();
-      allow create: if signedIn() && idMatches();
-      allow update: if signedIn() && idMatches();
+      allow create: if signedIn() && idMatches()
+                    && !request.resource.data.keys().hasAny(['staffHidden']);
+      allow update: if signedIn() && idMatches()
+                    && (!changes(['staffHidden', 'staffHiddenAt']) || mayArchive());
       // history is not the sync worker's to throw away
       allow delete: if isSiteAdmin();
 
