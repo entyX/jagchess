@@ -31,9 +31,9 @@
 .widget-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 /* widgets that are a single coloured surface draw edge to edge */
-.widget.w-banner, .widget.w-announcement, .widget.w-link, .widget.w-countdown,
-.widget.w-welcome, .widget.w-video { padding: 0; }
-.widget.w-video .widget-body { padding: 16px; }
+.widget.wt-banner, .widget.wt-announcement, .widget.wt-link, .widget.wt-countdown,
+.widget.wt-welcome, .widget.wt-video { padding: 0; }
+.widget.wt-video .widget-body { padding: 16px; }
 
 .dash-canvas.stacked { display: flex; flex-direction: column; gap: 14px; height: auto !important; }
 .dash-canvas.stacked .widget {
@@ -41,11 +41,11 @@
   transform: none !important;
   width: auto !important;
   height: auto !important;
-  min-height: calc(var(--h, 4) * 30px);
+  min-height: calc(var(--h, 8) * 15px);
 }
-.dash-canvas.stacked .w-banner,
-.dash-canvas.stacked .w-video { min-height: 0; }
-.dash-canvas.stacked .widget.w-banner .widget-body { aspect-ratio: 16 / 9; }
+.dash-canvas.stacked .wt-banner,
+.dash-canvas.stacked .wt-video { min-height: 0; }
+.dash-canvas.stacked .widget.wt-banner .widget-body { aspect-ratio: var(--ar, 16 / 9); }
 
 /* loading */
 .dash-skeleton { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
@@ -361,7 +361,7 @@ a.w-banner:hover .w-banner-img.fit-cover { transform: scale(1.02); }
 
 .w-video { flex: 1; min-height: 0; border-radius: 14px; overflow: hidden; background: #000; }
 .w-video iframe { width: 100%; height: 100%; border: 0; display: block; }
-.dash-canvas.stacked .w-video { aspect-ratio: 16 / 9; }
+.dash-canvas.stacked .wt-video .widget-body { aspect-ratio: 16 / 9; }
 
 /* ═══ customize mode ═══════════════════════════════════════════════════ */
 
@@ -398,7 +398,7 @@ a.w-banner:hover .w-banner-img.fit-cover { transform: scale(1.02); }
 /* the grid shows through while customizing */
 .dash.editing .dash-canvas {
   background-image: linear-gradient(to right, color-mix(in srgb, var(--green) 7%, transparent) 1px, transparent 1px);
-  background-size: calc((100% + 16px) / 12) 100%;
+  background-size: calc((100% + 16px) / 24) 100%;
   border-radius: 22px;
 }
 .dash.editing .widget { cursor: grab; touch-action: none; user-select: none; }
@@ -411,23 +411,32 @@ a.w-banner:hover .w-banner-img.fit-cover { transform: scale(1.02); }
 .widget.dragging {
   cursor: grabbing;
   z-index: 20;
-  transition: width .2s var(--ease), height .2s var(--ease), box-shadow .2s !important;
+  /* it tracks the pointer exactly; any easing here reads as wobble */
+  transition: box-shadow .2s !important;
   box-shadow: var(--pop);
   opacity: .96;
+  will-change: transform;
 }
-.widget.resizing { z-index: 20; transition: transform .2s var(--ease) !important; }
+.widget.resizing { z-index: 20; transition: none !important; will-change: transform, width, height; }
 .dash-ghost {
   position: absolute; top: 0; left: 0; z-index: 1;
   border: 2px dashed var(--green); border-radius: 22px;
   background: color-mix(in srgb, var(--green) 8%, transparent);
-  transition: transform .16s var(--ease), width .16s var(--ease), height .16s var(--ease);
+  transition: transform .12s var(--ease), width .12s var(--ease), height .12s var(--ease);
   pointer-events: none;
+}
+.dash-ghost[data-size]:not([data-size=""])::after {
+  content: attr(data-size);
+  position: absolute; right: 8px; bottom: 8px;
+  padding: 3px 8px; border-radius: 8px;
+  background: var(--green); color: #fff;
+  font: 700 12px/1.2 var(--font); font-variant-numeric: tabular-nums;
 }
 .widget.just-added { animation: added .7s var(--spring) both; }
 @keyframes added { 0% { box-shadow: 0 0 0 0 rgba(31,175,90,.5); } 100% { box-shadow: 0 0 0 14px rgba(31,175,90,0), var(--lift-card); } }
 
 .widget-tools {
-  position: absolute; top: 10px; right: 10px; z-index: 3;
+  position: absolute; top: 10px; right: 10px; z-index: 5;
   display: flex; align-items: center; gap: 2px;
   padding: 3px 3px 3px 10px;
   border-radius: 12px;
@@ -449,15 +458,32 @@ a.w-banner:hover .w-banner-img.fit-cover { transform: scale(1.02); }
 .dash-canvas.busy .widget-tools { display: none; }
 
 .widget-resize { position: absolute; z-index: 3; }
-.widget-resize.se {
-  right: 6px; bottom: 6px; width: 18px; height: 18px; cursor: nwse-resize;
+/* edges: thin strips along each side; corners: squares that win over them */
+.widget-resize.n, .widget-resize.s { left: 18px; right: 18px; height: 10px; cursor: ns-resize; }
+.widget-resize.n { top: -2px; }
+.widget-resize.s { bottom: -2px; }
+.widget-resize.e, .widget-resize.w { top: 18px; bottom: 18px; width: 10px; cursor: ew-resize; }
+.widget-resize.e { right: -2px; }
+.widget-resize.w { left: -2px; }
+.widget-resize.ne, .widget-resize.nw, .widget-resize.se, .widget-resize.sw { width: 20px; height: 20px; z-index: 4; }
+.widget-resize.nw { top: -2px; left: -2px; cursor: nwse-resize; }
+.widget-resize.ne { top: -2px; right: -2px; cursor: nesw-resize; }
+.widget-resize.sw { bottom: -2px; left: -2px; cursor: nesw-resize; }
+.widget-resize.se { bottom: -2px; right: -2px; cursor: nwse-resize; }
+/* visible grips: a corner bracket, and a short bar mid-edge */
+.widget-resize.se::after {
+  content: ''; position: absolute; right: 8px; bottom: 8px; width: 12px; height: 12px;
   border-right: 3px solid var(--faint); border-bottom: 3px solid var(--faint);
-  border-radius: 0 0 8px 0;
-  opacity: 0; transition: opacity .15s;
+  border-radius: 0 0 6px 0;
 }
-.widget:hover .widget-resize.se, .widget.selected .widget-resize.se { opacity: 1; }
-.widget-resize.e { top: 20px; bottom: 26px; right: 0; width: 10px; cursor: ew-resize; }
-.widget-resize.s { left: 20px; right: 26px; bottom: 0; height: 10px; cursor: ns-resize; }
+.widget-resize.e::after, .widget-resize.w::after, .widget-resize.n::after, .widget-resize.s::after {
+  content: ''; position: absolute; border-radius: 3px; background: var(--faint);
+}
+.widget-resize.e::after, .widget-resize.w::after { top: 50%; width: 4px; height: 26px; margin-top: -13px; left: 3px; }
+.widget-resize.n::after, .widget-resize.s::after { left: 50%; height: 4px; width: 26px; margin-left: -13px; top: 3px; }
+.widget-resize::after { opacity: 0; transition: opacity .15s; }
+.widget:hover .widget-resize::after, .widget.selected .widget-resize::after, .widget.resizing .widget-resize::after { opacity: 1; }
+.widget-resize:hover::after { background: var(--green); border-color: var(--green); }
 
 .dash-canvas.stacked .widget-resize { display: none; }
 

@@ -11,6 +11,12 @@
    that every move can animate — the one being dragged follows the pointer
    and the rest slide out of its way. Below 900px the canvas gives up on
    positions entirely and stacks widgets in reading order.
+
+   The grid is fine — 24 columns, 12px rows — so a widget can be almost
+   any rectangle. A drag is worked out from a snapshot taken when it began,
+   and only when the cell under it changes, and the outline shown during
+   the drag is exactly where the widget lands: nothing is re-arranged after
+   you let go.
    ═══════════════════════════════════════════════════════════════════════ */
 
 import {
@@ -23,11 +29,14 @@ import { loadMyRatings, setDuelIntent, duelsHash, tcLabel } from './club-duels.j
 import { listTournaments, phaseOf, arenaEndsAt, FORMATS } from './tournaments-core.js';
 import { miniBoardHTML } from './mini-board.js';
 
-const COLS = 12;
-const ROW = 40;       // one grid row, in px
+const COLS = 24;
+const ROW = 12;       // one grid row, in px
 const GAP = 16;
 const UNIT = ROW + GAP;
-const LAYOUT_V = 2;   // layouts saved before this used rows twice as tall
+/* v1 rows were twice as tall as v2's; v3 halved both the columns and the
+   rows of v2. Every step is an exact doubling, so an old layout lands on
+   precisely the same pixels it had before. */
+const LAYOUT_V = 3;
 
 /* ── layout maths ──────────────────────────────────────────────────── */
 
@@ -70,9 +79,53 @@ function compact(layout, pinned) {
   }
 }
 
+/**
+ * Where everything ends up if `moved` is put at its target cell.
+ *
+ * Plain gravity cannot do this: drag a widget down past its neighbour and
+ * the next compaction floats it straight back over it, which is why drops
+ * used to snap somewhere other than where you let go. So the others are
+ * laid out in reading order around the moved one, each free to settle
+ * ABOVE it when there is room — that is what makes a swap — and only then
+ * does everything, the moved widget included, float up.
+ *
+ * Pure: it works on copies of `snapshot` and returns a new layout.
+ */
+function arrange(snapshot, target) {
+  const moved = { ...target };
+  // where the pointer is aiming, which a push never changes
+  const aim = target.y + target.h / 2;
+  const others = snapshot.filter((w) => w.i !== moved.i).map((w) => ({ ...w }))
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+  const placed = [];
+  const overlapX = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x;
+  for (const o of others) {
+    // as high as the widgets already settled in its columns allow…
+    let y = placed.reduce((m, p) => (overlapX(o, p) ? Math.max(m, p.y + p.h) : m), 0);
+    // a widget that belongs after the moved one stays after it
+    if (overlapX(o, moved) && o.y + o.h / 2 >= aim) y = Math.max(y, moved.y + moved.h);
+    /* …and if that spot is the moved one's, whichever centre is higher
+       goes first: drag past the middle of a neighbour and you swap. */
+    if (hit({ ...o, y }, moved)) {
+      if (y + o.h / 2 < aim) {
+        moved.y = y + o.h;
+        while (placed.some((p) => hit(moved, p))) moved.y++;
+      } else {
+        y = moved.y + moved.h;
+      }
+    }
+    while (placed.some((p) => hit({ ...o, y }, p)) || hit({ ...o, y }, moved)) y++;
+    o.y = y;
+    placed.push(o);
+  }
+  const out = [...placed, moved];
+  compact(out);
+  return snapshot.map((w) => out.find((o) => o.i === w.i));
+}
+
 /* The first free spot a widget of this size fits, scanning top-down. */
 function firstFit(layout, w, h) {
-  for (let y = 0; y < 400; y++) {
+  for (let y = 0; y < 2000; y++) {
     for (let x = 0; x + w <= COLS; x++) {
       const probe = { i: '__probe', x, y, w, h };
       if (!layout.some((o) => hit(probe, o))) return { x, y };
@@ -84,13 +137,13 @@ function firstFit(layout, w, h) {
 /* A first look that makes sense for a club that has done nothing yet: who
    you are and what to do, then the three things that change week to week. */
 const DEFAULT_LAYOUT = [
-  { i: 'w1', type: 'welcome',      x: 0, y: 0,  w: 8, h: 5 },
-  { i: 'w2', type: 'quick-duel',   x: 8, y: 0,  w: 4, h: 5 },
-  { i: 'w3', type: 'events-next',  x: 0, y: 5,  w: 4, h: 7 },
-  { i: 'w4', type: 'puzzle-daily', x: 4, y: 5,  w: 4, h: 7 },
-  { i: 'w5', type: 'leaderboard',  x: 8, y: 5,  w: 4, h: 7 },
-  { i: 'w6', type: 'news-latest',  x: 0, y: 12, w: 6, h: 5 },
-  { i: 'w7', type: 'tournaments',  x: 6, y: 12, w: 6, h: 5 }
+  { i: 'w1', type: 'welcome',      x: 0,  y: 0,  w: 16, h: 10 },
+  { i: 'w2', type: 'quick-duel',   x: 16, y: 0,  w: 8,  h: 10 },
+  { i: 'w3', type: 'events-next',  x: 0,  y: 10, w: 8,  h: 14 },
+  { i: 'w4', type: 'puzzle-daily', x: 8,  y: 10, w: 8,  h: 14 },
+  { i: 'w5', type: 'leaderboard',  x: 16, y: 10, w: 8,  h: 14 },
+  { i: 'w6', type: 'news-latest',  x: 0,  y: 24, w: 12, h: 10 },
+  { i: 'w7', type: 'tournaments',  x: 12, y: 24, w: 12, h: 10 }
 ];
 
 const TIPS = [
@@ -108,25 +161,25 @@ const TIPS = [
 /* `group` is the gallery shelf it sits on. `settings` lists what its drawer
    lets you change beyond the title, which everything has. */
 export const WIDGETS = {
-  welcome:        { name: 'Welcome', desc: 'A greeting with the club\'s next step', group: 'Club', w: 8, h: 5, minW: 4, minH: 4, icon: 'wave' },
-  announcement:   { name: 'Announcement', desc: 'A coloured card for news nobody should miss', group: 'Club', w: 6, h: 4, minW: 3, minH: 3, icon: 'megaphone', settings: ['color', 'emoji', 'body', 'button'] },
-  banner:         { name: 'Image banner', desc: 'A photo, poster or sponsor ad that fits itself to the space', group: 'Club', w: 12, h: 5, minW: 3, minH: 2, icon: 'image', settings: ['image', 'link'] },
-  text:           { name: 'Text', desc: 'Club rules, a meeting room, what to bring', group: 'Club', w: 4, h: 4, minW: 2, minH: 2, icon: 'text', settings: ['body'] },
-  link:           { name: 'Button link', desc: 'Send people to a sign-up sheet, group chat or form', group: 'Club', w: 4, h: 2, minW: 2, minH: 2, icon: 'link', settings: ['color', 'emoji', 'url', 'desc'] },
-  countdown:      { name: 'Countdown', desc: 'Days until the next meeting or a big tournament', group: 'Club', w: 4, h: 4, minW: 3, minH: 3, icon: 'timer', settings: ['date', 'color'] },
-  video:          { name: 'Video', desc: 'A YouTube lesson or highlight', group: 'Club', w: 6, h: 7, minW: 3, minH: 4, icon: 'play', settings: ['video'] },
+  welcome:        { name: 'Welcome', desc: 'A greeting with the club\'s next step', group: 'Club', w: 16, h: 10, minW: 8, minH: 8, icon: 'wave' },
+  announcement:   { name: 'Announcement', desc: 'A coloured card for news nobody should miss', group: 'Club', w: 12, h: 8, minW: 4, minH: 4, icon: 'megaphone', settings: ['color', 'emoji', 'body', 'button'] },
+  banner:         { name: 'Image banner', desc: 'A photo, poster or sponsor ad, in any rectangle you drag it to', group: 'Club', w: 24, h: 10, minW: 2, minH: 2, icon: 'image', settings: ['image', 'link'] },
+  text:           { name: 'Text', desc: 'Club rules, a meeting room, what to bring', group: 'Club', w: 8, h: 8, minW: 3, minH: 3, icon: 'text', settings: ['body'] },
+  link:           { name: 'Button link', desc: 'Send people to a sign-up sheet, group chat or form', group: 'Club', w: 8, h: 4, minW: 4, minH: 3, icon: 'link', settings: ['color', 'emoji', 'url', 'desc'] },
+  countdown:      { name: 'Countdown', desc: 'Days until the next meeting or a big tournament', group: 'Club', w: 8, h: 8, minW: 6, minH: 6, icon: 'timer', settings: ['date', 'color'] },
+  video:          { name: 'Video', desc: 'A YouTube lesson or highlight', group: 'Club', w: 12, h: 14, minW: 6, minH: 8, icon: 'play', settings: ['video'] },
 
-  'events-next':  { name: 'Upcoming events', desc: 'The next few dates on the calendar', group: 'Activity', w: 4, h: 7, minW: 3, minH: 4, icon: 'calendar' },
-  'news-latest':  { name: 'Latest news', desc: 'The newest newsletters', group: 'Activity', w: 6, h: 5, minW: 3, minH: 3, icon: 'mail' },
-  leaderboard:    { name: 'Leaderboard', desc: 'Who has the most points', group: 'Activity', w: 4, h: 7, minW: 3, minH: 4, icon: 'trophy' },
-  tournaments:    { name: 'Tournaments', desc: 'What is running and what is next', group: 'Activity', w: 6, h: 5, minW: 3, minH: 3, icon: 'bracket' },
-  'club-stats':   { name: 'Club stats', desc: 'Members, events and points at a glance', group: 'Activity', w: 12, h: 2, minW: 4, minH: 2, icon: 'chart' },
-  'stat-members': { name: 'Member count', desc: 'How many people are in the club', group: 'Activity', w: 3, h: 3, minW: 2, minH: 2, icon: 'people' },
+  'events-next':  { name: 'Upcoming events', desc: 'The next few dates on the calendar', group: 'Activity', w: 8, h: 14, minW: 6, minH: 8, icon: 'calendar' },
+  'news-latest':  { name: 'Latest news', desc: 'The newest newsletters', group: 'Activity', w: 12, h: 10, minW: 6, minH: 6, icon: 'mail' },
+  leaderboard:    { name: 'Leaderboard', desc: 'Who has the most points', group: 'Activity', w: 8, h: 14, minW: 6, minH: 8, icon: 'trophy' },
+  tournaments:    { name: 'Tournaments', desc: 'What is running and what is next', group: 'Activity', w: 12, h: 10, minW: 6, minH: 6, icon: 'bracket' },
+  'club-stats':   { name: 'Club stats', desc: 'Members, events and points at a glance', group: 'Activity', w: 24, h: 4, minW: 8, minH: 4, icon: 'chart' },
+  'stat-members': { name: 'Member count', desc: 'How many people are in the club', group: 'Activity', w: 6, h: 6, minW: 4, minH: 4, icon: 'people' },
 
-  'quick-duel':   { name: 'Quick game', desc: 'Your ratings and a button straight into a game', group: 'Play and learn', w: 4, h: 5, minW: 3, minH: 4, icon: 'swords' },
-  'puzzle-daily': { name: 'Puzzle of the day', desc: 'The newest puzzle, with its board', group: 'Play and learn', w: 4, h: 7, minW: 3, minH: 5, icon: 'puzzle' },
-  tip:            { name: 'Tip of the day', desc: 'A short chess tip that changes daily', group: 'Play and learn', w: 4, h: 3, minW: 3, minH: 2, icon: 'bulb' },
-  'store-preview':{ name: 'Store preview', desc: 'A few things members can spend points on', group: 'Play and learn', w: 4, h: 5, minW: 3, minH: 3, icon: 'bag' }
+  'quick-duel':   { name: 'Quick game', desc: 'Your ratings and a button straight into a game', group: 'Play and learn', w: 8, h: 10, minW: 6, minH: 8, icon: 'swords' },
+  'puzzle-daily': { name: 'Puzzle of the day', desc: 'The newest puzzle, with its board', group: 'Play and learn', w: 8, h: 14, minW: 6, minH: 10, icon: 'puzzle' },
+  tip:            { name: 'Tip of the day', desc: 'A short chess tip that changes daily', group: 'Play and learn', w: 8, h: 6, minW: 6, minH: 4, icon: 'bulb' },
+  'store-preview':{ name: 'Store preview', desc: 'A few things members can spend points on', group: 'Play and learn', w: 8, h: 10, minW: 6, minH: 6, icon: 'bag' }
 };
 
 const GROUPS = ['Club', 'Activity', 'Play and learn'];
@@ -488,21 +541,28 @@ function widgetHTML(w, ctx, data) {
 
 /* ── rendering ─────────────────────────────────────────────────────── */
 
-/* Layouts saved before v2 used rows twice as tall, and widgets without an
-   id or a known type are dropped rather than drawn as holes. */
+/* Older layouts are scaled up to today's grid (see LAYOUT_V), and widgets
+   without an id or a known type are dropped rather than drawn as holes. */
 function readLayout(club) {
   const raw = club.layout && club.layout.length ? club.layout : null;
   if (!raw) return DEFAULT_LAYOUT.map((w) => ({ ...w }));
-  const scale = club.layoutV === LAYOUT_V ? 1 : 2;
+  const v = club.layoutV || 1;
+  const sx = v >= 3 ? 1 : 2;
+  const sy = v >= 3 ? 1 : v === 2 ? 2 : 4;
   return raw
     .map((w) => ({ ...w, type: w.type === 'stat-points' ? 'quick-duel' : w.type }))
     .filter((w) => w.i && WIDGETS[w.type])
-    .map((w) => ({
-      ...w,
-      y: w.y * scale,
-      h: Math.max(WIDGETS[w.type].minH || 2, w.h * scale),
-      w: Math.max(WIDGETS[w.type].minW || 2, Math.min(COLS, w.w))
-    }));
+    .map((w) => {
+      const meta = WIDGETS[w.type];
+      const width = Math.max(meta.minW || 2, Math.min(COLS, w.w * sx));
+      return {
+        ...w,
+        x: Math.max(0, Math.min(COLS - width, w.x * sx)),
+        y: w.y * sy,
+        w: width,
+        h: Math.max(meta.minH || 2, w.h * sy)
+      };
+    });
 }
 
 /* Firestore will not store `undefined`, and a drag leaves bookkeeping on
@@ -565,7 +625,10 @@ export async function renderDashboard(ctx, host) {
       // reading order on a phone is the order a desktop reader would scan
       layout.slice().sort((a, b) => a.y - b.y || a.x - b.x).forEach((w, n) => {
         const node = canvas.querySelector(`[data-i="${w.i}"]`);
-        if (node) node.style.cssText = `order:${n};--h:${w.h}`;
+        /* A banner keeps the shape it was given on a desktop, so a wide
+           sponsor strip stays a strip on a phone. */
+        const ar = (w.w * 30.5 + (w.w - 1) * GAP) / (w.h * ROW + (w.h - 1) * GAP);
+        if (node) node.style.cssText = `order:${n};--h:${w.h};--ar:${ar.toFixed(3)}`;
       });
       return;
     }
@@ -583,7 +646,7 @@ export async function renderDashboard(ctx, host) {
 
   const nodeHTML = (w) => {
     const meta = WIDGETS[w.type] || { name: w.type };
-    return `<section class="widget w-${esc(w.type)}" data-i="${esc(w.i)}">
+    return `<section class="widget wt-${esc(w.type)}" data-i="${esc(w.i)}">
         <div class="widget-body">${widgetHTML(w, ctx, data)}</div>
         ${editing ? `
           <div class="widget-shield" title="Drag to move. Click to edit."></div>
@@ -593,9 +656,8 @@ export async function renderDashboard(ctx, host) {
             <button data-dup title="Duplicate" aria-label="Duplicate ${esc(meta.name)}">${svg('copy')}</button>
             <button data-del title="Remove" aria-label="Remove ${esc(meta.name)}">${svg('trash')}</button>
           </div>
-          <span class="widget-resize se" data-resize="se" title="Drag to resize"></span>
-          <span class="widget-resize e" data-resize="e"></span>
-          <span class="widget-resize s" data-resize="s"></span>` : ''}
+          ${['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'].map((d) =>
+            `<span class="widget-resize ${d}" data-resize="${d}"${d === 'se' ? ' title="Drag to resize"' : ''}></span>`).join('')}` : ''}
       </section>`;
   };
 
@@ -689,6 +751,9 @@ export async function renderDashboard(ctx, host) {
       if (stacked()) { openSettings(id); return; }
       const handle = e.target.closest('[data-resize]');
       const mode = handle ? handle.dataset.resize : 'move';
+      const meta = WIDGETS[item.type] || {};
+      const minW = meta.minW || 2;
+      const minH = meta.minH || 2;
 
       e.preventDefault();
       measure();
@@ -696,11 +761,85 @@ export async function renderDashboard(ctx, host) {
       const startY = e.clientY;
       const start = { ...item };
       const startBox = box(item);
-      const before = new Map(layout.map((o) => [o.i, o.y]));
+      /* Every frame is worked out from this, never from the frame before,
+         so the same pointer position always gives the same arrangement. */
+      const snapshot = layout.map((w) => ({ ...w }));
+      const stepX = colW + GAP;
       let moved = false;
       let ghost = null;
+      let lastKey = '';
+      let frame = 0;
+      let pending = null;
 
       el.setPointerCapture(e.pointerId);
+
+      /* The cell a pointer offset asks for. */
+      function targetFor(dxPx, dyPx) {
+        const t = { ...start };
+        if (mode === 'move') {
+          t.x = Math.max(0, Math.min(COLS - start.w, start.x + Math.round(dxPx / stepX)));
+          t.y = Math.max(0, start.y + Math.round(dyPx / UNIT));
+          return t;
+        }
+        const dx = Math.round(dxPx / stepX);
+        const dy = Math.round(dyPx / UNIT);
+        if (mode.includes('e')) t.w = Math.max(minW, Math.min(COLS - start.x, start.w + dx));
+        if (mode.includes('s')) t.h = Math.max(minH, start.h + dy);
+        if (mode.includes('w')) {
+          const x = Math.max(0, Math.min(start.x + start.w - minW, start.x + dx));
+          t.w = start.w + (start.x - x);
+          t.x = x;
+        }
+        if (mode.includes('n')) {
+          const y = Math.max(0, Math.min(start.y + start.h - minH, start.y + dy));
+          t.h = start.h + (start.y - y);
+          t.y = y;
+        }
+        return t;
+      }
+
+      /* The widget itself follows the pointer to the pixel; the cells only
+         decide the outline and where everything else goes. */
+      function follow(dxPx, dyPx) {
+        if (mode === 'move') {
+          el.style.transform = `translate(${startBox.left + dxPx}px,${startBox.top + dyPx}px)`;
+          return;
+        }
+        const minWpx = minW * colW + (minW - 1) * GAP;
+        const minHpx = minH * ROW + (minH - 1) * GAP;
+        let { left, top, width, height } = startBox;
+        if (mode.includes('e')) width = Math.max(minWpx, Math.min(canvas.clientWidth - left, width + dxPx));
+        if (mode.includes('s')) height = Math.max(minHpx, height + dyPx);
+        if (mode.includes('w')) {
+          const nl = Math.max(0, Math.min(left + width - minWpx, left + dxPx));
+          width += left - nl; left = nl;
+        }
+        if (mode.includes('n')) {
+          const nt = Math.max(0, Math.min(top + height - minHpx, top + dyPx));
+          height += top - nt; top = nt;
+        }
+        el.style.transform = `translate(${left}px,${top}px)`;
+        el.style.width = width + 'px';
+        el.style.height = height + 'px';
+      }
+
+      function apply() {
+        frame = 0;
+        if (!pending) return;
+        const { dxPx, dyPx } = pending;
+        pending = null;
+        follow(dxPx, dyPx);
+        const t = targetFor(dxPx, dyPx);
+        const key = `${t.x},${t.y},${t.w},${t.h}`;
+        if (key === lastKey) return;          // same cell: nothing else moves
+        lastKey = key;
+        const next = arrange(snapshot, t);
+        next.forEach((n) => Object.assign(layout.find((w) => w.i === n.i), n));
+        place(item.i);
+        const b = box(item);
+        ghost.style.cssText = `transform:translate(${b.left}px,${b.top}px);width:${b.width}px;height:${b.height}px`;
+        ghost.dataset.size = mode === 'move' ? '' : `${item.w} × ${item.h}`;
+      }
 
       const move = (ev) => {
         const dxPx = ev.clientX - startX;
@@ -714,29 +853,9 @@ export async function renderDashboard(ctx, host) {
           ghost.className = 'dash-ghost';
           canvas.appendChild(ghost);
         }
-        const meta = WIDGETS[item.type] || {};
-        const dx = Math.round(dxPx / (colW + GAP));
-        const dy = Math.round(dyPx / UNIT);
-
-        if (mode === 'move') {
-          item.x = Math.max(0, Math.min(COLS - item.w, start.x + dx));
-          item.y = Math.max(0, start.y + dy);
-          // the widget follows the pointer exactly; the grid underneath snaps
-          el.style.transform = `translate(${startBox.left + dxPx}px,${startBox.top + dyPx}px)`;
-        } else {
-          if (mode !== 's') item.w = Math.max(meta.minW || 2, Math.min(COLS - item.x, start.w + dx));
-          if (mode !== 'e') item.h = Math.max(meta.minH || 2, start.h + dy);
-          if (mode !== 's') el.style.width = Math.max(colW * (meta.minW || 2), startBox.width + dxPx) + 'px';
-          if (mode !== 'e') el.style.height = Math.max(ROW * (meta.minH || 2), startBox.height + dyPx) + 'px';
-        }
-        /* Everyone else starts from where they were when the drag began, so
-           a widget nudged aside slides back once the drag moves on. */
-        layout.forEach((o) => { if (o !== item) o.y = before.get(o.i); });
-        resolve(layout, item);
-        compact(layout, item);
-        place(item.i);
-        const b = box(item);
-        ghost.style.cssText = `transform:translate(${b.left}px,${b.top}px);width:${b.width}px;height:${b.height}px`;
+        // one layout pass per frame, however fast the pointer reports
+        pending = { dxPx, dyPx };
+        if (!frame) frame = requestAnimationFrame(apply);
       };
 
       const up = () => {
@@ -744,6 +863,7 @@ export async function renderDashboard(ctx, host) {
         el.removeEventListener('pointermove', move);
         el.removeEventListener('pointerup', up);
         el.removeEventListener('pointercancel', up);
+        if (frame) { cancelAnimationFrame(frame); apply(); }
         canvas.classList.remove('busy');
         if (ghost) ghost.remove();
         el.classList.remove('dragging', 'resizing');
@@ -751,7 +871,7 @@ export async function renderDashboard(ctx, host) {
           if (mode === 'move') openSettings(id);   // a click, not a drag
           return;
         }
-        compact(layout);
+        // the layout already is what the outline showed; just settle into it
         place();
         persist();
       };

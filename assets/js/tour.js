@@ -189,7 +189,7 @@ function memberSteps(ctx) {
       body: 'Solve puzzles, show up to meetings and win games to earn points. Come every week to keep your streak going.'
     },
     {
-      target: '.w-quick-duel, .w-welcome',
+      target: '.wt-quick-duel, .wt-welcome',
       title: 'Play someone',
       body: 'Start a game with a clubmate or anyone on JagChess. Your rating goes up as you win.'
     }
