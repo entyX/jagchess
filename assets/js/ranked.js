@@ -593,7 +593,7 @@ function manageHTML(board) {
       <button class="rkm-x" data-del="${esc(r.entryId)}" title="Remove" aria-label="Remove ${esc(r.name)}">×</button>
       <div class="rkm-linkbox" hidden>
         <div class="rkm-search"><input type="text" autocomplete="off" placeholder="Search JagChess accounts…" data-linksearch="${esc(r.entryId)}"><div class="rkm-sug" hidden></div></div>
-        <input type="text" class="rkm-li-in" autocomplete="off" placeholder="Lichess username" value="${esc(r.lichess)}" data-lichess="${esc(r.entryId)}">
+        <div class="rkm-search"><input type="text" class="rkm-li-in" autocomplete="off" placeholder="Lichess username" value="${esc(r.lichess)}" data-lichess="${esc(r.entryId)}"><div class="rkm-sug" hidden></div></div>
         ${r.uid ? `<button class="rkm-link" data-unlink="${esc(r.entryId)}">Unlink</button>` : ''}
       </div>
     </div>`;
