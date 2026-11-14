@@ -573,70 +573,100 @@ export function rankedBoardHTML(board, ctx, opts = {}) {
 }
 
 function manageHTML(board) {
-  const people = Object.values(board.people || {}).filter((p) => p.username)
-    .sort((a, b) => a.username.localeCompare(b.username));
-  return `
-    <div class="rk-unconfirmed rk-manage">
-      <div class="rk-unconfirmed-head"><b>Manage leaderboard</b>
-        <small>You decide who is listed and their points. Nothing is added automatically.</small></div>
-      ${board.rows.map((r) => `
-        <div class="rk-un-row" data-no-profile>
-          <span class="rk-who"><b>${esc(r.name)}</b><small>${r.uid ? 'JagChess member' : 'No account'}</small></span>
-          <input type="text" list="rk-people" data-link="${esc(r.entryId)}" value="${esc(r.uid && (board.people || {})[r.uid] ? board.people[r.uid].username : '')}" placeholder="No account" aria-label="Account for ${esc(r.name)}" style="width:150px">
-          <input type="number" step="any" value="${r.trophies}" data-pts="${esc(r.entryId)}" style="width:80px" aria-label="Points for ${esc(r.name)}">
-          <button class="btn sm" data-save="${esc(r.entryId)}">Save</button>
-          <button class="btn sm" data-del="${esc(r.entryId)}">Remove</button>
-        </div>`).join('')}
-      <div class="rk-un-row" data-no-profile>
-        <input type="text" list="rk-people" placeholder="Search a JagChess account, or type any name" data-new-name autocomplete="off" style="flex:1;min-width:0">
-        <datalist id="rk-people">${people.map((p) => `<option value="${esc(p.username)}"></option>`).join('')}</datalist>
-        <small data-new-hint style="width:100%"></small>
-        <input type="number" step="any" placeholder="Points" data-new-pts style="width:80px">
-        <button class="btn primary sm" data-add>Add</button>
+  const row = (r) => `
+    <div class="rkm-row" data-no-profile data-entry="${esc(r.entryId)}">
+      <span class="rkm-name">
+        <b>${esc(r.name)}</b>
+        ${r.uid ? `<span class="rkm-pill on">JagChess account</span>` : `<span class="rkm-pill">Name only</span>`}
+      </span>
+      <button class="rkm-link" data-linkbtn="${esc(r.entryId)}">${r.uid ? 'Change account' : 'Link account'}</button>
+      <label class="rkm-pts">${TROPHY_SVG}<input type="number" step="any" value="${r.trophies}" data-pts="${esc(r.entryId)}" aria-label="Points for ${esc(r.name)}"></label>
+      <button class="rkm-x" data-del="${esc(r.entryId)}" title="Remove" aria-label="Remove ${esc(r.name)}">×</button>
+      <div class="rkm-linkbox" hidden>
+        <div class="rkm-search"><input type="text" autocomplete="off" placeholder="Search JagChess accounts…" data-linksearch="${esc(r.entryId)}"><div class="rkm-sug" hidden></div></div>
+        ${r.uid ? `<button class="rkm-link" data-unlink="${esc(r.entryId)}">Unlink</button>` : ''}
       </div>
+    </div>`;
+  return `
+    <div class="rkm">
+      <div class="rkm-head"><b>Manage leaderboard</b><small>You choose who is listed and their points. Nothing is added automatically.</small></div>
+      <div class="rkm-add" data-no-profile>
+        <div class="rkm-search">
+          <input type="text" autocomplete="off" spellcheck="false" name="rk-name" placeholder="Add a person — search accounts or type any name" data-new-name>
+          <div class="rkm-sug" hidden></div>
+        </div>
+        <input class="rkm-addpts" type="number" step="any" placeholder="Points" data-new-pts>
+        <button class="btn primary sm" data-add>Add</button>
+        <small class="rkm-hint" data-new-hint></small>
+      </div>
+      ${board.rows.length ? board.rows.map(row).join('') : '<p class="rkm-empty">Nobody on the board yet.</p>'}
     </div>`;
 }
 
 /** Wires what rankedBoardHTML drew. Profile clicks are handled site-wide. */
 export function wireRankedBoard(host, ctx, board) {
   const fail = (e) => toast(e.message || 'Could not save', 'error');
-  host.querySelectorAll('[data-save]').forEach((b) => {
-    b.onclick = () => setEntryPoints(ctx, b.dataset.save, host.querySelector(`[data-pts="${b.dataset.save}"]`).value).catch(fail);
+  const people = Object.values(board.people || {}).filter((p) => p.username);
+
+  /* Our own suggestion list, so it is plainly JagChess and never mistaken
+     for the browser's autofill. onPick gets the account; typing by hand
+     never counts as a pick. */
+  function suggest(input, onPick) {
+    const box = input.parentElement.querySelector('.rkm-sug');
+    input.setAttribute('autocomplete', 'off');
+    const render = () => {
+      const q = input.value.trim().toLowerCase();
+      const hits = q ? people.filter((p) => p.username.toLowerCase().includes(q)).slice(0, 6) : [];
+      box.hidden = !hits.length;
+      box.innerHTML = hits.map((p) => `<button type="button" class="rkm-opt" data-uid="${esc(p.uid)}">
+        ${personAvatar(p, 28)}<span><b>${esc(p.username)}</b><small>JagChess account</small></span></button>`).join('');
+    };
+    input.addEventListener('input', () => { onPick(null); render(); });
+    input.addEventListener('focus', render);
+    input.addEventListener('blur', () => setTimeout(() => { box.hidden = true; }, 150));
+    box.addEventListener('mousedown', (e) => {
+      const o = e.target.closest('.rkm-opt');
+      if (!o) return;
+      e.preventDefault();
+      const p = board.people[o.dataset.uid];
+      box.hidden = true;
+      if (p) onPick(p);
+    });
+  }
+
+  host.querySelectorAll('[data-pts]').forEach((i) => {
+    i.onchange = () => setEntryPoints(ctx, i.dataset.pts, i.value).catch(fail);
   });
   host.querySelectorAll('[data-del]').forEach((b) => {
     b.onclick = () => { if (confirm('Remove this person from the leaderboard?')) removeEntry(ctx, b.dataset.del).catch(fail); };
   });
-  const find = (txt) => Object.values(board.people || {}).find((p) =>
-    p.username && p.username.toLowerCase() === String(txt).trim().toLowerCase());
-  host.querySelectorAll('[data-link]').forEach((inp) => {
-    inp.onchange = () => {
-      if (!inp.value.trim()) return setEntryUid(ctx, inp.dataset.link, '').catch(fail);
-      const person = find(inp.value);
-      if (!person) return toast('No JagChess account with that name', 'error');
-      setEntryUid(ctx, inp.dataset.link, person.uid).catch(fail);
+  host.querySelectorAll('[data-linkbtn]').forEach((b) => {
+    b.onclick = () => {
+      const lb = b.closest('.rkm-row').querySelector('.rkm-linkbox');
+      lb.hidden = !lb.hidden;
+      if (!lb.hidden) lb.querySelector('input').focus();
     };
   });
-  /* Clicking a suggestion links the account; typing a name by hand never does. */
-  let picked = null;
-  const nameBox = host.querySelector('[data-new-name]');
-  const hint = host.querySelector('[data-new-hint]');
-  if (nameBox) nameBox.addEventListener('input', (e) => {
-    const viaList = !e.inputType || e.inputType === 'insertReplacementText';
-    picked = viaList ? find(nameBox.value) || null : null;
-    hint.textContent = picked ? `Linked to ${picked.username}'s JagChess account` : '';
+  host.querySelectorAll('[data-unlink]').forEach((b) => {
+    b.onclick = () => setEntryUid(ctx, b.dataset.unlink, '').catch(fail);
   });
-  const add = host.querySelector('[data-add]');
-  if (add) add.onclick = () => {
+  host.querySelectorAll('[data-linksearch]').forEach((i) => {
+    suggest(i, (p) => { if (p) setEntryUid(ctx, i.dataset.linksearch, p.uid).catch(fail); });
+  });
+
+  const nameBox = host.querySelector('[data-new-name]');
+  if (!nameBox) return;
+  const hint = host.querySelector('[data-new-hint]');
+  let picked = null;
+  suggest(nameBox, (p) => {
+    picked = p;
+    if (p) nameBox.value = p.username;
+    hint.textContent = p ? `Will sync with ${p.username}'s JagChess account` : '';
+  });
+  host.querySelector('[data-add]').onclick = () => {
     const name = nameBox.value.trim();
-    const person = picked && picked.username.toLowerCase() === name.toLowerCase() ? picked : null;
-    const uid = person ? person.uid : '';
+    const uid = picked && picked.username === name ? picked.uid : '';
     addEntry(ctx, { name, points: host.querySelector('[data-new-pts]').value, uid }).catch(fail);
   };
-  host.querySelectorAll('[data-confirm]').forEach((b) => {
-    b.onclick = (e) => {
-      e.stopPropagation();
-      const u = board.unlinked.find((x) => x.lichessId === b.dataset.confirm);
-      if (u) openConfirmPoints(ctx, u, board);
-    };
-  });
+  host.querySelector('[data-new-pts]').onkeydown = (e) => { if (e.key === 'Enter') host.querySelector('[data-add]').click(); };
 }
