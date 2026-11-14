@@ -189,9 +189,10 @@ export async function renderLichessTournament(ctx, host, id, api2 = {}) {
   /* Who each lichess name is on JagChess, when anybody has said. */
   let board = lastRanked(ctx);
   const jagOf = (name) => {
-    const uid = board && board.links && board.links[String(name || '').toLowerCase()];
-    const person = uid && board.people && board.people[uid];
-    return uid && person ? { uid, person } : null;
+    const hit = board && board.links && board.links[String(name || '').toLowerCase()];
+    if (!hit) return null;
+    const person = (board.people && board.people[hit.uid]) || { username: hit.name };
+    return { uid: hit.uid, person: { ...person, username: person.username || hit.name } };
   };
 
   /* What lichess says about your teams. `null` means we have not asked or
@@ -1190,7 +1191,7 @@ export function openPlayerCard(t, username, parts, games, jag) {
       </div>`;
     }).join('') : '<div class="empty-state">No games stored for this player yet.</div>'}</div>
     <div class="li-modal-foot">
-      ${jag ? `<button class="btn primary" data-profile="${esc(jag.uid)}" data-x>JagChess profile</button>` : ''}
+      ${jag && jag.uid ? `<button class="btn primary" data-profile="${esc(jag.uid)}" data-x>JagChess profile</button>` : ''}
       <a class="btn subtle" href="#${esc(playerHashFor(username))}" data-x>All their tournaments</a>
       <a class="btn subtle" href="${esc(api.userUrl(username))}" target="_blank" rel="noopener">Profile on lichess ↗</a>
     </div>

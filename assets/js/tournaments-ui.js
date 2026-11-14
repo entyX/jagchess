@@ -251,10 +251,10 @@ export async function renderTournaments(ctx, host, api) {
   function who(kind, p) {
     if (kind === 'jag') return { uid: p.uid, person: p };
     const id = String(p.username || '').toLowerCase();
-    const uid = board && board.links && board.links[id];
-    const person = uid && board.people[uid];
-    return uid && person
-      ? { uid, person: { ...person, username: person.username || p.username }, alias: p.username }
+    const hit = board && board.links && board.links[id];
+    const person = hit && hit.uid && board.people[hit.uid];
+    return person
+      ? { uid: hit.uid, person: { ...person, username: person.username || p.username }, alias: p.username }
       : { uid: null, person: { username: p.username, avatarColor: '#8a8f99' } };
   }
 

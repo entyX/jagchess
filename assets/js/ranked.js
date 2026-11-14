@@ -231,7 +231,16 @@ function buildBoard(entries, people, lichess = []) {
     w: 0, d: 0, l: 0, gold: 0, silver: 0, bronze: 0, best: null
   })).sort((a, b) => b.trophies - a.trophies || a.name.localeCompare(b.name));
   rows.forEach((r, i) => { r.rank = i && rows[i - 1].trophies === r.trophies ? rows[i - 1].rank : i + 1; });
-  return { mode: 'manual', rows, unlinked: [], tournaments: 0, liveCount: 0, games: 0, people, lichess, manual: true };
+  /* lichess name → who that is here: connected accounts first, then whatever
+     the staff typed against an entry (which wins). */
+  const links = {};
+  lichess.forEach((l) => { if (l.uid && people[l.uid]) links[l.name.toLowerCase()] = { uid: l.uid, name: people[l.uid].username }; });
+  entries.forEach((e) => {
+    if (!e.lichess) return;
+    links[e.lichess.toLowerCase()] = e.uid && people[e.uid]
+      ? { uid: e.uid, name: people[e.uid].username || e.name } : { uid: '', name: e.name };
+  });
+  return { mode: 'manual', links, rows, unlinked: [], tournaments: 0, liveCount: 0, games: 0, people, lichess, manual: true };
 }
 
 async function readLichessNames() {
