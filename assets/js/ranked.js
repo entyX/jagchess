@@ -211,25 +211,32 @@ const entryRef = (ctx, id) => ctx.clubId ? doc(db, 'clubs', ctx.clubId, 'rankedE
 /* Who may edit: a club's staff, or a site administrator on the global board. */
 export const mayEditBoard = (ctx) => !!(ctx && (ctx.clubId ? ctx.isAdmin : (ctx.member && ctx.member.role === 'admin')));
 
-export const addEntry = (ctx, { name, points, uid }) => {
+export const addEntry = (ctx, { name, points, uid, lichess }) => {
   const clean = String(name || '').trim();
   if (!clean) throw new Error('Enter a name.');
   const data = { name: clean, points: Number(points) || 0, createdAt: Date.now() };
   if (uid) data.uid = uid;
+  if (lichess) data.lichess = String(lichess).trim();
   return setDoc(doc(entriesCol(ctx)), data);
 };
 export const setEntryPoints = (ctx, id, points) => updateDoc(entryRef(ctx, id), { points: Number(points) || 0 });
+export const setEntryLichess = (ctx, id, name) => updateDoc(entryRef(ctx, id), { lichess: String(name || '').trim() });
 export const setEntryUid = (ctx, id, uid) => updateDoc(entryRef(ctx, id), { uid: uid || '' });
 export const removeEntry = (ctx, id) => deleteDoc(entryRef(ctx, id));
 
-function buildBoard(entries, people) {
+function buildBoard(entries, people, lichess = []) {
   const rows = entries.map((e) => ({
     entryId: e.id, uid: e.uid || null, person: e.uid && people[e.uid] ? people[e.uid] : { username: e.name },
-    names: [e.name], name: e.name, trophies: Number(e.points) || 0, live: 0, events: 0,
+    names: [e.name], name: e.name, lichess: e.lichess || '', trophies: Number(e.points) || 0, live: 0, events: 0,
     w: 0, d: 0, l: 0, gold: 0, silver: 0, bronze: 0, best: null
   })).sort((a, b) => b.trophies - a.trophies || a.name.localeCompare(b.name));
   rows.forEach((r, i) => { r.rank = i && rows[i - 1].trophies === r.trophies ? rows[i - 1].rank : i + 1; });
-  return { mode: 'manual', rows, unlinked: [], tournaments: 0, liveCount: 0, games: 0, people, manual: true };
+  return { mode: 'manual', rows, unlinked: [], tournaments: 0, liveCount: 0, games: 0, people, lichess, manual: true };
+}
+
+async function readLichessNames() {
+  const s = await getDocs(query(accountsCol(), limit(1000))).catch(() => null);
+  return s ? s.docs.map((d) => ({ uid: d.id, name: String(d.data().username || d.data().lichessId || '') })).filter((x) => x.name) : [];
 }
 
 async function readPeople(ctx) {
@@ -244,14 +251,15 @@ async function readPeople(ctx) {
 export function watchRanked(ctx, cb) {
   let entries = [];
   let people = {};
+  let names = [];
   let ready = false;
   const emit = () => {
     if (!ready) return;
-    const out = buildBoard(entries, people);
+    const out = buildBoard(entries, people, names);
     latest.set(scopeOf(ctx), out);
     cb(out);
   };
-  readPeople(ctx).then((p) => { people = p; ready = true; emit(); });
+  Promise.all([readPeople(ctx), readLichessNames()]).then(([p, n]) => { people = p; names = n; ready = true; emit(); });
   const stop = onSnapshot(entriesCol(ctx), (s) => {
     entries = s.docs.map((d) => ({ id: d.id, ...d.data() }));
     emit();
@@ -262,8 +270,8 @@ export function watchRanked(ctx, cb) {
 export async function loadRanked(ctx) {
   const have = lastRanked(ctx);
   if (have) return have;
-  const [s, people] = await Promise.all([getDocs(entriesCol(ctx)).catch(() => null), readPeople(ctx)]);
-  const out = buildBoard(s ? s.docs.map((d) => ({ id: d.id, ...d.data() })) : [], people);
+  const [s, people, names] = await Promise.all([getDocs(entriesCol(ctx)).catch(() => null), readPeople(ctx), readLichessNames()]);
+  const out = buildBoard(s ? s.docs.map((d) => ({ id: d.id, ...d.data() })) : [], people, names);
   latest.set(scopeOf(ctx), out);
   return out;
 }
@@ -535,7 +543,7 @@ export function rankedBoardHTML(board, ctx, opts = {}) {
       ${personAvatar(p, 34)}
       <span class="rk-who">
         <b>${esc(p.username || r.names[0] || 'Player')}${r.uid === me ? '<span class="lb-me-badge">You</span>' : ''}</b>
-        <small>${r.uid ? 'JagChess member' : 'No account'}</small>
+        <small>${r.uid ? 'JagChess member' : 'No account'}${r.lichess ? ` · ♞ ${esc(r.lichess)}` : ''}</small>
       </span>
       ${r.live ? `<span class="rk-live-gain" title="From tournaments running right now">+${trophyText(r.live)}</span>` : ''}
       <span class="rk-tro">${TROPHY_SVG}${trophyText(r.trophies)}</span>
@@ -578,12 +586,14 @@ function manageHTML(board) {
       <span class="rkm-name">
         <b>${esc(r.name)}</b>
         ${r.uid ? `<span class="rkm-pill on">JagChess account</span>` : `<span class="rkm-pill">Name only</span>`}
+        ${r.lichess ? `<span class="rkm-pill li">♞ ${esc(r.lichess)}</span>` : ''}
       </span>
       <button class="rkm-link" data-linkbtn="${esc(r.entryId)}">${r.uid ? 'Change account' : 'Link account'}</button>
       <label class="rkm-pts">${TROPHY_SVG}<input type="number" step="any" value="${r.trophies}" data-pts="${esc(r.entryId)}" aria-label="Points for ${esc(r.name)}"></label>
       <button class="rkm-x" data-del="${esc(r.entryId)}" title="Remove" aria-label="Remove ${esc(r.name)}">×</button>
       <div class="rkm-linkbox" hidden>
         <div class="rkm-search"><input type="text" autocomplete="off" placeholder="Search JagChess accounts…" data-linksearch="${esc(r.entryId)}"><div class="rkm-sug" hidden></div></div>
+        <input type="text" class="rkm-li-in" autocomplete="off" placeholder="Lichess username" value="${esc(r.lichess)}" data-lichess="${esc(r.entryId)}">
         ${r.uid ? `<button class="rkm-link" data-unlink="${esc(r.entryId)}">Unlink</button>` : ''}
       </div>
     </div>`;
@@ -595,6 +605,7 @@ function manageHTML(board) {
           <input type="text" autocomplete="off" spellcheck="false" name="rk-name" placeholder="Add a person — search accounts or type any name" data-new-name>
           <div class="rkm-sug" hidden></div>
         </div>
+        <div class="rkm-search rkm-li"><input type="text" autocomplete="off" spellcheck="false" placeholder="Lichess username (optional)" data-new-li><div class="rkm-sug" hidden></div></div>
         <input class="rkm-addpts" type="number" step="any" placeholder="Points" data-new-pts>
         <button class="btn primary sm" data-add>Add</button>
         <small class="rkm-hint" data-new-hint></small>
@@ -611,15 +622,26 @@ export function wireRankedBoard(host, ctx, board) {
   /* Our own suggestion list, so it is plainly JagChess and never mistaken
      for the browser's autofill. onPick gets the account; typing by hand
      never counts as a pick. */
-  function suggest(input, onPick) {
+  function suggest(input, onPick, kind = 'account') {
     const box = input.parentElement.querySelector('.rkm-sug');
     input.setAttribute('autocomplete', 'off');
     const render = () => {
       const q = input.value.trim().toLowerCase();
-      const hits = q ? people.filter((p) => p.username.toLowerCase().includes(q)).slice(0, 6) : [];
+      let hits = [];
+      if (q && kind === 'account') {
+        hits = people.filter((p) => p.username.toLowerCase().includes(q)).slice(0, 6)
+          .map((p) => ({ key: p.uid, title: p.username, sub: 'JagChess account', person: p }));
+      } else if (q) {
+        hits = (board.lichess || []).filter((l) => l.name.toLowerCase().includes(q)).slice(0, 6)
+          .map((l) => {
+            const p = board.people[l.uid] || null;
+            return { key: l.name, title: l.name, sub: p ? `Lichess · ${p.username}` : 'Lichess account', person: p || { username: l.name }, uid: p ? l.uid : '' };
+          });
+      }
       box.hidden = !hits.length;
-      box.innerHTML = hits.map((p) => `<button type="button" class="rkm-opt" data-uid="${esc(p.uid)}">
-        ${personAvatar(p, 28)}<span><b>${esc(p.username)}</b><small>JagChess account</small></span></button>`).join('');
+      box.innerHTML = hits.map((h, i) => `<button type="button" class="rkm-opt" data-i="${i}">
+        ${personAvatar(h.person, 28)}<span><b>${esc(h.title)}</b><small>${esc(h.sub)}</small></span></button>`).join('');
+      box._hits = hits;
     };
     input.addEventListener('input', () => { onPick(null); render(); });
     input.addEventListener('focus', render);
@@ -628,9 +650,8 @@ export function wireRankedBoard(host, ctx, board) {
       const o = e.target.closest('.rkm-opt');
       if (!o) return;
       e.preventDefault();
-      const p = board.people[o.dataset.uid];
       box.hidden = true;
-      if (p) onPick(p);
+      onPick(box._hits[+o.dataset.i]);
     });
   }
 
@@ -651,22 +672,41 @@ export function wireRankedBoard(host, ctx, board) {
     b.onclick = () => setEntryUid(ctx, b.dataset.unlink, '').catch(fail);
   });
   host.querySelectorAll('[data-linksearch]').forEach((i) => {
-    suggest(i, (p) => { if (p) setEntryUid(ctx, i.dataset.linksearch, p.uid).catch(fail); });
+    suggest(i, (h) => { if (h) setEntryUid(ctx, i.dataset.linksearch, h.key).catch(fail); });
+  });
+
+  host.querySelectorAll('[data-lichess]').forEach((i) => {
+    i.onchange = () => setEntryLichess(ctx, i.dataset.lichess, i.value).catch(fail);
+    suggest(i, (h) => { if (h) { i.value = h.title; setEntryLichess(ctx, i.dataset.lichess, h.title).catch(fail); } }, 'lichess');
   });
 
   const nameBox = host.querySelector('[data-new-name]');
   if (!nameBox) return;
   const hint = host.querySelector('[data-new-hint]');
   let picked = null;
-  suggest(nameBox, (p) => {
-    picked = p;
-    if (p) nameBox.value = p.username;
-    hint.textContent = p ? `Will sync with ${p.username}'s JagChess account` : '';
+  const liBox = host.querySelector('[data-new-li]');
+  const show = () => {
+    hint.textContent = picked ? `Will sync with ${picked.username}'s JagChess account` : '';
+  };
+  suggest(nameBox, (h) => {
+    picked = h ? h.person : null;
+    if (h) nameBox.value = h.title;
+    show();
   });
+  suggest(liBox, (h) => {
+    if (!h) return;
+    liBox.value = h.title;
+    /* a lichess name that belongs to a connected member also links the account */
+    if (h.uid && !picked) {
+      picked = board.people[h.uid];
+      nameBox.value = nameBox.value.trim() || picked.username;
+      show();
+    }
+  }, 'lichess');
   host.querySelector('[data-add]').onclick = () => {
-    const name = nameBox.value.trim();
-    const uid = picked && picked.username === name ? picked.uid : '';
-    addEntry(ctx, { name, points: host.querySelector('[data-new-pts]').value, uid }).catch(fail);
+    const name = nameBox.value.trim() || (picked && picked.username) || liBox.value.trim();
+    const uid = picked && picked.username.toLowerCase() === name.toLowerCase() ? picked.uid : '';
+    addEntry(ctx, { name, points: host.querySelector('[data-new-pts]').value, uid, lichess: liBox.value }).catch(fail);
   };
   host.querySelector('[data-new-pts]').onkeydown = (e) => { if (e.key === 'Enter') host.querySelector('[data-add]').click(); };
 }

@@ -883,3 +883,6 @@ div.rk-step { cursor: default; }
 .rkm-x:hover { background: rgba(240,68,56,.12); color: #f04438; }
 .rkm-linkbox { flex-basis: 100%; display: flex; align-items: center; gap: 8px; }
 .rkm-empty { color: var(--muted); font-size: 13px; margin: 4px 0; }
+.rkm-pill.li { background: rgba(46,144,250,.14); color: var(--blue, #2e90fa); }
+.rkm-li { max-width: 220px; min-width: 160px; flex: 0 1 220px; }
+.rkm-li-in { width: 180px; }
