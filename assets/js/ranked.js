@@ -588,9 +588,9 @@ function manageHTML(board) {
           <button class="btn sm" data-del="${esc(r.entryId)}">Remove</button>
         </div>`).join('')}
       <div class="rk-un-row" data-no-profile>
-        <input type="text" list="rk-people" data-new-uid placeholder="Search JagChess account (optional)" aria-label="JagChess account" style="width:200px">
+        <input type="text" list="rk-people" placeholder="Search a JagChess account, or type any name" data-new-name autocomplete="off" style="flex:1;min-width:0">
         <datalist id="rk-people">${people.map((p) => `<option value="${esc(p.username)}"></option>`).join('')}</datalist>
-        <input type="text" placeholder="Name (auto-filled from account)" data-new-name style="flex:1;min-width:0">
+        <small data-new-hint style="width:100%"></small>
         <input type="number" step="any" placeholder="Points" data-new-pts style="width:80px">
         <button class="btn primary sm" data-add>Add</button>
       </div>
@@ -616,19 +616,20 @@ export function wireRankedBoard(host, ctx, board) {
       setEntryUid(ctx, inp.dataset.link, person.uid).catch(fail);
     };
   });
-  const pick = host.querySelector('[data-new-uid]');
-  if (pick) pick.onchange = () => {
-    const person = find(pick.value);
-    const nm = host.querySelector('[data-new-name]');
-    if (person && !nm.value.trim()) nm.value = person.username;
-  };
+  /* Clicking a suggestion links the account; typing a name by hand never does. */
+  let picked = null;
+  const nameBox = host.querySelector('[data-new-name]');
+  const hint = host.querySelector('[data-new-hint]');
+  if (nameBox) nameBox.addEventListener('input', (e) => {
+    const viaList = !e.inputType || e.inputType === 'insertReplacementText';
+    picked = viaList ? find(nameBox.value) || null : null;
+    hint.textContent = picked ? `Linked to ${picked.username}'s JagChess account` : '';
+  });
   const add = host.querySelector('[data-add]');
   if (add) add.onclick = () => {
-    const typed = host.querySelector('[data-new-uid]').value.trim();
-    const person = typed ? find(typed) : null;
-    if (typed && !person) return toast('No JagChess account with that name', 'error');
+    const name = nameBox.value.trim();
+    const person = picked && picked.username.toLowerCase() === name.toLowerCase() ? picked : null;
     const uid = person ? person.uid : '';
-    const name = host.querySelector('[data-new-name]').value.trim() || (person && person.username) || '';
     addEntry(ctx, { name, points: host.querySelector('[data-new-pts]').value, uid }).catch(fail);
   };
   host.querySelectorAll('[data-confirm]').forEach((b) => {
