@@ -575,8 +575,6 @@ export function rankedBoardHTML(board, ctx, opts = {}) {
 function manageHTML(board) {
   const people = Object.values(board.people || {}).filter((p) => p.username)
     .sort((a, b) => a.username.localeCompare(b.username));
-  const opts = (sel) => `<option value="">No JagChess account</option>` + people.map((p) =>
-    `<option value="${esc(p.uid)}"${p.uid === sel ? ' selected' : ''}>${esc(p.username)}</option>`).join('');
   return `
     <div class="rk-unconfirmed rk-manage">
       <div class="rk-unconfirmed-head"><b>Manage leaderboard</b>
@@ -584,13 +582,14 @@ function manageHTML(board) {
       ${board.rows.map((r) => `
         <div class="rk-un-row" data-no-profile>
           <span class="rk-who"><b>${esc(r.name)}</b><small>${r.uid ? 'JagChess member' : 'No account'}</small></span>
-          <select data-link="${esc(r.entryId)}" aria-label="Account for ${esc(r.name)}" style="max-width:160px">${opts(r.uid)}</select>
+          <input type="text" list="rk-people" data-link="${esc(r.entryId)}" value="${esc(r.uid && (board.people || {})[r.uid] ? board.people[r.uid].username : '')}" placeholder="No account" aria-label="Account for ${esc(r.name)}" style="width:150px">
           <input type="number" step="any" value="${r.trophies}" data-pts="${esc(r.entryId)}" style="width:80px" aria-label="Points for ${esc(r.name)}">
           <button class="btn sm" data-save="${esc(r.entryId)}">Save</button>
           <button class="btn sm" data-del="${esc(r.entryId)}">Remove</button>
         </div>`).join('')}
       <div class="rk-un-row" data-no-profile>
-        <select data-new-uid style="max-width:170px" aria-label="JagChess account">${opts('')}</select>
+        <input type="text" list="rk-people" data-new-uid placeholder="Search JagChess account (optional)" aria-label="JagChess account" style="width:200px">
+        <datalist id="rk-people">${people.map((p) => `<option value="${esc(p.username)}"></option>`).join('')}</datalist>
         <input type="text" placeholder="Name (auto-filled from account)" data-new-name style="flex:1;min-width:0">
         <input type="number" step="any" placeholder="Points" data-new-pts style="width:80px">
         <button class="btn primary sm" data-add>Add</button>
@@ -607,18 +606,28 @@ export function wireRankedBoard(host, ctx, board) {
   host.querySelectorAll('[data-del]').forEach((b) => {
     b.onclick = () => { if (confirm('Remove this person from the leaderboard?')) removeEntry(ctx, b.dataset.del).catch(fail); };
   });
-  host.querySelectorAll('[data-link]').forEach((sel) => {
-    sel.onchange = () => setEntryUid(ctx, sel.dataset.link, sel.value).catch(fail);
+  const find = (txt) => Object.values(board.people || {}).find((p) =>
+    p.username && p.username.toLowerCase() === String(txt).trim().toLowerCase());
+  host.querySelectorAll('[data-link]').forEach((inp) => {
+    inp.onchange = () => {
+      if (!inp.value.trim()) return setEntryUid(ctx, inp.dataset.link, '').catch(fail);
+      const person = find(inp.value);
+      if (!person) return toast('No JagChess account with that name', 'error');
+      setEntryUid(ctx, inp.dataset.link, person.uid).catch(fail);
+    };
   });
   const pick = host.querySelector('[data-new-uid]');
   if (pick) pick.onchange = () => {
-    const person = (board.people || {})[pick.value];
-    if (person) host.querySelector('[data-new-name]').value = person.username;
+    const person = find(pick.value);
+    const nm = host.querySelector('[data-new-name]');
+    if (person && !nm.value.trim()) nm.value = person.username;
   };
   const add = host.querySelector('[data-add]');
   if (add) add.onclick = () => {
-    const uid = host.querySelector('[data-new-uid]').value;
-    const person = (board.people || {})[uid];
+    const typed = host.querySelector('[data-new-uid]').value.trim();
+    const person = typed ? find(typed) : null;
+    if (typed && !person) return toast('No JagChess account with that name', 'error');
+    const uid = person ? person.uid : '';
     const name = host.querySelector('[data-new-name]').value.trim() || (person && person.username) || '';
     addEntry(ctx, { name, points: host.querySelector('[data-new-pts]').value, uid }).catch(fail);
   };
