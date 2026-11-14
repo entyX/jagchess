@@ -197,114 +197,72 @@ const latest = new Map();
 const scopeOf = (ctx) => (ctx && ctx.clubId) || 'global';
 export const lastRanked = (ctx) => latest.get(scopeOf(ctx)) || null;
 
-/**
- * The live board. Calls back every time anything under it moves.
- *
- * @returns {Function} stop
- */
-export function watchRanked(ctx, cb) {
-  const clubId = ctx.clubId || null;
-  let tournaments = [];
-  let accounts = {};
-  let manual = {};
-  let people = {};
-  const parts = {};
-  const partStops = new Map();
-  let ready = false;
+/* ── the manual board ─────────────────────────────────────────────────
+   The staff decide who is on the board and how many points each person
+   has. Nothing is ever added automatically.
 
+     rankedEntries/{id}                    (global board)
+     clubs/{clubId}/rankedEntries/{id}     (a club's board)
+       { name, points, uid? }              uid only when tied to an account */
+
+export const entriesCol = (ctx) => ctx.clubId ? clubCol(ctx.clubId, 'rankedEntries') : collection(db, 'rankedEntries');
+const entryRef = (ctx, id) => ctx.clubId ? doc(db, 'clubs', ctx.clubId, 'rankedEntries', id) : doc(db, 'rankedEntries', id);
+
+/* Who may edit: a club's staff, or a site administrator on the global board. */
+export const mayEditBoard = (ctx) => !!(ctx && (ctx.clubId ? ctx.isAdmin : (ctx.member && ctx.member.role === 'admin')));
+
+export const addEntry = (ctx, { name, points, uid }) => {
+  const clean = String(name || '').trim();
+  if (!clean) throw new Error('Enter a name.');
+  const data = { name: clean, points: Number(points) || 0, createdAt: Date.now() };
+  if (uid) data.uid = uid;
+  return setDoc(doc(entriesCol(ctx)), data);
+};
+export const setEntryPoints = (ctx, id, points) => updateDoc(entryRef(ctx, id), { points: Number(points) || 0 });
+export const removeEntry = (ctx, id) => deleteDoc(entryRef(ctx, id));
+
+function buildBoard(entries, people) {
+  const rows = entries.map((e) => ({
+    entryId: e.id, uid: e.uid || null, person: e.uid && people[e.uid] ? people[e.uid] : { username: e.name },
+    names: [e.name], name: e.name, trophies: Number(e.points) || 0, live: 0, events: 0,
+    w: 0, d: 0, l: 0, gold: 0, silver: 0, bronze: 0, best: null
+  })).sort((a, b) => b.trophies - a.trophies || a.name.localeCompare(b.name));
+  rows.forEach((r, i) => { r.rank = i && rows[i - 1].trophies === r.trophies ? rows[i - 1].rank : i + 1; });
+  return { mode: 'manual', rows, unlinked: [], tournaments: 0, liveCount: 0, games: 0, people, manual: true };
+}
+
+async function readPeople(ctx) {
+  const people = {};
+  const s = ctx.clubId
+    ? await getDocs(clubCol(ctx.clubId, 'members')).catch(() => null)
+    : await getDocs(query(collection(db, 'users'), limit(500))).catch(() => null);
+  if (s) s.docs.forEach((d) => { people[d.id] = { uid: d.id, ...d.data() }; });
+  return people;
+}
+
+export function watchRanked(ctx, cb) {
+  let entries = [];
+  let people = {};
+  let ready = false;
   const emit = () => {
     if (!ready) return;
-    const links = { ...accounts, ...manual };
-    const out = computeRanked({ tournaments, parts, links, people, mode: modeOf(ctx) });
-    out.links = links;
-    out.people = people;
-    out.allTournaments = tournaments;
+    const out = buildBoard(entries, people);
     latest.set(scopeOf(ctx), out);
     cb(out);
   };
-
-  const follow = (rows) => {
-    tournaments = rows.filter(counts);
-    const want = new Set(tournaments.map((t) => t.id));
-    for (const [id, stop] of partStops) {
-      if (!want.has(id)) { stop(); partStops.delete(id); delete parts[id]; }
-    }
-    for (const t of tournaments) {
-      if (partStops.has(t.id)) continue;
-      partStops.set(t.id, onSnapshot(partsCol(t.id), (s) => {
-        parts[t.id] = s.docs.map((d) => ({ userId: d.id, ...d.data() }));
-        emit();
-      }, (e) => console.warn('Ranked participants listener stopped', e)));
-    }
+  readPeople(ctx).then((p) => { people = p; ready = true; emit(); });
+  const stop = onSnapshot(entriesCol(ctx), (s) => {
+    entries = s.docs.map((d) => ({ id: d.id, ...d.data() }));
     emit();
-  };
-
-  const stops = [watchTournaments(ctx, follow)];
-
-  if (clubId) {
-    stops.push(onSnapshot(linksCol(clubId), (s) => {
-      manual = {};
-      s.docs.forEach((d) => { if (d.data().uid) manual[d.id] = d.data().uid; });
-      emit();
-    }, (e) => console.warn('Lichess link listener stopped', e)));
-    stops.push(onSnapshot(clubCol(clubId, 'members'), (s) => {
-      people = {};
-      s.docs.forEach((d) => { people[d.id] = { uid: d.id, ...d.data() }; });
-      emit();
-    }, (e) => console.warn('Ranked member listener stopped', e)));
-  } else {
-    getDocs(query(collection(db, 'users'), limit(500))).then((s) => {
-      s.docs.forEach((d) => { people[d.id] = { uid: d.id, ...d.data() }; });
-      emit();
-    }).catch((e) => console.warn('Could not read players for the ranked board', e));
-  }
-
-  readAccounts().then((a) => { accounts = a; ready = true; emit(); });
-
-  /* The mode lives on the club document, which club.js keeps live on ctx;
-     a cheap re-check means a staff change of mode lands without a reload. */
-  let lastMode = modeOf(ctx);
-  const modeTick = setInterval(() => {
-    if (modeOf(ctx) !== lastMode) { lastMode = modeOf(ctx); emit(); }
-  }, 1500);
-
-  return () => {
-    clearInterval(modeTick);
-    stops.forEach((s) => { try { s(); } catch (_) {} });
-    partStops.forEach((s) => { try { s(); } catch (_) {} });
-  };
+  }, (e) => console.warn('Ranked listener stopped', e));
+  return () => { try { stop(); } catch (_) {} };
 }
 
-/** One read of the whole board, for pages that are not showing it. */
 export async function loadRanked(ctx) {
   const have = lastRanked(ctx);
   if (have) return have;
-  const clubId = ctx.clubId || null;
-  const all = await listTournaments(ctx).catch(() => []);
-  const tournaments = all.filter(counts);
-  const parts = {};
-  await Promise.all(tournaments.map(async (t) => {
-    const s = await getDocs(partsCol(t.id)).catch(() => null);
-    parts[t.id] = s ? s.docs.map((d) => ({ userId: d.id, ...d.data() })) : [];
-  }));
-  const accounts = await readAccounts();
-  const manual = {};
-  const people = {};
-  if (!clubId) {
-    const us = await getDocs(query(collection(db, 'users'), limit(500))).catch(() => null);
-    if (us) us.docs.forEach((d) => { people[d.id] = { uid: d.id, ...d.data() }; });
-  } else {
-    const [ls, ms] = await Promise.all([
-      getDocs(linksCol(clubId)).catch(() => null),
-      getDocs(clubCol(clubId, 'members')).catch(() => null)
-    ]);
-    if (ls) ls.docs.forEach((d) => { if (d.data().uid) manual[d.id] = d.data().uid; });
-    if (ms) ms.docs.forEach((d) => { people[d.id] = { uid: d.id, ...d.data() }; });
-  }
-  const links = { ...accounts, ...manual };
-  const out = computeRanked({ tournaments, parts, links, people, mode: modeOf(ctx) });
-  out.links = links;
-  out.people = people;
+  const [s, people] = await Promise.all([getDocs(entriesCol(ctx)).catch(() => null), readPeople(ctx)]);
+  const out = buildBoard(s ? s.docs.map((d) => ({ id: d.id, ...d.data() })) : [], people);
   latest.set(scopeOf(ctx), out);
   return out;
 }
@@ -563,23 +521,24 @@ export function rankedBoardHTML(board, ctx, opts = {}) {
     uid: r.uid,
     person: r.person || { username: r.names[0] },
     value: `${TROPHY_SVG}${trophyText(r.trophies)}`,
-    sub: `${r.events} event${r.events === 1 ? '' : 's'}${r.w + r.d + r.l ? ` · ${r.w}-${r.d}-${r.l}` : ''}`
+    sub: r.uid ? '' : 'No account'
   });
 
   const row = (r) => {
     const p = r.person || {};
     const tier = tierOf(r.rank);
     const played = r.w + r.d + r.l;
-    return `<button class="rk-row ${tier} ${r.uid === me ? 'me' : ''}" data-profile="${esc(r.uid)}">
+    const tag = r.uid ? 'button' : 'div';
+    return `<${tag} class="rk-row ${tier} ${r.uid === me ? 'me' : ''}" ${r.uid ? `data-profile="${esc(r.uid)}"` : ''}>
       <span class="rk-rank ${tier}">${r.rank}</span>
       ${personAvatar(p, 34)}
       <span class="rk-who">
         <b>${esc(p.username || r.names[0] || 'Player')}${r.uid === me ? '<span class="lb-me-badge">You</span>' : ''}</b>
-        <small>${r.events} event${r.events === 1 ? '' : 's'}${played ? ` · ${r.w}W ${r.d}D ${r.l}L` : ''}${r.gold ? ` · ${r.gold}× 1st` : ''}</small>
+        <small>${r.uid ? 'JagChess member' : 'No account'}</small>
       </span>
       ${r.live ? `<span class="rk-live-gain" title="From tournaments running right now">+${trophyText(r.live)}</span>` : ''}
       <span class="rk-tro">${TROPHY_SVG}${trophyText(r.trophies)}</span>
-    </button>`;
+    </${tag}>`;
   };
 
   return `
@@ -590,11 +549,7 @@ export function rankedBoardHTML(board, ctx, opts = {}) {
       : `<div class="rk-empty">
           <span class="rk-empty-ico">${TROPHY_SVG}</span>
           <b>No ranked trophies yet</b>
-          <small>${board.tournaments
-            ? (board.unlinked.length
-              ? `${board.unlinked.length} lichess player${board.unlinked.length === 1 ? ' has' : 's have'} trophies waiting to be matched to a member.`
-              : 'Nobody has scored in a counted tournament yet.')
-            : 'Trophies arrive as soon as the first lichess tournament starts.'}</small>
+          <small>${mayEditBoard(ctx) ? 'Add people below and give them points.' : 'Points are awarded by the club staff.'}</small>
         </div>`}
       ${showConfirm ? `
         <div class="rk-unconfirmed">
@@ -612,11 +567,48 @@ export function rankedBoardHTML(board, ctx, opts = {}) {
         </div>` : (board.unlinked.length && !ctx.isAdmin ? `
         <p class="rk-note">${board.unlinked.length} lichess player${board.unlinked.length === 1 ? ' is' : 's are'} not on the board yet —
           connect your lichess account in Account settings and your trophies count automatically.</p>` : '')}
+      ${mayEditBoard(ctx) ? manageHTML(board) : ''}
+    </div>`;
+}
+
+function manageHTML(board) {
+  const people = Object.values(board.people || {}).filter((p) => p.username)
+    .sort((a, b) => a.username.localeCompare(b.username));
+  return `
+    <div class="rk-unconfirmed rk-manage">
+      <div class="rk-unconfirmed-head"><b>Manage leaderboard</b>
+        <small>You decide who is listed and their points. Nothing is added automatically.</small></div>
+      ${board.rows.map((r) => `
+        <div class="rk-un-row" data-no-profile>
+          <span class="rk-who"><b>${esc(r.name)}</b><small>${r.uid ? 'JagChess member' : 'No account'}</small></span>
+          <input type="number" step="any" value="${r.trophies}" data-pts="${esc(r.entryId)}" style="width:80px" aria-label="Points for ${esc(r.name)}">
+          <button class="btn sm" data-save="${esc(r.entryId)}">Save</button>
+          <button class="btn sm" data-del="${esc(r.entryId)}">Remove</button>
+        </div>`).join('')}
+      <div class="rk-un-row" data-no-profile>
+        <input type="text" placeholder="Name" data-new-name list="rk-people" style="flex:1;min-width:0">
+        <datalist id="rk-people">${people.map((p) => `<option value="${esc(p.username)}"></option>`).join('')}</datalist>
+        <input type="number" step="any" placeholder="Points" data-new-pts style="width:80px">
+        <button class="btn primary sm" data-add>Add</button>
+      </div>
     </div>`;
 }
 
 /** Wires what rankedBoardHTML drew. Profile clicks are handled site-wide. */
 export function wireRankedBoard(host, ctx, board) {
+  const fail = (e) => toast(e.message || 'Could not save', 'error');
+  host.querySelectorAll('[data-save]').forEach((b) => {
+    b.onclick = () => setEntryPoints(ctx, b.dataset.save, host.querySelector(`[data-pts="${b.dataset.save}"]`).value).catch(fail);
+  });
+  host.querySelectorAll('[data-del]').forEach((b) => {
+    b.onclick = () => { if (confirm('Remove this person from the leaderboard?')) removeEntry(ctx, b.dataset.del).catch(fail); };
+  });
+  const add = host.querySelector('[data-add]');
+  if (add) add.onclick = () => {
+    const name = host.querySelector('[data-new-name]').value.trim();
+    const match = Object.values(board.people || {}).find((p) => p.username && p.username.toLowerCase() === name.toLowerCase());
+    addEntry(ctx, { name, points: host.querySelector('[data-new-pts]').value, uid: match && match.uid }).catch(fail);
+  };
   host.querySelectorAll('[data-confirm]').forEach((b) => {
     b.onclick = (e) => {
       e.stopPropagation();

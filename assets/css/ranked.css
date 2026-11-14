@@ -848,3 +848,6 @@ div.rk-step { cursor: default; }
   .rk-confirm-who { grid-template-columns: 1fr; }
   .rk-confirm-arrow { transform: rotate(90deg); justify-self: center; }
 }
+
+.rk-manage .rk-un-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rk-manage .rk-who { flex: 1; min-width: 120px; }

@@ -195,6 +195,11 @@ service cloud.firestore {
       // a lichess USERNAME staff have said belongs to a member — what the
       // ranked board uses to credit trophies to somebody who never connected
       // a lichess account. Members read it; only staff say who is who.
+      match /rankedEntries/{id} {
+        allow read:  if isMember(clubId);
+        allow write: if isStaff(clubId);
+      }
+
       match /lichessLinks/{lichessId} {
         allow read:  if isMember(clubId);
         allow write: if isStaff(clubId);
@@ -556,6 +561,12 @@ service cloud.firestore {
 
     // a member's lichess link. Readable so a standings row can be matched to
     // a JagChess account; writable only by its owner.
+    // the hand-kept ranked board: staff decide who is on it and the points
+    match /rankedEntries/{id} {
+      allow read:  if signedIn();
+      allow write: if isSiteAdmin();
+    }
+
     match /lichessAccounts/{userId} {
       allow read:   if signedIn();
       allow write:  if signedIn() && uid() == userId;
