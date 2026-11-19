@@ -819,3 +819,18 @@ canvas.live ~ .stage-hint { opacity: 1; }
   .merge-after { opacity: 1; transform: none; }
   .app { position: relative; left: auto; top: auto; transform: none; margin: 0 auto; }
 }
+
+/* ── official partners: a slow, endless strip of logos ─────────────── */
+.partners { padding: clamp(28px, 5vh, 52px) 0; overflow: hidden; }
+.partners-label { margin: 0 0 18px; text-align: center; font-size: 12.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.partners-track {
+  display: flex; width: max-content; animation: partners-scroll 48s linear infinite;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+.partners:hover .partners-track { animation-play-state: paused; }
+.partners-set { display: flex; flex: none; align-items: center; margin: 0; padding: 0; list-style: none; }
+.partners-set li { display: flex; align-items: center; gap: 14px; padding: 0 clamp(28px, 5vw, 64px); white-space: nowrap; }
+.partners-set img { height: 64px; width: auto; object-fit: contain; }
+.partners-set span { font-weight: 650; font-size: 17px; color: var(--ink-2); }
+@keyframes partners-scroll { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .partners-track { animation: none; } }
