@@ -833,3 +833,9 @@ canvas.live ~ .stage-hint { opacity: 1; }
 .partners-set span { font-weight: 650; font-size: 17px; color: var(--ink-2); }
 @keyframes partners-scroll { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .partners-track { animation: none; } }
+
+/* ── video ─────────────────────────────────────────────────────────── */
+.watch { width: min(920px, 100% - 40px); margin: clamp(48px, 9vh, 96px) auto; text-align: center; }
+.watch h2 { margin: 0 0 22px; }
+.watch-frame { position: relative; aspect-ratio: 16 / 9; border-radius: 22px; overflow: hidden; background: #0f1218; box-shadow: 0 30px 70px -28px rgba(26,29,36,.45); }
+.watch-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
